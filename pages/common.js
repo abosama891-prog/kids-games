@@ -5,7 +5,9 @@
   const gameCatalog = [
     { key: 'maze', title: 'المتاهة', icon: '🐰', href: new URL('pages/maze/index.html', APP_BASE_URL).href, levels: 5, accent: '#4a90e2' },
     { key: 'draw', title: 'الرسم', icon: '🎨', href: new URL('pages/draw/index.html', APP_BASE_URL).href, levels: 8, accent: '#f39c12' },
-    { key: 'gas', title: 'مهندس الغاز الذكي', icon: '🔧', href: new URL('pages/gas/index.html', APP_BASE_URL).href, levels: 6, accent: '#e47645' }
+    { key: 'gas', title: 'مهندس الغاز الذكي', icon: '🔧', href: new URL('pages/gas/index.html', APP_BASE_URL).href, levels: 6, accent: '#e47645' },
+    { key: 'frog', title: 'بركة الضفدع', icon: '🐸', href: new URL('pages/frog/index.html', APP_BASE_URL).href, levels: 1, accent: '#86EFAC' },
+    { key: 'potion', title: 'مختبر الجرعات', icon: '🧪', href: new URL('pages/potion/index.html', APP_BASE_URL).href, levels: 3, accent: '#2DD4BF' }
   ];
 
   const defaultState = {
