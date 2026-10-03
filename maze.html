@@ -1138,4 +1138,108 @@ function renderEditorGrid() {
       a.className = 'arrow'; a.textContent = dirSymbols[editorRabbitDir];
       c.appendChild(a);
     } else if (v === 'carrot') { c.classList.add('carrot'); c.textContent = t.f; }
-    else if (v === 'wall') { c.classList.add(
+    else if (v === 'wall') { c.classList.add('wall'); c.textContent = '🧱'; }
+    c.onclick = (function(xx, yy) { return function() { placeInCell(xx, yy); }; })(x, y);
+    g.appendChild(c);
+  }
+}
+function placeInCell(x, y) {
+  if (currentTool === 'erase') { if (editorGrid[y][x] !== 'rabbit') editorGrid[y][x] = null; renderEditorGrid(); return; }
+  if (currentTool === 'rabbit') {
+    for (let yy = 0; yy < 5; yy++) for (let xx = 0; xx < 5; xx++) if (editorGrid[yy][xx] === 'rabbit') editorGrid[yy][xx] = null;
+    editorGrid[y][x] = 'rabbit';
+  } else if (currentTool === 'carrot') {
+    for (let yy = 0; yy < 5; yy++) for (let xx = 0; xx < 5; xx++) if (editorGrid[yy][xx] === 'carrot') editorGrid[yy][xx] = null;
+    if (editorGrid[y][x] === 'rabbit') editorGrid[y][x] = null;
+    editorGrid[y][x] = 'carrot';
+  } else if (currentTool === 'wall') {
+    if (editorGrid[y][x] === 'rabbit' || editorGrid[y][x] === 'carrot') return;
+    editorGrid[y][x] = 'wall';
+  }
+  renderEditorGrid();
+}
+function clearEditor() {
+  if (!confirm('متأكد إنك عايز تمسح الشبكة؟')) return;
+  initEditorGrid(); renderThemeButtons(); renderEditorGrid();
+}
+function saveLevel() {
+  let r = null, c = null;
+  const w = [];
+  for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) {
+    const v = editorGrid[y][x];
+    if (v === 'rabbit') r = {x:x, y:y};
+    else if (v === 'carrot') c = {x:x, y:y};
+    else if (v === 'wall') w.push({x:x, y:y});
+  }
+  if (!r) { alert('لازم تحط الحيوان'); return; }
+  if (!c) { alert('لازم تحط الأكل'); return; }
+  const t = document.getElementById('editorTitle').value.trim();
+  const h = document.getElementById('editorHint').value.trim();
+  customLevels.push({
+    title: t || ('مستوى مخصص ' + (customLevels.length + 1)),
+    hint: h || 'مستوى من صنعك!',
+    theme: editorTheme,
+    start: { x: r.x, y: r.y, dir: editorRabbitDir },
+    carrot: { x: c.x, y: c.y },
+    walls: w, isCustom: true
+  });
+  saveCustomLevels(); rebuildLevels(); renderCustomLevelsList(); renderProgressBar();
+  alert('✅ تم حفظ المستوى!');
+  document.getElementById('editorTitle').value = '';
+  document.getElementById('editorHint').value = '';
+}
+function renderCustomLevelsList() {
+  const el = document.getElementById('customLevelsItems');
+  el.innerHTML = '';
+  if (customLevels.length === 0) {
+    el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;text-align:center;padding:8px;">لسه مفيش مستويات مخصصة</div>';
+    return;
+  }
+  for (let idx = 0; idx < customLevels.length; idx++) {
+    const lv = customLevels[idx];
+    const t = THEMES[lv.theme || 0];
+    const it = document.createElement('div');
+    it.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:14px';
+    it.innerHTML = '<span>' + t.a + ' مستوى ' + (builtInLevels.length + idx + 1) + ': ' + lv.title + '</span>';
+    const b = document.createElement('button');
+    b.textContent = '🗑️';
+    b.style.cssText = 'background:#e74c3c;color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer';
+    b.onclick = (function(i) { return function() { deleteCustomLevel(i); }; })(idx);
+    it.appendChild(b);
+    el.appendChild(it);
+  }
+}
+function deleteCustomLevel(idx) {
+  if (!confirm('متأكد؟')) return;
+  const g = builtInLevels.length + idx;
+  customLevels.splice(idx, 1);
+  saveCustomLevels();
+  savedProgress.completedLevels = savedProgress.completedLevels.filter(function(i) { return i !== g; }).map(function(i) { return i > g ? i - 1 : i; });
+  rebuildLevels();
+  if (currentLevel >= levels.length) currentLevel = Math.max(0, levels.length - 1);
+  saveProgress(); renderCustomLevelsList(); renderProgressBar(); updateTopBar();
+}
+
+window.addCommand = addCommand;
+window.addRepeat = addRepeat;
+window.runProgram = runProgram;
+window.stepProgram = stepProgram;
+window.resetLevel = resetLevel;
+window.nextLevel = nextLevel;
+window.closeWinScreen = closeWinScreen;
+window.openEditor = openEditor;
+window.closeEditor = closeEditor;
+window.selectTool = selectTool;
+window.setDir = setDir;
+window.clearEditor = clearEditor;
+window.saveLevel = saveLevel;
+window.confirmResetProgress = confirmResetProgress;
+window.showCode = showCode;
+
+loadCustomLevels(); rebuildLevels(); loadProgress();
+if (savedProgress.currentLevel >= levels.length) savedProgress.currentLevel = 0;
+loadLevel(savedProgress.currentLevel || 0);
+if (!localStorage.getItem(SAVE_KEY)) saveProgress();
+</script>
+</body>
+</html>
