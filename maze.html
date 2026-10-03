@@ -177,6 +177,8 @@ h1 span{color:#159879}
 .top-bar .stat{font-size:17px}
 .small-btn{border-radius:9px;box-shadow:none;padding:9px 13px;font-size:13px}
 .editor-btn{background:#187f75;box-shadow:none}
+.smart-mode-btn{background:#e8f1e7;color:#41644e;box-shadow:none;min-width:38px;padding:8px}
+.smart-mode-btn.active{background:#f4ca45;color:#5f4a0b}
 .reset-progress-btn{box-shadow:none}
 .album-btn{background:#e2a73e;box-shadow:none}
 .progress-bar{width:100%;max-width:1280px;flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;background:transparent;border-radius:0;box-shadow:none;padding:4px 2px 8px;margin-bottom:18px}
@@ -288,12 +290,13 @@ h1 span{color:#159879}
 .command-toolbar{display:flex;flex-direction:column;gap:4px;width:100%;padding:8px 10px;background:rgba(255,255,255,.65);border:1px solid #dce5dc;border-radius:12px}
 .arrows-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:auto;gap:2px;width:100%;height:auto;aspect-ratio:auto;margin:0}
 .direction-control{grid-column:auto!important;grid-row:auto!important;min-height:64px}
-.extra-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;border-top:1px solid #e2e9e2;padding-top:3px}
+.extra-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;border-top:1px solid #e2e9e2;padding-top:3px}
 .extra-btn{width:100%;min-width:0;min-height:48px;padding:4px 2px}
 .direction-control{display:grid;grid-template-columns:1fr;grid-template-rows:minmax(40px,1fr) 18px;min-height:76px}
 .direction-control .arrow-btn{grid-column:1;grid-row:1;height:auto;min-height:40px}
 .extra-control{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:minmax(42px,1fr) 18px;min-width:0;min-height:66px}
 .extra-control .extra-btn{grid-column:1;grid-row:1;align-self:center;height:100%}
+.condition-control .code-popup{left:0;right:auto;transform:none;width:min(240px,calc(100vw - 32px));white-space:normal;text-align:center;overflow-wrap:anywhere}
 .help-q{position:static;grid-column:1;grid-row:2;place-self:center;width:17px;height:17px;margin:0;border:1px solid #bccbc1;background:transparent;color:#61786b;font-size:11px;box-shadow:none}
 .help-q:hover{background:#eef3ed;color:#187f75}
 .code-popup{top:calc(100% + 1px);left:50%;right:auto;transform:translateX(-50%)}
@@ -377,6 +380,7 @@ h1 span{color:#159879}
   <div class="stat">🏆 <span class="value" id="currentLevelNum">1</span></div>
   <button class="small-btn album-btn" onclick="openAlbum()">📖 الألبوم</button>
   <button class="small-btn editor-btn" onclick="openEditor()">🛠️ المحرر</button>
+  <button class="small-btn smart-mode-btn" id="smartModeButton" aria-label="Smart code challenge" title="Smart code challenge" aria-pressed="false" onclick="toggleSmartChallenge()">🧠</button>
   <button class="small-btn reset-progress-btn" onclick="confirmResetProgress()">🗑️</button>
 </div>
 
@@ -437,6 +441,10 @@ h1 span{color:#159879}
       <div class="extra-control">
         <button class="extra-btn jump" aria-label="Jump forward two cells" onclick="addCommand('jump')"><span aria-hidden="true">↟</span></button>
         <button class="help-q" aria-label="عرض كود القفز" onclick="showCode(this, 'jump(2)')">?</button><span class="code-popup">jump(2)</span>
+      </div>
+      <div class="extra-control condition-control">
+        <button class="extra-btn condition" aria-label="If a wall is ahead, jump; otherwise move" title="Condition" onclick="addCommand('ifWallJump')"><span aria-hidden="true">◇</span></button>
+        <button class="help-q" aria-label="Show condition code" onclick="showCode(this, 'if(wallAhead) jump(); else move();')">?</button><span class="code-popup">if(wallAhead) jump(); else move();</span>
       </div>
     </div>
     </div>
@@ -563,13 +571,19 @@ const builtInLevels = [
   { title:"المستوى 19", hint:"متاهة كبيرة", theme:18, start:{x:0,y:0,dir:0}, carrot:{x:4,y:4}, walls:[{x:1,y:0},{x:1,y:1},{x:3,y:2},{x:3,y:3}] },
   { title:"المستوى 20", hint:"التحدي الأخير", theme:19, start:{x:0,y:0,dir:0}, carrot:{x:4,y:0}, walls:[{x:1,y:0},{x:3,y:0},{x:1,y:2},{x:3,y:2},{x:2,y:3}] }
 ];
+const SMART_MAPS = [
+  { start:{x:0,y:2,dir:0}, carrot:{x:4,y:2}, walls:[{x:1,y:2}] },
+  { start:{x:0,y:2,dir:0}, carrot:{x:4,y:2}, walls:[{x:2,y:2}] },
+  { start:{x:0,y:2,dir:0}, carrot:{x:4,y:2}, walls:[{x:3,y:2}] }
+];
 
 const SAVE_KEY = 'rabbitGameProgress_v8';
 const CUSTOM_KEY = 'rabbitCustomLevels_v5';
 let customLevels = [], levels = [];
 let currentLevel = 0, rabbit = {x:0,y:0,dir:0}, program = [];
 let isRunning = false, stepIndex = 0, audioCtx = null;
-let savedProgress = { currentLevel: 0, completedLevels: [], totalStars: 0 };
+let smartMode = false, smartMapIndex = 0, smartCompleted = false;
+let savedProgress = { currentLevel: 0, completedLevels: [], totalStars: 0, smartChallengeCompleted: false };
 
 const boardEl = document.getElementById('board');
 const programEl = document.getElementById('program');
@@ -584,9 +598,36 @@ const progressBarEl = document.getElementById('progressBar');
 const dx = [1,0,-1,0];
 const dy = [0,1,0,-1];
 const dirSymbols = ['→','↓','←','↑'];
-const cmdLabels = { up:'⬆️', down:'⬇️', left:'⬅️', right:'➡️', jump:'🦘' };
+const cmdLabels = { up:'⬆️', down:'⬇️', left:'⬅️', right:'➡️', jump:'🦘', ifWallJump:'◇' };
 
 function getTheme(lv) { return THEMES[lv.theme || 0]; }
+function getActiveLevel() { return smartMode ? SMART_MAPS[smartMapIndex] : levels[currentLevel]; }
+function setSmartModeButton(active) {
+  const button = document.getElementById('smartModeButton');
+  button.classList.toggle('active', active);
+  button.setAttribute('aria-pressed', String(active));
+}
+function renderSmartMap() {
+  const map = SMART_MAPS[smartMapIndex];
+  rabbit = { x: map.start.x, y: map.start.y, dir: map.start.dir };
+  stepIndex = 0;
+  levelTitleEl.textContent = '🧠';
+  levelHintEl.textContent = '🗺️ ' + (smartMapIndex + 1) + ' / ' + SMART_MAPS.length;
+  feedbackEl.textContent = '';
+  renderBoard(); renderProgram();
+}
+function toggleSmartChallenge() {
+  if (isRunning) return;
+  closeWinScreen();
+  smartMode = !smartMode;
+  setSmartModeButton(smartMode);
+  if (smartMode) {
+    smartMapIndex = 0; smartCompleted = false; program = [];
+    renderSmartMap();
+  } else {
+    loadLevel(currentLevel);
+  }
+}
 function rebuildLevels() { levels = builtInLevels.concat(customLevels); }
 
 function saveProgress() {
@@ -601,6 +642,7 @@ function loadProgress() {
       savedProgress.currentLevel = d.currentLevel || 0;
       savedProgress.completedLevels = Array.isArray(d.completedLevels) ? d.completedLevels : [];
       savedProgress.totalStars = d.totalStars || 0;
+      savedProgress.smartChallengeCompleted = Boolean(d.smartChallengeCompleted);
     }}
   } catch(e){}
 }
@@ -665,7 +707,7 @@ window.closeAlbum = closeAlbum;
 function confirmResetProgress() {
   if (isRunning) return;
   if (confirm('متأكد إنك عايز تمسح كل التقدم؟')) {
-    savedProgress = { currentLevel: 0, completedLevels: [], totalStars: 0 };
+    savedProgress = { currentLevel: 0, completedLevels: [], totalStars: 0, smartChallengeCompleted: false };
     try { localStorage.removeItem(SAVE_KEY); } catch(e){}
     closeWinScreen(); closeAlbum(); loadLevel(0); saveProgress();
     feedbackEl.textContent = '🗑️ تم مسح التقدم!';
@@ -776,6 +818,7 @@ function celebrate() {
   setTimeout(function() { showWinScreen(); }, 500);
 }
 function loadLevel(index) {
+  smartMode = false; smartMapIndex = 0; smartCompleted = false; setSmartModeButton(false);
   if (index < 0) index = 0;
   if (index >= levels.length) index = levels.length - 1;
   currentLevel = index;
@@ -793,7 +836,7 @@ function loadLevel(index) {
   renderBoard(); renderProgram(); updateTopBar(); renderProgressBar();
 }
 function renderBoard(speech) {
-  const lv = levels[currentLevel];
+  const lv = getActiveLevel();
   const t = getTheme(lv);
   boardEl.innerHTML = '';
   for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) {
@@ -830,7 +873,7 @@ function renderProgram() {
     help.type = 'button';
     help.textContent = '?';
     help.setAttribute('aria-label', 'Show command code');
-    const code = cmd.type === 'jump' ? 'jump(2)' : cmd.type + '()';
+    const code = cmd.type === 'ifWallJump' ? 'if(wallAhead) jump(); else move();' : cmd.type === 'jump' ? 'jump(2)' : cmd.type + '()';
     const repeatCode = cmd.repeat > 1 ? '  repeat(' + cmd.repeat + ')' : '';
     help.onclick = function(event) { event.stopPropagation(); showCode(this, code + repeatCode); };
     const popup = document.createElement('span');
@@ -853,7 +896,7 @@ function renderProgram() {
   });
 }
 function resetRabbit() {
-  const lv = levels[currentLevel];
+  const lv = getActiveLevel();
   rabbit = { x: lv.start.x, y: lv.start.y, dir: lv.start.dir };
   stepIndex = 0; renderBoard();
 }
@@ -885,15 +928,33 @@ function addRepeat(n) {
   feedbackEl.textContent = '🔁 آخر أمر هيتكرر ' + n + ' مرات';
   renderProgram();
 }
-function resetLevel() { if (isRunning) return; closeWinScreen(); loadLevel(currentLevel); }
+function resetLevel() {
+  if (isRunning) return;
+  closeWinScreen();
+  if (smartMode) {
+    smartMapIndex = 0; smartCompleted = false; program = [];
+    renderSmartMap();
+    return;
+  }
+  loadLevel(currentLevel);
+}
 function nextLevel() {
   if (isRunning) return;
+  if (smartMode) { smartMode = false; smartMapIndex = 0; setSmartModeButton(false); }
   closeWinScreen();
   if (currentLevel < levels.length - 1) { loadLevel(currentLevel + 1); saveProgress(); }
   else { feedbackEl.textContent = '🎉 خلصت كل المستويات!'; spawnStars(50); sfxWin(); }
 }
 function executeCommand(type) {
-  const lv = levels[currentLevel];
+  const lv = getActiveLevel();
+  if (type === 'ifWallJump') {
+    const nextX = rabbit.x + dx[rabbit.dir];
+    const nextY = rabbit.y + dy[rabbit.dir];
+    const outside = nextX < 0 || nextX > 4 || nextY < 0 || nextY > 4;
+    const wallAhead = outside || lv.walls.some(function(w) { return w.x === nextX && w.y === nextY; });
+    feedbackEl.textContent = wallAhead ? '🧱 ↟' : '➡️';
+    return executeCommand(wallAhead ? 'jump' : ['right','down','left','up'][rabbit.dir]);
+  }
   if (type === 'up' || type === 'down' || type === 'left' || type === 'right') {
     let newDir, ddx = 0, ddy = 0;
     if (type === 'right') { newDir = 0; ddx = 1; }
@@ -934,10 +995,42 @@ function shakeRabbit() {
   }, 30);
 }
 function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+function completeSmartChallenge() {
+  smartCompleted = true;
+  if (!savedProgress.smartChallengeCompleted) {
+    savedProgress.smartChallengeCompleted = true;
+    savedProgress.totalStars += 3;
+    saveProgress();
+  }
+  feedbackEl.textContent = '🧠 ⭐⭐⭐';
+  sfxWin(); spawnStars(20);
+}
+async function runSmartProgram(speed) {
+  for (let mapIndex = 0; mapIndex < SMART_MAPS.length; mapIndex++) {
+    smartMapIndex = mapIndex;
+    levelHintEl.textContent = '🗺️ ' + (mapIndex + 1) + ' / ' + SMART_MAPS.length;
+    resetRabbit();
+    await sleep(250);
+    let won = false;
+    for (let i = 0; i < program.length && !won; i++) {
+      const cmd = program[i];
+      for (let r = 0; r < cmd.repeat; r++) {
+        const result = executeCommand(cmd.type);
+        await sleep(speed);
+        if (result === 'win') { won = true; break; }
+        if (result === 'fail') { isRunning = false; return; }
+      }
+    }
+    if (!won) { isRunning = false; feedbackEl.textContent = '↻'; return; }
+  }
+  isRunning = false;
+  completeSmartChallenge();
+}
 async function runProgram() {
   if (isRunning) return;
   if (program.length === 0) { feedbackEl.textContent = '🤔 أضف أوامر أولاً!'; return; }
   initAudio(); isRunning = true; feedbackEl.textContent = '';
+  if (smartMode) { await runSmartProgram(parseInt(speedInput.value)); return; }
   resetRabbit(); await sleep(300);
   const speed = parseInt(speedInput.value);
   for (let i = 0; i < program.length; i++) {
@@ -965,6 +1058,17 @@ async function stepProgram() {
     if (res === 'fail') break;
   }
   stepIndex++;
+  if (won && smartMode) {
+    isRunning = false;
+    if (smartMapIndex < SMART_MAPS.length - 1) {
+      smartMapIndex++;
+      renderSmartMap();
+      feedbackEl.textContent = '✅';
+    } else {
+      completeSmartChallenge();
+    }
+    return;
+  }
   if (won) { feedbackEl.textContent = '🎉 برافو!'; celebrate(); }
   isRunning = false;
 }
@@ -1034,108 +1138,4 @@ function renderEditorGrid() {
       a.className = 'arrow'; a.textContent = dirSymbols[editorRabbitDir];
       c.appendChild(a);
     } else if (v === 'carrot') { c.classList.add('carrot'); c.textContent = t.f; }
-    else if (v === 'wall') { c.classList.add('wall'); c.textContent = '🧱'; }
-    c.onclick = (function(xx, yy) { return function() { placeInCell(xx, yy); }; })(x, y);
-    g.appendChild(c);
-  }
-}
-function placeInCell(x, y) {
-  if (currentTool === 'erase') { if (editorGrid[y][x] !== 'rabbit') editorGrid[y][x] = null; renderEditorGrid(); return; }
-  if (currentTool === 'rabbit') {
-    for (let yy = 0; yy < 5; yy++) for (let xx = 0; xx < 5; xx++) if (editorGrid[yy][xx] === 'rabbit') editorGrid[yy][xx] = null;
-    editorGrid[y][x] = 'rabbit';
-  } else if (currentTool === 'carrot') {
-    for (let yy = 0; yy < 5; yy++) for (let xx = 0; xx < 5; xx++) if (editorGrid[yy][xx] === 'carrot') editorGrid[yy][xx] = null;
-    if (editorGrid[y][x] === 'rabbit') editorGrid[y][x] = null;
-    editorGrid[y][x] = 'carrot';
-  } else if (currentTool === 'wall') {
-    if (editorGrid[y][x] === 'rabbit' || editorGrid[y][x] === 'carrot') return;
-    editorGrid[y][x] = 'wall';
-  }
-  renderEditorGrid();
-}
-function clearEditor() {
-  if (!confirm('متأكد إنك عايز تمسح الشبكة؟')) return;
-  initEditorGrid(); renderThemeButtons(); renderEditorGrid();
-}
-function saveLevel() {
-  let r = null, c = null;
-  const w = [];
-  for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) {
-    const v = editorGrid[y][x];
-    if (v === 'rabbit') r = {x:x, y:y};
-    else if (v === 'carrot') c = {x:x, y:y};
-    else if (v === 'wall') w.push({x:x, y:y});
-  }
-  if (!r) { alert('لازم تحط الحيوان'); return; }
-  if (!c) { alert('لازم تحط الأكل'); return; }
-  const t = document.getElementById('editorTitle').value.trim();
-  const h = document.getElementById('editorHint').value.trim();
-  customLevels.push({
-    title: t || ('مستوى مخصص ' + (customLevels.length + 1)),
-    hint: h || 'مستوى من صنعك!',
-    theme: editorTheme,
-    start: { x: r.x, y: r.y, dir: editorRabbitDir },
-    carrot: { x: c.x, y: c.y },
-    walls: w, isCustom: true
-  });
-  saveCustomLevels(); rebuildLevels(); renderCustomLevelsList(); renderProgressBar();
-  alert('✅ تم حفظ المستوى!');
-  document.getElementById('editorTitle').value = '';
-  document.getElementById('editorHint').value = '';
-}
-function renderCustomLevelsList() {
-  const el = document.getElementById('customLevelsItems');
-  el.innerHTML = '';
-  if (customLevels.length === 0) {
-    el.innerHTML = '<div style="color:#7f8c8d;font-size:13px;text-align:center;padding:8px;">لسه مفيش مستويات مخصصة</div>';
-    return;
-  }
-  for (let idx = 0; idx < customLevels.length; idx++) {
-    const lv = customLevels[idx];
-    const t = THEMES[lv.theme || 0];
-    const it = document.createElement('div');
-    it.style.cssText = 'display:flex;justify-content:space-between;align-items:center;background:#fff;border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:14px';
-    it.innerHTML = '<span>' + t.a + ' مستوى ' + (builtInLevels.length + idx + 1) + ': ' + lv.title + '</span>';
-    const b = document.createElement('button');
-    b.textContent = '🗑️';
-    b.style.cssText = 'background:#e74c3c;color:#fff;border:none;border-radius:8px;padding:6px 12px;cursor:pointer';
-    b.onclick = (function(i) { return function() { deleteCustomLevel(i); }; })(idx);
-    it.appendChild(b);
-    el.appendChild(it);
-  }
-}
-function deleteCustomLevel(idx) {
-  if (!confirm('متأكد؟')) return;
-  const g = builtInLevels.length + idx;
-  customLevels.splice(idx, 1);
-  saveCustomLevels();
-  savedProgress.completedLevels = savedProgress.completedLevels.filter(function(i) { return i !== g; }).map(function(i) { return i > g ? i - 1 : i; });
-  rebuildLevels();
-  if (currentLevel >= levels.length) currentLevel = Math.max(0, levels.length - 1);
-  saveProgress(); renderCustomLevelsList(); renderProgressBar(); updateTopBar();
-}
-
-window.addCommand = addCommand;
-window.addRepeat = addRepeat;
-window.runProgram = runProgram;
-window.stepProgram = stepProgram;
-window.resetLevel = resetLevel;
-window.nextLevel = nextLevel;
-window.closeWinScreen = closeWinScreen;
-window.openEditor = openEditor;
-window.closeEditor = closeEditor;
-window.selectTool = selectTool;
-window.setDir = setDir;
-window.clearEditor = clearEditor;
-window.saveLevel = saveLevel;
-window.confirmResetProgress = confirmResetProgress;
-window.showCode = showCode;
-
-loadCustomLevels(); rebuildLevels(); loadProgress();
-if (savedProgress.currentLevel >= levels.length) savedProgress.currentLevel = 0;
-loadLevel(savedProgress.currentLevel || 0);
-if (!localStorage.getItem(SAVE_KEY)) saveProgress();
-</script>
-</body>
-</html>
+    else if (v === 'wall') { c.classList.add(
