@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>صالة الألعاب التعليمية</title>
+    <link rel="stylesheet" href="../common.css" />
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div class="badge">🧩 اختر القسم</div>
+        <h1 class="title">صالة الألعاب التعليمية</h1>
+        <div class="user-toolbar">
+          <span id="current-user-badge" class="user-badge">المستخدم</span>
+          <button id="logout-button" class="logout-button" type="button">تسجيل الخروج</button>
+          <a id="admin-link" class="admin-link hidden" href="../admin/index.html">إدارة المستخدمين</a>
+        </div>
+      </header>
+
+      <section class="stats" aria-label="إحصاءات المشروع">
+        <div class="stat-box" aria-label="النجوم">
+          <span class="stat-icon" aria-hidden="true">⭐</span>
+          <span class="stat-label">نجوم</span>
+          <strong id="total-stars">0</strong>
+        </div>
+        <div class="stat-box" aria-label="المستوى الحالي">
+          <span class="stat-icon" aria-hidden="true">🏆</span>
+          <span class="stat-label">مستوى</span>
+          <strong id="last-level">1</strong>
+        </div>
+        <div class="stat-box" aria-label="رتبتك">
+          <span class="stat-icon" aria-hidden="true">🎖️</span>
+          <span class="stat-label">رتبتك</span>
+          <strong id="level-status">مبتدئ</strong>
+        </div>
+      </section>
+
+      <section class="progress-summary" aria-label="تقدمك في المستويات">
+        <div class="progress-row">
+          <span class="progress-symbol" aria-hidden="true">🧩</span>
+          <strong class="progress-count"><span id="completed-levels">0</span><span aria-hidden="true"> / <span id="total-level-count">19</span></span></strong>
+          <span class="next-level" aria-label="المستوى التالي">➡️ <strong id="next-level">1</strong></span>
+        </div>
+        <div class="progress-track" role="progressbar" aria-label="تقدم المستويات" aria-valuemin="0" aria-valuemax="19" aria-valuenow="0">
+          <div class="progress-fill" id="level-progress"></div>
+        </div>
+      </section>
+
+      <section class="sections-section" aria-label="الأقسام">
+        <div class="section-title">اختر القسم</div>
+        <div class="sections-grid">
+          <a class="section-card section-games" href="../games/index.html" aria-label="قسم الألعاب">
+            <span class="section-icon" aria-hidden="true">🎮</span>
+            <h2>الألعاب</h2>
+            <span class="section-arrow" aria-hidden="true">➜</span>
+          </a>
+          <a class="section-card section-lessons" href="../lesson/index.html" aria-label="قسم الدروس">
+            <span class="section-icon" aria-hidden="true">📚</span>
+            <h2>الدروس</h2>
+            <span class="section-arrow" aria-hidden="true">➜</span>
+          </a>
+          <a class="section-card section-achievements" href="../achievements/index.html" aria-label="قسم الإنجازات">
+            <span class="section-icon" aria-hidden="true">🏆</span>
+            <h2>الإنجازات</h2>
+            <span class="section-arrow" aria-hidden="true">➜</span>
+          </a>
+        </div>
+      </section>
+
+    </div>
+
+    <script src="../common.js"></script>
+    <script src="index.js"></script>
+  </body>
+</html>

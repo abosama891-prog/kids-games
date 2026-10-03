@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>إدارة المستخدمين | صالة الألعاب التعليمية</title>
+    <link rel="stylesheet" href="../common.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <div class="admin-shell">
+      <header class="admin-header page-card">
+        <div class="header-top">
+          <div>
+            <span class="eyebrow">لوحة الإدارة</span>
+            <h1>إدارة المستخدمين</h1>
+          </div>
+          <div class="header-actions">
+            <a class="nav-control" href="../index/index.html" aria-label="الرئيسية">🏠</a>
+            <button id="logout-button" class="logout-button" type="button">تسجيل الخروج</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="admin-content">
+        <section class="summary-grid">
+          <article class="summary-card">
+            <span class="summary-label">إجمالي المستخدمين</span>
+            <strong id="total-users">0</strong>
+          </article>
+          <article class="summary-card">
+            <span class="summary-label">المستخدمين النشطين</span>
+            <strong id="active-users">0</strong>
+          </article>
+          <article class="summary-card">
+            <span class="summary-label">الأطفال</span>
+            <strong id="child-users">0</strong>
+          </article>
+          <article class="summary-card">
+            <span class="summary-label">أولياء الأمور</span>
+            <strong id="parent-users">0</strong>
+          </article>
+        </section>
+
+        <section class="panel page-card">
+          <div class="panel-title-row">
+            <h2>إضافة مستخدم جديد</h2>
+          </div>
+
+          <form id="user-form" class="user-form">
+            <label>
+              الاسم الكامل
+              <input id="full-name" type="text" placeholder="مثال: محمد عبدالله" required />
+            </label>
+            <label>
+              اسم المستخدم
+              <input id="username" type="text" placeholder="username" required />
+            </label>
+            <label>
+              البريد الإلكتروني
+              <input id="email" type="email" placeholder="user@example.com" required />
+            </label>
+            <label>
+              كلمة المرور
+              <input id="password" type="password" placeholder="••••••••" required />
+            </label>
+            <label>
+              الدور
+              <select id="role">
+                <option value="child">طفل</option>
+                <option value="parent">ولي أمر</option>
+                <option value="teacher">معلم</option>
+                <option value="admin">مدير</option>
+              </select>
+            </label>
+            <button type="submit" class="primary-btn">إضافة المستخدم</button>
+          </form>
+        </section>
+
+        <section class="panel page-card">
+          <div class="panel-title-row">
+            <h2>قائمة المستخدمين</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>الاسم</th>
+                  <th>اسم المستخدم</th>
+                  <th>البريد</th>
+                  <th>الدور</th>
+                  <th>الحالة</th>
+                  <th>المزود</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="../common.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>
