@@ -9,17 +9,17 @@
     { key: 'gas', title: 'المهندس', icon: '🌉', href: new URL('pages/gas/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47645' },
     { key: 'frog', title: 'الضفدع', icon: '🐸', href: new URL('pages/frog/index.html', APP_BASE_URL).href, levels: 1, accent: '#86EFAC' },
     { key: 'potion', title: 'المختبر', icon: '🧪', href: new URL('pages/potion/index.html', APP_BASE_URL).href, levels: 3, accent: '#2DD4BF' },
-    { key: 'robot', title: 'الألوان', icon: '🌈', href: new URL('pages/robot/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47765' }
-      { key: 'code-park', title: 'ملاهي البرمجة', icon: '🎢', href: new URL('pages/games/code-park.html', APP_BASE_URL).href, levels: 5, accent: '#FF6B6B' },
+    { key: 'robot', title: 'الألوان', icon: '🌈', href: new URL('pages/robot/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47765' },
+    { key: 'code-park', title: 'ملاهي البرمجة', icon: '🎢', href: new URL('pages/games/code-park.html', APP_BASE_URL).href, levels: 5, accent: '#FF6B6B' },
   ];
   const lessonCatalog = [
     { key: 'commands', title: 'ما معنى الأمر في البرمجة؟', icon: '📘', unlockAt: 1 },
     { key: 'sequence', title: 'ترتيب الأوامر', icon: '🔢', unlockAt: 3 },
     { key: 'loops', title: 'التكرار والحلقات', icon: '🔁', unlockAt: 5 },
     { key: 'conditions', title: 'الشروط واتخاذ القرار', icon: '🚦', unlockAt: 8 },
-    { key: 'debugging', title: 'اكتشاف الأخطاء وتصحيحها', icon: '🔍', unlockAt: 12 }
-    { key: 'code-park', title: 'ملاهي البرمجة', icon: '🎢', href: new URL('pages/games/code-park.html', APP_BASE_URL).href, levels: 5, accent: '#FF6B6B' },
-  ];  
+    { key: 'debugging', title: 'اكتشاف الأخطاء وتصحيحها', icon: '🔍', unlockAt: 12 },
+    { key: 'code-park', title: 'ملاهي البرمجة', icon: '🎢', unlockAt: 15 },
+  ];
   const defaultState = {
     stars: 0,
     unattributedStars: 0,
