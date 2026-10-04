@@ -60,5 +60,29 @@
 
     <script src="../common.js"></script>
     <script src="auth.js"></script>
+    <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDqzlYHiOb5jZp8xELdwRhJah-7MBfBXXs",
+    authDomain: "b-u-d-d-y.firebaseapp.com",
+    projectId: "b-u-d-d-y",
+    storageBucket: "b-u-d-d-y.firebasestorage.app",
+    messagingSenderId: "188730557243",
+    appId: "1:188730557243:web:1ccce836714e619a146d1e",
+    measurementId: "G-ZVQSQ5WDVY"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  
+  // جعلها متاحة لملف auth.js
+  window.db = db;
+  window.auth = auth;
+  console.log("Firebase متصل بنجاح!");
+</script>
   </body>
 </html>
