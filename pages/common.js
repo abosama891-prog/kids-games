@@ -3,6 +3,13 @@
   const STORAGE_KEY = 'kids_games_progress_v1';
   const LESSON_SETTINGS_KEY = 'kids_games_lesson_unlocks_v1';
 
+  // ✅ FIX #5: uuid helper مع fallback للمتصفحات القديمة
+  function uuid() {
+    return (window.crypto && typeof crypto.randomUUID === 'function')
+      ? crypto.randomUUID()
+      : `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
+
   const gameCatalog = [
     { key: 'draw', title: 'الرسم', icon: '🎨', href: new URL('pages/draw/index.html', APP_BASE_URL).href, levels: 10, accent: '#f39c12' },
     { key: 'maze', title: 'المتاهة', icon: '🐰', href: new URL('pages/maze/index.html', APP_BASE_URL).href, levels: 5, accent: '#4a90e2' },
@@ -35,6 +42,17 @@
     return user?.id ? `${STORAGE_KEY}_${user.id}` : STORAGE_KEY;
   }
 
+  // ✅ FIX #6: معالجة QuotaExceededError
+  function safeSetItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      console.error('LocalStorage write failed:', error);
+      return false;
+    }
+  }
+
   function readProgress() {
     try {
       const key = progressStorageKey();
@@ -42,7 +60,7 @@
       if (!raw && key !== STORAGE_KEY) {
         raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
-          localStorage.setItem(key, raw);
+          safeSetItem(key, raw);
           localStorage.removeItem(STORAGE_KEY);
         }
       }
@@ -88,7 +106,7 @@
   }
 
   function saveProgress(nextState) {
-    localStorage.setItem(progressStorageKey(), JSON.stringify(nextState));
+    safeSetItem(progressStorageKey(), JSON.stringify(nextState));
     window.KidsGamesCloud?.saveProgress?.(nextState)?.catch(error => console.error('Progress sync failed:', error));
     return nextState;
   }
@@ -111,6 +129,7 @@
     return state;
   }
 
+  // ✅ FIX #1 + #2: تبسيط حساب stars + تحديث currentLevel تلقائيًا
   function completeGameLevel(gameKey, levelNumber, starsAwarded, updates = {}) {
     const game = gameCatalog.find(item => item.key === gameKey);
     if (!game) {
@@ -131,18 +150,35 @@
     const isFirstCompletion = !current.completed.includes(levelNumber);
     const completed = [...current.completed, levelNumber].sort((a, b) => a - b);
     const gameStars = (Number(current.stars) || 0) + (isFirstCompletion ? Math.floor(starsAwarded) : 0);
+
+    // تحديث currentLevel تلقائيًا بدون الاعتماد على updates
+    const autoCurrentLevel = Math.max(
+      Number(current.currentLevel) || 1,
+      Math.min(levelNumber + 1, game.levels)
+    );
+
     const gameProgress = {
       ...current,
       ...updates,
+      currentLevel: updates.currentLevel ?? autoCurrentLevel,
       completed,
       stars: gameStars
     };
+
+    // حساب إجمالي النجوم بشكل صريح
+    let totalGameStars = 0;
+    gameCatalog.forEach(item => {
+      if (item.key === gameKey) {
+        totalGameStars += gameStars;
+      } else {
+        totalGameStars += Number(progress[item.key]?.stars) || 0;
+      }
+    });
+
     const nextProgress = {
       ...progress,
       [gameKey]: gameProgress,
-      stars: (Number(progress.unattributedStars) || 0) + gameCatalog.reduce((total, game) => {
-        return total + (game.key === gameKey ? gameStars : Number(progress[game.key]?.stars) || 0);
-      }, 0)
+      stars: (Number(progress.unattributedStars) || 0) + totalGameStars
     };
 
     saveProgress(nextProgress);
@@ -166,8 +202,7 @@
     while (unlocked < game.levels && completed.has(unlocked)) unlocked += 1;
     return unlocked;
   }
-
-  function getCompletedLevelCount(progress = readProgress()) {
+    function getCompletedLevelCount(progress = readProgress()) {
     return gameCatalog.reduce((total, game) => {
       const completed = new Set(
         (Array.isArray(progress[game.key]?.completed) ? progress[game.key].completed : [])
@@ -201,7 +236,7 @@
       }
       normalized[lesson.key] = unlockAt;
     });
-    localStorage.setItem(LESSON_SETTINGS_KEY, JSON.stringify(normalized));
+    safeSetItem(LESSON_SETTINGS_KEY, JSON.stringify(normalized));
     return normalized;
   }
 
@@ -266,9 +301,10 @@
     victoryTimeout = window.setTimeout(hideLevelVictory, 1500);
   }
 
+  // ✅ FIX #3: إضافة تحقق referrer &&
   function goBack(fallbackUrl) {
     const referrer = document.referrer;
-    if (referrer.startsWith(`${window.location.origin}/`) && referrer !== window.location.href) {
+    if (referrer && referrer !== window.location.href && referrer.startsWith(`${window.location.origin}/`)) {
       window.history.back();
       return;
     }
@@ -298,8 +334,7 @@
     hideLevelVictory,
     goBack
   };
-
-  const manifestLink = document.querySelector('link[rel="manifest"]');
+    const manifestLink = document.querySelector('link[rel="manifest"]');
   if (!manifestLink) {
     const link = document.createElement('link');
     link.rel = 'manifest';
@@ -428,7 +463,7 @@
 
   function normalizeUser(user) {
     return {
-      id: user.id || user.username || crypto.randomUUID(),
+      id: user.id || user.username || uuid(),   // ✅ FIX #5: استخدام uuid() بدل crypto.randomUUID()
       username: user.username || (user.email ? user.email.split('@')[0] : 'user'),
       password: user.password || '',
       email: user.email || '',
@@ -443,23 +478,23 @@
     try {
       const stored = localStorage.getItem(USERS_STORAGE_KEY);
       if (!stored) {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
+        safeSetItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
         return [...defaultUsers];
       }
       const parsed = JSON.parse(stored);
       if (!Array.isArray(parsed) || parsed.length === 0) {
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
+        safeSetItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
         return [...defaultUsers];
       }
       return parsed.map(normalizeUser);
     } catch (error) {
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
+      safeSetItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
       return [...defaultUsers];
     }
   }
 
   function saveUsers(users) {
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users.map(normalizeUser)));
+    safeSetItem(USERS_STORAGE_KEY, JSON.stringify(users.map(normalizeUser)));
     return users.map(normalizeUser);
   }
 
@@ -476,7 +511,7 @@
 
   function setCurrentUser(user) {
     const normalized = normalizeUser(user);
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalized));
+    safeSetItem(AUTH_STORAGE_KEY, JSON.stringify(normalized));
     return normalized;
   }
 
@@ -503,6 +538,7 @@
     return `${normalized}@accounts.kids-games.invalid`;
   }
 
+  // ✅ FIX #4: منع دخول حسابات Google بكلمة سر فاضية
   function loginWithUsername(username, password) {
     const user = getUsers().find(item => {
       const matchesUser = (item.username || '').trim().toLowerCase() === (username || '').trim().toLowerCase();
@@ -511,6 +547,10 @@
     });
 
     if (!user || user.status === 'inactive') return null;
+    // رفض الدخول لو الحساب مش local (Google) أو كلمة السر فاضية
+    if (!user.password || String(user.password).length === 0) return null;
+    if (user.provider && user.provider !== 'local') return null;
+
     return setCurrentUser(user);
   }
 
@@ -536,7 +576,7 @@
 
     const next = normalizeUser({
       ...userPayload,
-      id: userPayload.id || crypto.randomUUID(),
+      id: userPayload.id || uuid(),   // ✅ FIX #5
       fullName,
       username,
       email,
@@ -711,7 +751,7 @@
           ? mergeProgress(localProgress, cloudData.progress)
           : localProgress;
         const changed = JSON.stringify(localProgress) !== JSON.stringify(progress);
-        localStorage.setItem(progressStorageKey(), JSON.stringify(progress));
+        safeSetItem(progressStorageKey(), JSON.stringify(progress));
         await userRef.set({
           email: user.email,
           fullName: user.fullName,
