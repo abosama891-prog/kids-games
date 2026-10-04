@@ -60,33 +60,38 @@ document.addEventListener('DOMContentLoaded', () => {
       concept: 'التسلسل',
       hint: 'يلا نبدأ!',
       start: { x: 0, y: 2, dir: 0 }, goal: { x: 5, y: 2 },
-      energy: [{ x: 2, y: 2 }, { x: 4, y: 2 }], walls: [], hazards: []
+      energy: [{ x: 2, y: 2 }, { x: 4, y: 2 }], walls: [], hazards: [],
+      tools: ['forward']
     },
     {
       concept: 'تغيير الاتجاه',
       hint: 'لفّي عند القوس.',
       start: { x: 0, y: 0, dir: 0 }, goal: { x: 5, y: 5 },
-      energy: [{ x: 2, y: 0 }, { x: 5, y: 2 }], walls: [], hazards: []
+      energy: [{ x: 2, y: 0 }, { x: 5, y: 2 }], walls: [], hazards: [],
+      tools: ['forward', 'left', 'right']
     },
     {
       concept: 'حلقة التكرار',
       hint: 'كرّري التقدّم!',
       start: { x: 0, y: 3, dir: 0 }, goal: { x: 5, y: 3 },
-      energy: [{ x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 4, y: 3 }, { x: 5, y: 3 }], walls: [], hazards: []
+      energy: [{ x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 4, y: 3 }, { x: 5, y: 3 }], walls: [], hazards: [],
+      tools: ['forward', 'left', 'right', 'repeat']
     },
     {
       concept: 'الدوال',
       hint: 'الدالة صديقتك!',
       start: { x: 0, y: 5, dir: 3 }, goal: { x: 5, y: 0 },
       energy: [{ x: 0, y: 3 }, { x: 2, y: 4 }, { x: 4, y: 2 }, { x: 4, y: 0 }],
-      walls: [{ x: 2, y: 5 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 5, y: 4 }], hazards: []
+      walls: [{ x: 2, y: 5 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 5, y: 4 }], hazards: [],
+      tools: ['forward', 'left', 'right', 'define', 'call']
     },
     {
       concept: 'الشروط',
       hint: 'آمن؟ تأكدي أولًا.',
       start: { x: 0, y: 0, dir: 0 }, goal: { x: 5, y: 0 },
       energy: [{ x: 2, y: 0 }, { x: 5, y: 1 }], walls: [{ x: 1, y: 2 }, { x: 2, y: 2 }, { x: 3, y: 2 }],
-      hazards: [{ x: 3, y: 0 }]
+      hazards: [{ x: 3, y: 0 }],
+      tools: ['forward', 'left', 'right', 'ifClear']
     },
     {
       concept: 'التحقّق قبل الحركة',
@@ -94,14 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
       start: { x: 0, y: 2, dir: 0 }, goal: { x: 5, y: 2 },
       energy: [{ x: 1, y: 2 }, { x: 4, y: 2 }],
       walls: [{ x: 2, y: 3 }, { x: 3, y: 3 }, { x: 3, y: 1 }, { x: 5, y: 1 }],
-      hazards: [{ x: 3, y: 2 }]
+      hazards: [{ x: 3, y: 2 }],
+      tools: ['forward', 'left', 'right', 'ifClear']
     },
     {
       concept: 'حلقة مع شرط',
       hint: 'كرّري، بس خدي بالك!',
       start: { x: 0, y: 5, dir: 0 }, goal: { x: 5, y: 5 },
       energy: [{ x: 1, y: 5 }, { x: 2, y: 5 }, { x: 4, y: 5 }],
-      walls: [{ x: 3, y: 4 }, { x: 3, y: 3 }], hazards: [{ x: 3, y: 5 }]
+      walls: [{ x: 3, y: 4 }, { x: 3, y: 3 }], hazards: [{ x: 3, y: 5 }],
+      tools: ['forward', 'left', 'right', 'repeat', 'ifClear']
     },
     {
       concept: 'تصحيح الأخطاء',
@@ -109,7 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
       start: { x: 0, y: 0, dir: 0 }, goal: { x: 5, y: 5 },
       energy: [{ x: 2, y: 0 }, { x: 2, y: 3 }, { x: 5, y: 3 }],
       walls: [{ x: 1, y: 1 }, { x: 1, y: 3 }, { x: 3, y: 3 }, { x: 4, y: 4 }],
-      hazards: [{ x: 4, y: 3 }]
+      hazards: [{ x: 4, y: 3 }],
+      tools: ['forward', 'left', 'right', 'repeat', 'ifClear', 'define', 'call']
     },
     {
       concept: 'إعادة استخدام الدوال',
@@ -117,7 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
       start: { x: 0, y: 5, dir: 0 }, goal: { x: 5, y: 0 },
       energy: [{ x: 2, y: 5 }, { x: 2, y: 2 }, { x: 5, y: 2 }],
       walls: [{ x: 1, y: 4 }, { x: 3, y: 4 }, { x: 3, y: 1 }],
-      hazards: [{ x: 4, y: 2 }]
+      hazards: [{ x: 4, y: 2 }],
+      tools: ['forward', 'left', 'right', 'ifClear', 'define', 'call']
     },
     {
       concept: 'التحدي الأخير',
@@ -125,7 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
       start: { x: 0, y: 5, dir: 0 }, goal: { x: 5, y: 0 },
       energy: [{ x: 2, y: 5 }, { x: 2, y: 2 }, { x: 5, y: 2 }],
       walls: [{ x: 1, y: 4 }, { x: 1, y: 2 }, { x: 4, y: 4 }, { x: 4, y: 2 }],
-      hazards: [{ x: 3, y: 5 }, { x: 3, y: 2 }, { x: 4, y: 1 }]
+      hazards: [{ x: 3, y: 5 }, { x: 3, y: 2 }, { x: 4, y: 1 }],
+      tools: ['forward', 'left', 'right', 'repeat', 'ifClear', 'define', 'call']
     }
   ];
 
@@ -280,7 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('clearButton').disabled = isRunning || program.length === 0;
     $('resetButton').disabled = isRunning;
     document.querySelectorAll('.command-button').forEach(button => {
-      button.disabled = isRunning || (button.dataset.command === 'call' && !customFunction.length);
+      const available = levelData[levelIndex].tools.includes(button.dataset.command);
+      button.disabled = isRunning || !available || (button.dataset.command === 'call' && !customFunction.length);
     });
   }
 
@@ -306,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isRunning || index < 0 || index >= unlocked) return;
     levelIndex = index;
     program = [];
+    renderTools();
     $('conceptTitle').textContent = levelData[index].concept;
     $('levelCount').textContent = String(index + 1);
     renderGuide(guideAssignments[index]);
@@ -314,6 +326,13 @@ document.addEventListener('DOMContentLoaded', () => {
     resetPlayer();
     renderProgram();
     renderLevels();
+  }
+
+  function renderTools() {
+    const tools = new Set(levelData[levelIndex].tools);
+    document.querySelectorAll('.command-button').forEach(button => {
+      button.closest('.command-control').hidden = !tools.has(button.dataset.command);
+    });
   }
 
   function renderGuide(guideKey) {
@@ -345,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function addCommand(type) {
-    if (isRunning || type === 'call' && !customFunction.length) return;
+    if (isRunning || !levelData[levelIndex].tools.includes(type) || type === 'call' && !customFunction.length) return;
     if (type === 'define') {
       functionDraft = [];
       renderFunctionDraft();

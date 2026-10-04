@@ -122,6 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const level = levels[levelIndex];
     levelElement.textContent = String(levelIndex + 1);
     window.KidsGames.renderGameHeader('potion', levelIndex + 1);
+    const availablePipes = new Set(level.solution);
+    pipeButtons.forEach(button => {
+      button.closest('.command-help-control').hidden = !availablePipes.has(button.dataset.pipe);
+    });
     slotsElement.replaceChildren();
     updateFlowGuide();
 
@@ -316,11 +320,33 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (opening) {
         popup.classList.add('show');
+        positionCodePopup(popup);
         popup.setAttribute('aria-hidden', 'false');
         button.setAttribute('aria-expanded', 'true');
       }
     });
   });
+
+  function positionCodePopup(popup) {
+    popup.style.transitionProperty = 'none';
+    popup.style.setProperty('--horizontal-shift', '0px');
+    const rect = popup.getBoundingClientRect();
+    const shift = rect.left < 8
+      ? 8 - rect.left
+      : rect.right > window.innerWidth - 8
+        ? window.innerWidth - 8 - rect.right
+        : 0;
+    popup.style.setProperty('--horizontal-shift', `${shift}px`);
+    popup.getBoundingClientRect();
+    popup.style.removeProperty('transition-property');
+  }
+
+  function positionCodePopups() {
+    document.querySelectorAll('.code-popup').forEach(positionCodePopup);
+  }
+
+  positionCodePopups();
+  window.addEventListener('resize', positionCodePopups);
 
   lessonHelp.addEventListener('click', () => {
     const opening = learningGuide.hidden;

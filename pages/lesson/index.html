@@ -3,88 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>درس: الأوامر في البرمجة</title>
+    <title>دروس البرمجة | 🌈 B u d d y 🌈</title>
     <link rel="stylesheet" href="../common.css" />
     <link rel="stylesheet" href="lesson.css" />
   </head>
   <body>
     <div class="app-shell lesson-page">
-      <header class="page-card lesson-header">
+      <header class="page-card lesson-header" id="lessonHeader">
         <nav class="page-navigation" aria-label="التنقل">
-          <button class="nav-control back-control" type="button" data-go-back="../index/index.html" aria-label="رجوع">
+          <button class="nav-control back-control" id="lessonBack" type="button" data-go-back="../index/index.html" aria-label="رجوع">
             ⬅️
           </button>
           <a class="nav-control" href="../index/index.html" aria-label="الرئيسية">
             🏠
           </a>
         </nav>
-        <div class="tag">📚 درس البرمجة</div>
-        <h1>ما معنى “الأمر” في البرمجة؟</h1>
-        <p>الأمر هو التعليمات التي نطلب من الحاسب تنفيذها خطوة بخطوة.</p>
+        <div class="tag" id="lessonTag">📚 مسار تعلّم البرمجة</div>
+        <img id="lessonImage" class="lesson-header-image" alt="" hidden />
+        <h1 id="lessonTitle">دروس البرمجة</h1>
+        <p id="lessonDescription">خمسة دروس قصيرة تفتح تدريجيًا مع تقدمك في الألعاب.</p>
       </header>
 
-      <main class="content-grid">
-        <section class="page-card info-card">
-          <h2>✨ الفكرة البسيطة</h2>
-          <p>لو قلت لصديقك: “اقفز من مكانك”، فهذا أمر. في البرمجة نفس الشيء: نكتب أوامر للحاسب ليقوم بها بالتسلسل.</p>
-          <div class="example-box">
-            <span>مثال:</span>
-            <code>moveRight();</code>
-            <span>يعني: تحرك يمينًا.</span>
-          </div>
-        </section>
-
-        <section class="page-card info-card">
-          <h2>🔄 مقارنة سريعة</h2>
-          <div class="compare-grid">
-            <div class="compare-item">
-              <div class="emoji">👨‍👩‍👧</div>
-              <strong>في الحياة</strong>
-              <p>“خذ الكرة واذهب إلى البيت”</p>
-            </div>
-            <div class="compare-item">
-              <div class="emoji">💻</div>
-              <strong>في البرمجة</strong>
-              <p>moveBall(); goHome();</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="page-card info-card">
-          <h2>🧩 أمثلة أوامر</h2>
-          <ul class="steps">
-            <li><code>moveUp();</code> = تحرك للأعلى</li>
-            <li><code>moveDown();</code> = تحرك للأسفل</li>
-            <li><code>moveLeft();</code> = تحرك لليسار</li>
-            <li><code>moveRight();</code> = تحرك لليمين</li>
-            <li><code>jump(2);</code> = قفزة</li>
-          </ul>
-        </section>
-
-        <section class="page-card info-card">
-          <h2>🧠 لماذا هذا مهم؟</h2>
-          <p>كل برنامج يتكون من أوامر صغيرة. عندما تضع هذه الأوامر في ترتيب صحيح، تحصل على نتيجة كبيرة مثل لعبة، رسم، أو تطبيق.</p>
-          <div class="sequence">
-            <span>الأمر الأول</span>
-            <span>➡️</span>
-            <span>الأمر الثاني</span>
-            <span>➡️</span>
-            <span>النتيجة</span>
-          </div>
-        </section>
-
-        <section class="page-card info-card highlight-card">
-          <h2>💡 تمرين صغير</h2>
-          <p>إذا أردت أن يصعد الأرنب درجتين، فالأمر المناسب هو:</p>
-          <div class="example-box warning-box">
-            <code>jump(2);</code>
-          </div>
-        </section>
-      </main>
-
-      <div class="footer-actions">
-        <a href="../maze/index.html" class="play-btn" aria-label="اللعب">🎮</a>
-      </div>
+      <main id="lessonContent" class="content-grid" aria-live="polite"></main>
     </div>
 
     <script src="../common.js"></script>

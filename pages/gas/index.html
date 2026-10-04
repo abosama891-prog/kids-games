@@ -4,19 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#176b63" />
-    <title>مهندس الجسور والمعدّيات | أنقذ المدينة</title>
+    <title>المهندس | أنقذ المدينة | 🌈 B u d d y 🌈</title>
     <link rel="stylesheet" href="../common.css" />
     <link rel="stylesheet" href="gas.css" />
+    <link rel="stylesheet" href="../game-controls.css" />
   </head>
   <body>
     <div class="app-shell gas-app">
       <header class="topbar page-card game-topbar gas-topbar">
         <button class="nav-control back-control" type="button" data-go-back="../games/index.html" aria-label="رجوع للألعاب">⬅️</button>
         <a class="nav-control home-control" href="../index/index.html" aria-label="الرئيسية">🏠</a>
-        <div class="stat game-star-stat" aria-label="نجوم مهندس الجسور والمعدّيات"><strong id="stars" data-game-stars>0</strong><span aria-hidden="true">⭐</span></div>
+        <div class="stat game-star-stat" aria-label="نجوم المهندس"><strong id="stars" data-game-stars>0</strong><span aria-hidden="true">⭐</span></div>
         <div class="stat game-level-stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="level-count" data-game-level>1</strong></div>
         <span class="game-identity" aria-hidden="true">🧑‍🔧</span>
-        <span class="game-mark" aria-label="لعبة مهندس الجسور والمعدّيات">🌉</span>
+        <span class="game-mark" aria-label="لعبة المهندس">🌉</span>
         <button class="nav-control next-control" id="headerNextButton" data-game-next type="button" aria-label="المستوى التالي" disabled hidden>➡️</button>
       </header>
 
@@ -34,6 +35,8 @@
 
         <div class="board-wrap gas-board-wrap">
           <div class="city-scene">
+            <canvas id="construction-canvas" class="construction-canvas" role="img" aria-label="مشهد ثلاثي الأبعاد لمهندس يبني جسرًا فوق النهر"></canvas>
+            <p id="construction-status" class="construction-status" role="status" aria-live="polite" hidden></p>
             <img class="city-art" src="crossing.svg" alt="" />
             <div class="station factory-station" aria-label="ضفة البداية">
               <svg viewBox="0 0 64 64" aria-hidden="true">
@@ -87,31 +90,85 @@
         <div id="program-list" class="program-box" aria-label="البرنامج" aria-live="polite"></div>
 
         <section class="command-toolbar" aria-label="الأوامر">
-          <div class="command-control">
+          <div class="command-control material-control">
             <button class="piece-button straight-piece" type="button" data-piece="deck" aria-label="قطعة سطح جسر">
-              <svg viewBox="0 0 80 48" aria-hidden="true"><path d="M5 21h70v18H5z" fill="#b9783d" stroke="#68462c" stroke-width="4" stroke-linejoin="round"/><path d="M12 24v12M27 24v12M42 24v12M57 24v12M70 24v12" stroke="#f1c27d" stroke-width="3"/><path d="M8 18h64" stroke="#e0a967" stroke-width="4" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 100 72" aria-hidden="true">
+                <defs>
+                  <linearGradient id="deck-face" x2="0" y2="1"><stop stop-color="#d9a66b"/><stop offset=".52" stop-color="#ad7040"/><stop offset="1" stop-color="#75482e"/></linearGradient>
+                  <linearGradient id="deck-edge" x2="0" y2="1"><stop stop-color="#94603a"/><stop offset="1" stop-color="#5d3b29"/></linearGradient>
+                </defs>
+                <ellipse cx="51" cy="61" rx="39" ry="6" fill="#473c31" opacity=".18"/>
+                <path d="m10 31 67-14 13 12-69 15z" fill="url(#deck-edge)" stroke="#62422c" stroke-width="2"/>
+                <path d="m11 25 67-14 13 12-69 15z" fill="url(#deck-face)" stroke="#6d492e" stroke-width="2" stroke-linejoin="round"/>
+                <path d="m23 22 11 16m5-20 11 16m5-20 11 16m5-20 11 16" stroke="#754b2e" stroke-width="1.4" opacity=".7"/>
+                <path d="m17 24 12-3m8-2 13-3m7-1 12-3m7-1 8-2" stroke="#f2cc91" stroke-width="1.5" stroke-linecap="round" opacity=".9"/>
+                <path d="m25 33 8-2m26-6 8-2m-4 8 8-2" stroke="#dba86f" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>
+                <circle cx="19" cy="27" r="2.3" fill="#bfc6c3" stroke="#53615c" stroke-width=".8"/>
+                <circle cx="81" cy="14" r="2.3" fill="#bfc6c3" stroke="#53615c" stroke-width=".8"/>
+              </svg>
             </button>
+            <span class="tool-caption">ألواح خشب</span>
             <button class="help-q" type="button" aria-label="كود قطعة سطح الجسر" aria-expanded="false">?</button>
             <span class="code-popup" aria-hidden="true">placeBridgeDeck();</span>
           </div>
-          <div class="command-control">
+          <div class="command-control material-control">
             <button class="piece-button elbow-piece" type="button" data-piece="ramp" aria-label="منحدر صعود للجسر">
-              <svg viewBox="0 0 80 56" aria-hidden="true"><path d="M5 43h28L53 14h22v20H61L41 54H5z" fill="#b9783d" stroke="#68462c" stroke-width="4" stroke-linejoin="round"/><path d="m14 40 19 0M52 21h15M37 45l13-18" stroke="#f1c27d" stroke-width="3" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 100 72" aria-hidden="true">
+                <defs>
+                  <linearGradient id="ramp-face" x2="0" y2="1"><stop stop-color="#d7a36a"/><stop offset="1" stop-color="#80502f"/></linearGradient>
+                </defs>
+                <ellipse cx="50" cy="61" rx="38" ry="5" fill="#473c31" opacity=".18"/>
+                <path d="m10 51 30-1 31-33 18 6-38 40H10z" fill="#65432d" stroke="#503722" stroke-width="2" stroke-linejoin="round"/>
+                <path d="m11 44 29-1 31-33 18 6-38 40H11z" fill="url(#ramp-face)" stroke="#704a2e" stroke-width="2" stroke-linejoin="round"/>
+                <path d="m17 43 19-1m8-5 10-11m8-8 8-8m-36 29 5 8m18-21 6 6m8-22 6 6" fill="none" stroke="#f2cb90" stroke-width="1.7" stroke-linecap="round"/>
+                <path d="m20 47 14-1m18-20 10-10m-8 21 12-13" fill="none" stroke="#71482d" stroke-width="1.2" opacity=".8"/>
+                <circle cx="18" cy="46" r="2" fill="#c3cac7" stroke="#53615c" stroke-width=".7"/>
+                <circle cx="82" cy="15" r="2" fill="#c3cac7" stroke="#53615c" stroke-width=".7"/>
+              </svg>
             </button>
+            <span class="tool-caption">منحدر خشبي</span>
             <button class="help-q" type="button" aria-label="كود منحدر الجسر" aria-expanded="false">?</button>
             <span class="code-popup" aria-hidden="true">buildRamp();</span>
           </div>
-          <div class="command-control">
+          <div class="command-control material-control">
             <button class="piece-button support-piece" type="button" data-piece="support" aria-label="دعامة للجسر">
-              <svg viewBox="0 0 80 56" aria-hidden="true"><path d="M15 45h50M21 45 29 13h22l8 32M12 13h56" fill="none" stroke="#68462c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 45h50M21 45 29 13h22l8 32M12 13h56" fill="none" stroke="#d99b58" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg viewBox="0 0 100 72" aria-hidden="true">
+                <defs>
+                  <linearGradient id="concrete-face" x2="1" y2="0"><stop stop-color="#8d9999"/><stop offset=".48" stop-color="#d0d3ce"/><stop offset="1" stop-color="#85918f"/></linearGradient>
+                </defs>
+                <ellipse cx="51" cy="62" rx="37" ry="5" fill="#473c31" opacity=".18"/>
+                <path d="m18 20 62-7 10 10-64 7z" fill="#684b34" stroke="#493926" stroke-width="2"/>
+                <path d="m18 15 62-7 10 10-64 7z" fill="url(#deck-face)" stroke="#65442d" stroke-width="2"/>
+                <path d="m24 29 17-2-7 25-19 2zm33-4 17-2 13 26-19 2z" fill="url(#concrete-face)" stroke="#626d6b" stroke-width="2" stroke-linejoin="round"/>
+                <path d="m17 52 19-2 1 8-23 2zm41-1 20-2 4 8-23 2z" fill="#788482" stroke="#505c5a" stroke-width="1.5"/>
+                <path d="m29 32-5 16m10-17-5 17m34-19 7 17m-1-18 7 17" stroke="#e4e6e1" stroke-width="1" opacity=".8"/>
+                <circle cx="28" cy="19" r="2" fill="#c3cac7" stroke="#53615c" stroke-width=".7"/>
+                <circle cx="78" cy="12" r="2" fill="#c3cac7" stroke="#53615c" stroke-width=".7"/>
+              </svg>
             </button>
+            <span class="tool-caption">قاعدة خرسانية</span>
             <button class="help-q" type="button" aria-label="كود دعامة الجسر" aria-expanded="false">?</button>
             <span class="code-popup" aria-hidden="true">addSupport();</span>
           </div>
-          <div class="command-control">
+          <div class="command-control material-control">
             <button class="piece-button ferry-piece" type="button" data-piece="ferry" aria-label="معدّية لعبور النهر">
-              <svg viewBox="0 0 80 56" aria-hidden="true"><path d="M8 36h64L61 49H20z" fill="#d57745" stroke="#714a36" stroke-width="3" stroke-linejoin="round"/><path d="M25 17h31v19H25z" fill="#f6d77c" stroke="#714a36" stroke-width="3"/><path d="M31 22h8v8h-8zM43 22h8v8h-8z" fill="#8ecbd2"/><path d="M5 52q10-6 20 0t20 0 20 0 15 0" fill="none" stroke="#4599b5" stroke-width="3" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 100 72" aria-hidden="true">
+                <defs>
+                  <linearGradient id="ferry-hull-face" x2="0" y2="1"><stop stop-color="#e6a463"/><stop offset=".55" stop-color="#bb593d"/><stop offset="1" stop-color="#753b34"/></linearGradient>
+                  <linearGradient id="ferry-window" x2="0" y2="1"><stop stop-color="#d7f2ed"/><stop offset="1" stop-color="#5e9eaa"/></linearGradient>
+                </defs>
+                <path d="M8 53q11-6 22 0t22 0 22 0 20 0" fill="none" stroke="#579eb0" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="m13 42 75 0-12 15-48 0z" fill="#713d34" stroke="#513a32" stroke-width="2"/>
+                <path d="m12 36 76 0-12 14-48 0z" fill="url(#ferry-hull-face)" stroke="#634237" stroke-width="2" stroke-linejoin="round"/>
+                <path d="m18 39 63 0m-53 6 45 0" stroke="#f1c38b" stroke-width="1.4" opacity=".85"/>
+                <path d="m27 32 8-19 32 0 12 19z" fill="#e9d4a0" stroke="#665641" stroke-width="2"/>
+                <path d="m35 17 12 0 0 11-17 0zm17 0 11 0 7 11H52z" fill="url(#ferry-window)" stroke="#526a68" stroke-width="1.4"/>
+                <path d="m26 31 58 0 4 5-66 0z" fill="#ddd2b9" stroke="#665641" stroke-width="1.5"/>
+                <path d="m26 31 0 4m9-4 0 4m34-4 0 4m9-4 0 4" stroke="#45585a" stroke-width="1.5"/>
+                <circle cx="21" cy="36" r="2.5" fill="#df5d43" stroke="#fff" stroke-width=".8"/>
+              </svg>
             </button>
+            <span class="tool-caption">قارب المعدّية</span>
             <button class="help-q" type="button" aria-label="كود تشغيل المعدّية" aria-expanded="false">?</button>
             <span class="code-popup" aria-hidden="true">launchFerry();</span>
           </div>
@@ -157,6 +214,7 @@
     </div>
 
     <script src="../common.js"></script>
+    <script src="gas-3d.js"></script>
     <script src="gas.js"></script>
   </body>
 </html>

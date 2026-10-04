@@ -15,17 +15,141 @@ const targetHintElement = document.getElementById('targetHint');
 const feedbackElement = document.getElementById('feedback');
 const canvasWrap = document.querySelector('.canvas-wrap');
 
+const beadCircleOutline = createBeadCircleOutline();
+const beadStarOutline = createBeadStarOutline();
+const beadRainbowOutline = createBeadRainbowOutline();
+
+function createBeadCircleOutline() {
+  return Array.from({ length: 49 }, (_, index) => {
+    const angle = (135 + index * 7.5) * Math.PI / 180;
+    return [3 + Math.cos(angle) * 2.1, 3 + Math.sin(angle) * 2.1];
+  });
+}
+
+function createBeadStarOutline() {
+  return Array.from({ length: 10 }, (_, index) => {
+    const angle = -Math.PI / 2 + index * Math.PI / 5;
+    const radius = index % 2 === 0 ? 2.15 : 1.05;
+    return [3 + Math.cos(angle) * radius, 3 + Math.sin(angle) * radius];
+  });
+}
+
+function createBeadRainbowOutline() {
+  const outer = Array.from({ length: 13 }, (_, index) => {
+    const angle = (180 + index * 15) * Math.PI / 180;
+    return [3 + Math.cos(angle) * 2.1, 4.8 + Math.sin(angle) * 2.1];
+  });
+  const inner = Array.from({ length: 13 }, (_, index) => {
+    const angle = (360 - index * 15) * Math.PI / 180;
+    return [3 + Math.cos(angle) * 1.35, 4.8 + Math.sin(angle) * 1.35];
+  });
+  return [...outer, ...inner];
+}
+
 const levels = [
   { target: '🏠', hint: 'ارسم طريقًا آمنًا إلى البيت', start: [0, 3], goal: [6, 3], obstacles: [[3, 3, '🪨']] },
   { target: '🐟', hint: 'أوصل القطة إلى السمكة بين الأشجار', start: [0, 5], goal: [6, 1], obstacles: [[2, 4, '🌳'], [3, 3, '🌳'], [4, 2, '🌳']] },
   { target: '🌻', hint: 'اعبر البحيرة من الممر المفتوح', start: [0, 1], goal: [6, 5], obstacles: [[1, 3, '💧'], [2, 3, '💧'], [3, 3, '💧'], [4, 3, '💧'], [5, 3, '💧']] },
-  { target: '🍎', hint: 'تجاوز الصخور في طريق التفاحة', start: [0, 5], goal: [6, 1], obstacles: [[2, 5, '🪨'], [2, 4, '🪨'], [3, 3, '🌵'], [4, 2, '🪨'], [4, 1, '🪨']] },
-  { target: '🏰', hint: 'التف حول الغابة حتى القلعة', start: [0, 1], goal: [6, 5], obstacles: [[2, 1, '🌲'], [2, 2, '🌲'], [2, 3, '🌲'], [4, 3, '🌲'], [4, 4, '🌲'], [4, 5, '🌲']] },
-  { target: '🎈', hint: 'اعبر الجسر فوق النهر', start: [0, 5], goal: [6, 1], obstacles: [[1, 3, '🌊'], [2, 3, '🌊'], [3, 3, '🌉'], [4, 3, '🌊'], [5, 3, '🌊']] },
-  { target: '🧺', hint: 'اجمع الفاكهة من دون لمس الأشواك', start: [0, 3], goal: [6, 3], obstacles: [[2, 2, '🌵'], [2, 4, '🌵'], [3, 2, '🌵'], [3, 4, '🌵'], [4, 2, '🌵'], [4, 4, '🌵']] },
-  { target: '⭐', hint: 'اتبع الممر المتعرج إلى النجمة', start: [0, 5], goal: [6, 1], obstacles: [[1, 4, '🪵'], [2, 4, '🪵'], [3, 3, '🪵'], [4, 2, '🪵'], [5, 2, '🪵']] },
-  { target: '🐶', hint: 'مر بين الحواجز للوصول إلى صديقك', start: [0, 1], goal: [6, 5], obstacles: [[2, 1, '🪵'], [2, 2, '🪵'], [2, 4, '🪵'], [2, 5, '🪵'], [4, 1, '🪵'], [4, 2, '🪵'], [4, 4, '🪵'], [4, 5, '🪵']] },
-  { target: '🌈', hint: 'ارسم طريقك عبر البوابة الملونة', start: [0, 5], goal: [6, 1], obstacles: [[1, 4, '🌳'], [2, 3, '🪨'], [3, 2, '🌵'], [4, 3, '🪨'], [5, 4, '🌳']] }
+  {
+    target: '🙂',
+    hint: 'أكملي الجزء الناقص من خرز الوجه المبتسم.',
+    start: beadCircleOutline[0],
+    goal: beadCircleOutline[36],
+    obstacles: [],
+    beadShape: {
+      kind: 'smile',
+      outline: beadCircleOutline,
+      gapEdges: Array.from({ length: 12 }, (_, index) => index + 36),
+      tracePath: [48, 46, 44, 42, 40, 38, 36].map(index => beadCircleOutline[index])
+    }
+  },
+  {
+    target: '🍎',
+    hint: 'أكملي الجزء الناقص من خرز التفاحة.',
+    start: [2, 5.15],
+    goal: [4, 5.15],
+    obstacles: [],
+    beadShape: {
+      kind: 'apple',
+      fill: '#e77d55',
+      outline: [[2, 5.15], [4, 5.15], [4.8, 4.3], [5.05, 3.3], [4.7, 2.25], [4.05, 1.75], [3.45, 2.05], [3, 1.8], [2.55, 2.05], [1.95, 1.75], [1.3, 2.2], [0.95, 3.3], [1.2, 4.2], [2, 5.15]],
+      gapEdges: [0],
+      tracePath: [[2, 5.15], [2.45, 5.35], [3, 5.42], [3.55, 5.35], [4, 5.15]]
+    }
+  },
+  {
+    target: '🏰',
+    hint: 'أكملي الجزء الناقص من خرز القلعة.',
+    start: [1, 5.5],
+    goal: [5, 5.5],
+    obstacles: [],
+    beadShape: {
+      kind: 'castle',
+      fill: '#63a7db',
+      outline: [[1, 5.5], [5, 5.5], [5, 3.5], [4.4, 3.5], [4.4, 2.5], [3.8, 2.5], [3.8, 3.5], [3.4, 3.5], [3.4, 1.8], [2.6, 1.8], [2.6, 3.5], [2.2, 3.5], [2.2, 2.5], [1.6, 2.5], [1.6, 3.5], [1, 3.5]],
+      gapEdges: [0],
+      tracePath: [[1, 5.5], [2, 5.5], [3, 5.5], [4, 5.5], [5, 5.5]]
+    }
+  },
+  {
+    target: '🎈',
+    hint: 'أكملي الجزء الناقص من خرز البالون.',
+    start: [2, 4.8],
+    goal: [4, 4.8],
+    obstacles: [],
+    beadShape: {
+      kind: 'balloon',
+      fill: '#55b8cb',
+      outline: [[2, 4.8], [1.2, 4.1], [1, 3], [1.35, 2], [2.1, 1.4], [3, 1.1], [3.9, 1.4], [4.65, 2], [5, 3], [4.8, 4], [4, 4.8]],
+      gapEdges: [10],
+      tracePath: [[2, 4.8], [2.45, 5.2], [3, 5.45], [3.55, 5.2], [4, 4.8]]
+    }
+  },
+  {
+    target: '🧺',
+    hint: 'أكملي الجزء الناقص من خرز السلة.',
+    start: [1, 2.5],
+    goal: [5, 2.5],
+    obstacles: [],
+    beadShape: {
+      kind: 'basket',
+      fill: '#c47b49',
+      outline: [[1, 2.5], [5, 2.5], [4.5, 5.5], [1.5, 5.5]],
+      gapEdges: [0],
+      tracePath: [[1, 2.5], [2, 2.28], [3, 2.2], [4, 2.28], [5, 2.5]]
+    }
+  },
+  {
+    target: '⭐',
+    hint: 'أكملي الجزء الناقص من خرز النجمة.',
+    start: beadStarOutline[6],
+    goal: beadStarOutline[8],
+    obstacles: [],
+    beadShape: {
+      kind: 'star',
+      fill: '#f3aa39',
+      outline: beadStarOutline,
+      gapEdges: [6, 7],
+      tracePath: [beadStarOutline[6], beadStarOutline[7], beadStarOutline[8]]
+    }
+  },
+  {
+    target: '🌈',
+    hint: 'أكملي الجزء الناقص من خرز قوس قزح.',
+    start: beadRainbowOutline[4],
+    goal: beadRainbowOutline[8],
+    obstacles: [],
+    beadShape: {
+      kind: 'rainbow',
+      fill: '#9873cb',
+      outline: beadRainbowOutline,
+      gapEdges: [4, 5, 6, 7],
+      tracePath: Array.from({ length: 7 }, (_, index) => {
+        const angle = (240 + index * 10) * Math.PI / 180;
+        return [3 + Math.cos(angle) * 2.1, 4.8 + Math.sin(angle) * 2.1];
+      })
+    }
+  }
 ];
 
 const themeColors = ['#f3aa39', '#63a7db', '#55b8cb', '#e77d55', '#6aa879', '#559ac1', '#c47b49', '#9873cb', '#e48e56', '#ed7c78'];
@@ -68,6 +192,33 @@ function pointFor([column, row]) {
 
 function currentLevelData() {
   return levels[currentLevel];
+}
+
+function createBeadCircleOutline() {
+  return Array.from({ length: 49 }, (_, index) => {
+    const angle = (135 + index * 7.5) * Math.PI / 180;
+    return [3 + Math.cos(angle) * 2.1, 3 + Math.sin(angle) * 2.1];
+  });
+}
+
+function createBeadStarOutline() {
+  return Array.from({ length: 10 }, (_, index) => {
+    const angle = -Math.PI / 2 + index * Math.PI / 5;
+    const radius = index % 2 === 0 ? 2.15 : 1.05;
+    return [3 + Math.cos(angle) * radius, 3 + Math.sin(angle) * radius];
+  });
+}
+
+function createBeadRainbowOutline() {
+  const outer = Array.from({ length: 13 }, (_, index) => {
+    const angle = (180 + index * 15) * Math.PI / 180;
+    return [3 + Math.cos(angle) * 2.1, 4.8 + Math.sin(angle) * 2.1];
+  });
+  const inner = Array.from({ length: 13 }, (_, index) => {
+    const angle = (360 - index * 15) * Math.PI / 180;
+    return [3 + Math.cos(angle) * 1.35, 4.8 + Math.sin(angle) * 1.35];
+  });
+  return [...outer, ...inner];
 }
 
 function playTone(frequency, duration = 0.08) {
@@ -127,9 +278,137 @@ function drawBackdrop() {
   ctx.fill();
   ctx.globalAlpha = 1;
 
-  drawLandmark(level.start, '🐱', '#e8a23d');
-  drawLandmark(level.goal, level.target, color);
+  if (level.beadShape) {
+    drawBeadShape(level);
+  } else {
+    drawLandmark(level.start, '🐱', '#e8a23d');
+    drawLandmark(level.goal, level.target, color);
+  }
   level.obstacles.forEach(([column, row, icon]) => drawObstacle(column, row, icon));
+}
+
+function drawBeadShape(level) {
+  const beadShape = level.beadShape;
+  const outline = beadShape.outline.map(pointFor);
+  const gapEdges = new Set(beadShape.gapEdges);
+  const center = pointFor([3, 3]);
+  const palette = beadShape.kind === 'smile'
+    ? ['#b77cd0', '#9270b4', '#d29be0']
+    : [beadShape.fill, themeColors[currentLevel % themeColors.length], '#fff3d0'];
+
+  ctx.save();
+  ctx.beginPath();
+  outline.forEach((point, index) => {
+    if (index === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  });
+  ctx.closePath();
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = beadShape.kind === 'smile' ? '#ffffff' : beadShape.fill;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  if (beadShape.kind === 'smile') {
+    ctx.fillStyle = '#655477';
+    ctx.beginPath();
+    ctx.ellipse(center.x - 42, center.y - 28, 8, 14, 0, 0, Math.PI * 2);
+    ctx.ellipse(center.x + 42, center.y - 28, 8, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (beadShape.kind === 'apple') {
+    ctx.strokeStyle = '#7a5738';
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(center.x, center.y - 100);
+    ctx.lineTo(center.x + 7, center.y - 127);
+    ctx.stroke();
+    ctx.fillStyle = '#69a96a';
+    ctx.beginPath();
+    ctx.ellipse(center.x + 22, center.y - 117, 18, 8, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (beadShape.kind === 'castle') {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    [[2.9, 2.5], [4.1, 3.1], [1.9, 3.1]].forEach(([column, row]) => {
+      const point = pointFor([column, row]);
+      ctx.fillRect(point.x - 9, point.y - 12, 18, 24);
+    });
+  } else if (beadShape.kind === 'balloon') {
+    ctx.strokeStyle = 'rgba(63, 128, 150, 0.58)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(center.x, pointFor([3, 5.35]).y);
+    ctx.quadraticCurveTo(center.x - 30, center.y + 145, center.x + 13, BOARD_SIZE - 16);
+    ctx.stroke();
+  } else if (beadShape.kind === 'basket') {
+    ctx.strokeStyle = 'rgba(128, 76, 39, 0.34)';
+    ctx.lineWidth = 5;
+    for (let index = 0; index < 4; index += 1) {
+      const y = center.y + index * 27;
+      ctx.beginPath();
+      ctx.moveTo(center.x - 95, y);
+      ctx.lineTo(center.x + 95, y);
+      ctx.stroke();
+    }
+  } else if (beadShape.kind === 'star') {
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.beginPath();
+    ctx.arc(center.x, center.y, 13, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (beadShape.kind === 'rainbow') {
+    ctx.globalAlpha = 0.7;
+    ['#f28b63', '#efc452', '#69b987', '#67aee0'].forEach((color, index) => {
+      const point = pointFor([3, 5.5 - index * 0.12]);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+
+  for (let index = 0; index < outline.length; index += 1) {
+    if (gapEdges.has(index)) continue;
+    const start = outline[index];
+    const end = outline[(index + 1) % outline.length];
+    const length = distance(start, end);
+    const beadCount = Math.max(1, Math.floor(length / 12));
+    for (let beadIndex = 0; beadIndex < beadCount; beadIndex += 1) {
+      const ratio = (beadIndex + 0.5) / beadCount;
+      const x = start.x + (end.x - start.x) * ratio;
+      const y = start.y + (end.y - start.y) * ratio;
+      ctx.save();
+      ctx.shadowColor = 'rgba(53, 48, 62, 0.18)';
+      ctx.shadowBlur = 4;
+      ctx.shadowOffsetY = 2;
+      ctx.fillStyle = palette[(index + beadIndex) % palette.length];
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.68)';
+      ctx.beginPath();
+      ctx.arc(x - 1.5, y - 1.5, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  [level.start, level.goal].forEach((position, index) => {
+    const point = pointFor(position);
+    ctx.save();
+    ctx.fillStyle = index === 0 ? '#fff4dc' : '#e9f8f1';
+    ctx.strokeStyle = index === 0 ? '#e8a23d' : '#59aa88';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = '19px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(index === 0 ? '✏️' : level.target, point.x, point.y + 1);
+    ctx.restore();
+  });
 }
 
 function drawLandmark(cell, icon, color) {
@@ -228,6 +507,57 @@ function distance(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+function distanceToSegment(point, start, end) {
+  const segmentLengthSquared = (end.x - start.x) ** 2 + (end.y - start.y) ** 2;
+  if (!segmentLengthSquared) return distance(point, start);
+  const projection = Math.max(0, Math.min(1,
+    ((point.x - start.x) * (end.x - start.x) + (point.y - start.y) * (end.y - start.y)) /
+      segmentLengthSquared
+  ));
+  return distance(point, {
+    x: start.x + projection * (end.x - start.x),
+    y: start.y + projection * (end.y - start.y)
+  });
+}
+
+function distanceToPolyline(point, points) {
+  let nearest = Infinity;
+  for (let index = 1; index < points.length; index += 1) {
+    nearest = Math.min(nearest, distanceToSegment(point, points[index - 1], points[index]));
+  }
+  return nearest;
+}
+
+function matchesTraceShape(level) {
+  if (distance(path[path.length - 1], pointFor(level.goal)) > GOAL_RADIUS) return false;
+  const tracePath = level.beadShape.tracePath.map(pointFor);
+  const expectedLength = tracePath.slice(1).reduce(
+    (total, point, index) => total + distance(tracePath[index], point),
+    0
+  );
+  const drawnLength = path.slice(1).reduce(
+    (total, point, index) => total + distance(path[index], point),
+    0
+  );
+  if (drawnLength < expectedLength * 0.78) return false;
+  if (path.some(point => distanceToPolyline(point, tracePath) > 26)) return false;
+
+  for (let index = 1; index < tracePath.length; index += 1) {
+    const start = tracePath[index - 1];
+    const end = tracePath[index];
+    const samples = Math.ceil(distance(start, end) / 8);
+    for (let sample = 0; sample <= samples; sample += 1) {
+      const ratio = sample / samples;
+      const point = {
+        x: start.x + (end.x - start.x) * ratio,
+        y: start.y + (end.y - start.y) * ratio
+      };
+      if (distanceToPolyline(point, path) > 30) return false;
+    }
+  }
+  return true;
+}
+
 function segmentTouchesObstacle(from, to) {
   const length = distance(from, to);
   const samples = Math.max(1, Math.ceil(length / 7));
@@ -307,7 +637,11 @@ function onPointerUp(event) {
   recordPoint(end);
   isDrawing = false;
   if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-  if (distance(end, pointFor(currentLevelData().goal)) <= GOAL_RADIUS && !pathTouchesObstacle) {
+  const level = currentLevelData();
+  const completed = level.beadShape
+    ? matchesTraceShape(level)
+    : distance(end, pointFor(level.goal)) <= GOAL_RADIUS && !pathTouchesObstacle;
+  if (completed) {
     winLevel();
   } else {
     animateBoard('fail');
@@ -328,7 +662,11 @@ function checkPath() {
     return;
   }
   const end = path[path.length - 1];
-  if (distance(end, pointFor(currentLevelData().goal)) <= GOAL_RADIUS && !pathTouchesObstacle) {
+  const level = currentLevelData();
+  const completed = level.beadShape
+    ? matchesTraceShape(level)
+    : distance(end, pointFor(level.goal)) <= GOAL_RADIUS && !pathTouchesObstacle;
+  if (completed) {
     winLevel();
   } else {
     animateBoard('fail');
@@ -372,8 +710,13 @@ function loadLevel() {
   canvasWrap.classList.remove('draw-fail', 'draw-win');
   const level = currentLevelData();
   titleElement.textContent = currentLevel + 1;
-  targetHintElement.textContent = `🐱 ➜ ${level.target}`;
-  targetHintElement.setAttribute('aria-label', `ارسم طريقًا من القطة إلى ${level.target}`);
+  targetHintElement.textContent = level.beadShape ? `✏️ ➜ ${level.target}` : `🐱 ➜ ${level.target}`;
+  targetHintElement.setAttribute('aria-label', level.beadShape
+    ? `أكملي الجزء الناقص من شكل ${level.target}`
+    : `ارسم طريقًا من القطة إلى ${level.target}`);
+  canvas.setAttribute('aria-label', level.beadShape
+    ? `ارسم الجزء الناقص من الخرز لإكمال شكل ${level.target}`
+    : 'المس القطة واسحب لرسم طريق إلى الهدف، مع تجنب العوائق');
   document.getElementById('levelHint').textContent = level.hint;
   levelNumElement.textContent = currentLevel + 1;
   resetDrawing();

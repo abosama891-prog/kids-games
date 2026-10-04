@@ -1,16 +1,179 @@
 body {
   display: block;
-  padding: 18px 12px 28px;
+  padding: 0 12px 28px;
+}
+
+.site-nav {
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(31, 45, 61, 0.1);
+}
+
+.site-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(1360px, calc(100% - 32px));
+  min-height: 68px;
+  margin: 0 auto;
+  direction: rtl;
+}
+
+.contact-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 13px;
+  background: #12385f;
+  box-shadow: 0 3px 8px rgba(18, 56, 95, 0.2);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.contact-button:hover {
+  background: #0d2e50;
+}
+
+.contact-button:focus-visible,
+.nav-action:focus-visible {
+  outline: 3px solid #e2a73e;
+  outline-offset: 2px;
+}
+
+.nav-user-area {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.account-menu {
+  position: relative;
+}
+
+.account-trigger {
+  list-style: none;
+}
+
+.account-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.account-trigger::after {
+  content: "⌄";
+  margin-inline-start: 5px;
+}
+
+.account-menu[open] .account-trigger {
+  background: #eaf0f6;
+}
+
+.account-dropdown {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: 5px;
+  width: max-content;
+  min-width: 190px;
+  padding: 8px;
+  border: 1px solid #dce5ee;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 10px 25px rgba(31, 45, 61, 0.18);
+  direction: rtl;
+}
+
+.account-details {
+  display: grid;
+  gap: 6px;
+  padding: 7px 8px 10px;
+  border-bottom: 1px solid #e8edf2;
+}
+
+.nav-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #dce5ee;
+  border-radius: 12px;
+  background: #f3f6fa;
+  color: #24415e;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.nav-action:hover {
+  background: #eaf0f6;
+}
+
+.account-menu-item {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #24415e;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: right;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.account-menu-item:hover {
+  background: #f3f6fa;
+}
+
+.account-menu-item:focus-visible {
+  outline: 2px solid #e2a73e;
+  outline-offset: -2px;
+}
+
+.user-role {
+  justify-self: start;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e4f7ef;
+  color: #18876c;
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.user-name {
+  max-width: 170px;
+  overflow: hidden;
+  color: #233a52;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-shell {
   max-width: 1100px;
   margin: 0 auto;
+  padding-top: 18px;
 }
 
 .hero {
   text-align: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .badge {
@@ -33,44 +196,10 @@ body {
   margin-bottom: 0;
 }
 
-.user-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
-}
 
-.user-badge,
-.logout-button,
-.admin-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 800;
-}
 
-.user-badge {
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+.hero .install-help {
   color: #fff;
-}
-
-.logout-button,
-.admin-link {
-  background: #fff;
-  color: #143b52;
-  text-decoration: none;
-  border: none;
-  cursor: pointer;
-}
-
-.admin-link.hidden {
-  display: none;
 }
 
 .stats {
@@ -265,7 +394,29 @@ body {
 
 @media (max-width: 640px) {
   body {
-    padding: 14px 10px 22px;
+    padding: 0 10px 22px;
+  }
+
+  .site-nav-inner {
+    width: calc(100% - 20px);
+    min-height: 62px;
+  }
+
+  .nav-action {
+    min-height: 36px;
+    padding: 0 9px;
+    font-size: 0.75rem;
+  }
+
+  .user-name {
+    max-width: 140px;
+    font-size: 0.75rem;
+  }
+
+  .contact-button {
+    min-height: 38px;
+    padding: 0 12px;
+    font-size: 0.8rem;
   }
 
   .title {
@@ -315,5 +466,28 @@ body {
   .section-arrow {
     width: 36px;
     height: 36px;
+  }
+}
+
+@media (max-width: 380px) {
+  .site-nav-inner {
+    flex-wrap: wrap;
+    padding-block: 8px;
+    row-gap: 8px;
+  }
+
+  .nav-user-area {
+    order: 1;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .contact-button {
+    order: 0;
+    margin-inline-start: auto;
+  }
+
+  .user-name {
+    max-width: 120px;
   }
 }

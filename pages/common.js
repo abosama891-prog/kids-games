@@ -1,14 +1,22 @@
 (function () {
   const APP_BASE_URL = new URL('../', document.currentScript.src);
   const STORAGE_KEY = 'kids_games_progress_v1';
+  const LESSON_SETTINGS_KEY = 'kids_games_lesson_unlocks_v1';
 
   const gameCatalog = [
-    { key: 'maze', title: 'المتاهة', icon: '🐰', href: new URL('pages/maze/index.html', APP_BASE_URL).href, levels: 5, accent: '#4a90e2' },
     { key: 'draw', title: 'الرسم', icon: '🎨', href: new URL('pages/draw/index.html', APP_BASE_URL).href, levels: 10, accent: '#f39c12' },
-    { key: 'gas', title: 'مهندس الجسور والمعدّيات', icon: '🌉', href: new URL('pages/gas/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47645' },
-    { key: 'frog', title: 'بركة الضفدع', icon: '🐸', href: new URL('pages/frog/index.html', APP_BASE_URL).href, levels: 1, accent: '#86EFAC' },
-    { key: 'potion', title: 'مختبر الجرعات', icon: '🧪', href: new URL('pages/potion/index.html', APP_BASE_URL).href, levels: 3, accent: '#2DD4BF' },
-    { key: 'robot', title: '🌈 B u d d y 🌈', icon: '🌈', href: new URL('pages/robot/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47765' }
+    { key: 'maze', title: 'المتاهة', icon: '🐰', href: new URL('pages/maze/index.html', APP_BASE_URL).href, levels: 5, accent: '#4a90e2' },
+    { key: 'gas', title: 'المهندس', icon: '🌉', href: new URL('pages/gas/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47645' },
+    { key: 'frog', title: 'الضفدع', icon: '🐸', href: new URL('pages/frog/index.html', APP_BASE_URL).href, levels: 1, accent: '#86EFAC' },
+    { key: 'potion', title: 'المختبر', icon: '🧪', href: new URL('pages/potion/index.html', APP_BASE_URL).href, levels: 3, accent: '#2DD4BF' },
+    { key: 'robot', title: 'الألوان', icon: '🌈', href: new URL('pages/robot/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47765' }
+  ];
+  const lessonCatalog = [
+    { key: 'commands', title: 'ما معنى الأمر في البرمجة؟', icon: '📘', unlockAt: 1 },
+    { key: 'sequence', title: 'ترتيب الأوامر', icon: '🔢', unlockAt: 3 },
+    { key: 'loops', title: 'التكرار والحلقات', icon: '🔁', unlockAt: 5 },
+    { key: 'conditions', title: 'الشروط واتخاذ القرار', icon: '🚦', unlockAt: 8 },
+    { key: 'debugging', title: 'اكتشاف الأخطاء وتصحيحها', icon: '🔍', unlockAt: 12 }
   ];
 
   const defaultState = {
@@ -158,6 +166,44 @@
     return unlocked;
   }
 
+  function getCompletedLevelCount(progress = readProgress()) {
+    return gameCatalog.reduce((total, game) => {
+      const completed = new Set(
+        (Array.isArray(progress[game.key]?.completed) ? progress[game.key].completed : [])
+          .map(Number)
+          .filter(level => Number.isInteger(level) && level >= 1 && level <= game.levels)
+      );
+      return total + completed.size;
+    }, 0);
+  }
+
+  function getLessonSettings() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(LESSON_SETTINGS_KEY) || '{}');
+      return Object.fromEntries(lessonCatalog.map(lesson => {
+        const unlockAt = Number(saved[lesson.key]);
+        return [lesson.key, Number.isInteger(unlockAt) && unlockAt >= 0 ? unlockAt : lesson.unlockAt];
+      }));
+    } catch (error) {
+      console.error('Unable to read lesson unlock settings:', error);
+      return Object.fromEntries(lessonCatalog.map(lesson => [lesson.key, lesson.unlockAt]));
+    }
+  }
+
+  function saveLessonSettings(settings) {
+    const maximum = gameCatalog.reduce((total, game) => total + game.levels, 0);
+    const normalized = {};
+    lessonCatalog.forEach(lesson => {
+      const unlockAt = Number(settings[lesson.key]);
+      if (!Number.isInteger(unlockAt) || unlockAt < 0 || unlockAt > maximum) {
+        throw new RangeError(`Unlock level for ${lesson.key} must be between 0 and ${maximum}.`);
+      }
+      normalized[lesson.key] = unlockAt;
+    });
+    localStorage.setItem(LESSON_SETTINGS_KEY, JSON.stringify(normalized));
+    return normalized;
+  }
+
   function renderGameHeader(gameKey, levelNumber) {
     const gameProgress = readProgress()[gameKey];
     const starsElement = document.querySelector('[data-game-stars]');
@@ -190,6 +236,7 @@
   window.KidsGames = {
     STORAGE_KEY,
     gameCatalog,
+    lessonCatalog,
     defaultState,
     readProgress,
     saveProgress,
@@ -197,6 +244,9 @@
     addStars,
     completeGameLevel,
     getUnlockedLevel,
+    getCompletedLevelCount,
+    getLessonSettings,
+    saveLessonSettings,
     renderGameHeader,
     goBack
   };
@@ -219,7 +269,69 @@
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register(new URL('sw.js', APP_BASE_URL).href).catch(() => {});
+      navigator.serviceWorker.register(new URL('sw.js', APP_BASE_URL).href, { updateViaCache: 'none' })
+        .catch(error => console.error('Unable to register the app service worker:', error));
+    });
+  }
+
+  const installPrompts = [...document.querySelectorAll('.app-install-prompt')];
+  let installEvent = null;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isEmbeddedBrowser = /Electron|Code\//i.test(navigator.userAgent);
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+
+  if (isInstalled) {
+    installPrompts.forEach(prompt => { prompt.hidden = true; });
+  } else {
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      installEvent = event;
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installPrompts.forEach(prompt => { prompt.hidden = true; });
+    });
+
+    installPrompts.forEach(prompt => {
+      const button = prompt.querySelector('[data-install-app]');
+      const help = prompt.querySelector('[data-install-help]');
+      if (!button || !help) return;
+
+      button.addEventListener('click', async () => {
+        if (!window.isSecureContext) {
+          help.textContent = 'لتثبيت التطبيق، افتح الموقع من اتصال آمن يبدأ بـ HTTPS.';
+          help.hidden = false;
+          return;
+        }
+
+        if (!installEvent) {
+          help.textContent = isIOS
+            ? 'في Safari اضغط «مشاركة» ثم «إضافة إلى الشاشة الرئيسية».'
+            : isEmbeddedBrowser
+              ? 'للتثبيت المباشر، افتح رابط الموقع في Chrome أو Edge؛ عارض VS Code لا يدعم نافذة التثبيت.'
+              : 'افتح قائمة المتصفح ⋮ ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».';
+          help.hidden = false;
+          return;
+        }
+
+        const promptEvent = installEvent;
+        installEvent = null;
+        try {
+          await promptEvent.prompt();
+          const choice = await promptEvent.userChoice;
+          if (choice.outcome === 'accepted') {
+            prompt.hidden = true;
+          } else {
+            help.textContent = 'يمكنك تثبيت التطبيق في أي وقت من قائمة المتصفح.';
+            help.hidden = false;
+          }
+        } catch (error) {
+          console.error('Unable to show the app install prompt:', error);
+          help.textContent = 'تعذر فتح نافذة التثبيت. جرّب اختيار «تثبيت التطبيق» من قائمة المتصفح.';
+          help.hidden = false;
+        }
+      });
     });
   }
 
@@ -333,6 +445,14 @@
       const email = (user.email || '').trim().toLowerCase();
       return username === value || email === value;
     }) || null;
+  }
+
+  function usernameEmail(username) {
+    const normalized = String(username || '').trim().toLocaleLowerCase('en-US');
+    if (!/^[a-z0-9._-]{3,32}$/.test(normalized)) {
+      throw new TypeError('اسم المستخدم يجب أن يتكون من 3 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
+    }
+    return `${normalized}@accounts.kids-games.invalid`;
   }
 
   function loginWithUsername(username, password) {
@@ -508,15 +628,12 @@
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-app-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-auth-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-firestore-compat.js`);
-      await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-functions-compat.js`);
 
       const firebase = window.firebase;
       const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
       const auth = app.auth();
       const database = app.firestore();
-      const functions = app.functions(config.functionsRegion || 'us-central1');
       await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      const callFunction = (name, data = {}) => functions.httpsCallable(name)(data).then(result => result.data);
 
       async function syncAccount(firebaseUser, reloadIfChanged = false, previousLocalProgress = null) {
         const userRef = database.collection('users').doc(firebaseUser.uid);
@@ -598,33 +715,39 @@
               console.error('Unable to read legacy local progress:', error);
             }
           }
-          const result = await callFunction('authenticateUsername', { username, password });
-          const credential = await auth.signInWithCustomToken(result.token);
+          const credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
           return syncAccount(credential.user, false, previousLocalProgress);
         },
-        async createAccount(account) {
-          return callFunction('createAccount', account);
-        },
         async listAccounts() {
-          const result = await callFunction('listAccounts');
-          return result.users;
+          const snapshot = await database.collection('users').orderBy('username').get();
+          return snapshot.docs.map(document => ({ id: document.id, uid: document.id, ...document.data() }));
         },
         async updateAccount(account) {
-          return callFunction('updateAccount', account);
+          const ref = database.collection('users').doc(account.uid);
+          await ref.update({
+            role: account.role,
+            status: account.status,
+            email: account.email || '',
+            fullName: account.fullName || account.username,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          return { ...account, id: account.uid };
         },
-        async deleteAccount(account) {
-          return callFunction('deleteAccount', account);
+        async getLessonSettings() {
+          const snapshot = await database.collection('settings').doc('lessons').get();
+          if (!snapshot.exists) return null;
+          return snapshot.data().unlockAt || null;
+        },
+        async saveLessonSettings(unlockAt) {
+          await database.collection('settings').doc('lessons').set({
+            unlockAt,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          return unlockAt;
         },
         async signOut() {
           await auth.signOut();
           logoutUser();
-        },
-        async saveProfile(user) {
-          if (!auth.currentUser || auth.currentUser.uid !== user.id) return false;
-          await callFunction('setOwnRole', { role: user.role });
-          await auth.currentUser.getIdToken(true);
-          await syncAccount(auth.currentUser);
-          return true;
         },
         async saveProgress(progress) {
           const user = getCurrentUser();

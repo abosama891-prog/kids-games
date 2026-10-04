@@ -14,7 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
       title: '3', concept: 'التكرار', ageBand: 'مبتدئ · مناسب للأعمار 6–8', icon: '🔁', riverState: 'calm', riverLabel: 'النهر هادئ',
       hint: 'كرّر وضع ألواح الجسر بدل إضافة كل لوح وحده.',
       route: ['deck', 'deck', 'deck', 'deck', 'deck', 'ramp'],
-      requireLoop: true
+      requireLoop: true,
+      repeatCounts: [5]
     },
     {
       title: '4', concept: 'الشرط إذا', ageBand: 'متوسط · مناسب للأعمار 9–11', icon: '🔀', riverState: 'calm', riverLabel: 'النهر هادئ',
@@ -53,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
         high: ['ferry', 'ferry']
       },
       requireLoop: true,
+      repeatCounts: [2, 5],
       requireCondition: true
     },
     {
@@ -60,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
       hint: 'ابنِ الجسر بأمرين فقط: كرّر الألواح ثم أضف منحدرًا.',
       route: ['deck', 'deck', 'deck', 'deck', 'ramp'],
       requireLoop: true,
+      repeatCounts: [4],
       maxInstructions: 2
     },
     {
@@ -67,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
       hint: 'أصلح آخر قطعة في الجسر مع الاحتفاظ بالألواح المتكررة.',
       route: ['deck', 'ramp', 'deck', 'deck', 'ramp'],
       requireLoop: true,
+      repeatCounts: [2],
       starterProgram: [
         { type: 'piece', shape: 'deck', repeat: 1 },
         { type: 'piece', shape: 'ramp', repeat: 1 },
@@ -82,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         high: ['ferry', 'ferry']
       },
       requireLoop: true,
+      repeatCounts: [2, 3],
       requireCondition: true
     }
   ];
@@ -96,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const gasColor = document.getElementById('gas-color');
   const pipeTrack = document.getElementById('pipe-track');
   const cityScene = document.querySelector('.city-scene');
+  const scene3D = window.BridgeBuilder3D;
   const programList = document.getElementById('program-list');
   const message = document.getElementById('mascot-message');
   const messageText = message.querySelector('p');
@@ -164,10 +170,10 @@ document.addEventListener('DOMContentLoaded', () => {
     svg.setAttribute('viewBox', '0 0 96 64');
     svg.setAttribute('aria-hidden', 'true');
     const graphics = {
-      deck: '<path d="M5 29h86v20H5z" fill="url(#' + baseId + '-wood-side)" stroke="#543b2a" stroke-width="3"/><path d="M7 24h82v8H7z" fill="url(#' + baseId + '-wood)" stroke="#6d492e" stroke-width="2"/><path d="M12 25v6m12-6v6m12-6v6m12-6v6m12-6v6m12-6v6m12-6v6" stroke="#f0c98e" stroke-width="1.5" opacity=".75"/><path d="M12 37h72M12 43h72" stroke="#d4a16c" stroke-width="1.5" opacity=".72"/><path d="M17 24v-5m62 5v-5" stroke="#485960" stroke-width="3"/><circle cx="17" cy="19" r="2" fill="#d9e0dd"/><circle cx="79" cy="19" r="2" fill="#d9e0dd"/>',
-      ramp: '<path d="M5 49h31l27-29h28v18H70L43 57H5z" fill="url(#' + baseId + '-wood-side)" stroke="#543b2a" stroke-width="3" stroke-linejoin="round"/><path d="M8 44h29l26-28h25v7H67L40 51H8z" fill="url(#' + baseId + '-wood)" stroke="#6d492e" stroke-width="2" stroke-linejoin="round"/><path d="m15 43 20 0m26-22h18M45 44l14-15" stroke="#edc38a" stroke-width="1.5"/><path d="M22 51 30 43m20-1 8-9m13-15h8" stroke="#59402d" stroke-width="2"/>',
-      support: '<path d="M8 23h80v10H8z" fill="url(#' + baseId + '-wood)" stroke="#5a3e2b" stroke-width="2"/><path d="M33 32h30l7 27H26z" fill="url(#' + baseId + '-concrete)" stroke="#59666a" stroke-width="3"/><path d="M20 59h56M38 36l-5 18m23-18 5 18" stroke="#899598" stroke-width="2"/><path d="M5 60q12-6 24 0t24 0 24 0 19 0" fill="none" stroke="#77b9c5" stroke-width="3"/><path d="M14 26v4m13-4v4m42-4v4m13-4v4" stroke="#edc38a" stroke-width="1.5"/>',
-      ferry: '<path d="M9 38h78L75 53H24z" fill="url(#' + baseId + '-hull)" stroke="#354a52" stroke-width="3" stroke-linejoin="round"/><path d="M19 43h57M29 49h40" stroke="#f2b985" stroke-width="1.5" opacity=".75"/><path d="M32 18h35v20H32z" fill="url(#' + baseId + '-cabin)" stroke="#5c5546" stroke-width="3"/><path d="M27 17h45v5H27z" fill="#ded5bd" stroke="#5c5546" stroke-width="2"/><path d="M37 23h10v9H37zm15 0h10v9H52z" fill="#9ed4de" stroke="#506b70" stroke-width="1.5"/><path d="M5 58q11-7 22 0t22 0 22 0 22 0" fill="none" stroke="#63a9bd" stroke-width="3"/><path d="m16 61 8-2m31 2 9-2m17 2 7-2" stroke="#d3edf0" stroke-width="1.5"/>'
+      deck: '<ellipse cx="49" cy="51" rx="43" ry="7" fill="#203b3c" opacity=".2"/><path d="m9 27 73 0 10 16-74 0z" fill="url(#' + baseId + '-wood-side)" stroke="#543b2a" stroke-width="2.5" stroke-linejoin="round"/><path d="m18 17 64 0 10 16-74 0z" fill="url(#' + baseId + '-wood)" stroke="#65442d" stroke-width="2" stroke-linejoin="round"/><path d="m18 17 10 0 10 16-10 0zm20 0 10 0 10 16-10 0zm20 0 10 0 10 16-10 0zm20 0 4 0 10 16-4 0z" fill="#e0b477" opacity=".62"/><path d="m28 18 10 14m10-14 10 14m10-14 10 14" stroke="#754c30" stroke-width="1" opacity=".58"/><path d="m14 32 74 0m-64 5 67 0" stroke="#d39b5e" stroke-width="1.5" opacity=".7"/><path d="m20 39 72 0" stroke="#4c5552" stroke-width="2"/><circle cx="24" cy="40" r="1.8" fill="#d9e0dd"/><circle cx="45" cy="40" r="1.8" fill="#d9e0dd"/><circle cx="66" cy="40" r="1.8" fill="#d9e0dd"/><path d="m14 20 3 7m56-7 3 7" stroke="#a7b2b0" stroke-width="2"/>',
+      ramp: '<ellipse cx="48" cy="53" rx="43" ry="6" fill="#203b3c" opacity=".2"/><path d="m8 47 28 0 27-28 25 0 0 17-19 0-25 25-36 0z" fill="url(#' + baseId + '-wood-side)" stroke="#543b2a" stroke-width="2.5" stroke-linejoin="round"/><path d="m11 40 26 0 26-27 24 0 0 8-20 0-25 27-31 0z" fill="url(#' + baseId + '-wood)" stroke="#65442d" stroke-width="2" stroke-linejoin="round"/><path d="m16 39 18 0m8-3 10-11m18-9 11 0" stroke="#edc38a" stroke-width="1.6"/><path d="m14 46 25 0 26-27m-17 27 5 7m20-35 2 9" fill="none" stroke="#76502f" stroke-width="2"/><path d="m18 44 7 0m10 0 5 0m17-18 5-5m13-4 7 0" stroke="#b8c0bd" stroke-width="2"/><circle cx="22" cy="44" r="1.5" fill="#e2e5df"/><circle cx="74" cy="17" r="1.5" fill="#e2e5df"/>',
+      support: '<ellipse cx="49" cy="58" rx="38" ry="5" fill="#203b3c" opacity=".18"/><path d="m13 20 68 0 9 12-70 0z" fill="url(#' + baseId + '-wood)" stroke="#65442d" stroke-width="2"/><path d="m20 32 14 0-4 19-17 0zm40 0 14 0 8 19-18 0z" fill="url(#' + baseId + '-concrete)" stroke="#626b68" stroke-width="2"/><path d="m15 49 19 0 0 8-22 0zm45 0 20 0 4 8-24 0z" fill="#808987" stroke="#59615f" stroke-width="1.5"/><path d="m18 24 63 0m-51 11-3 13m47-12 5 13" fill="none" stroke="#8a5734" stroke-width="1.5"/><path d="m24 35-5 12m8-12-4 12m42-12 5 12m3-12 5 12" stroke="#aeb7b3" stroke-width="1"/><path d="m11 19 5-4 65 0 9 4" fill="none" stroke="#485c60" stroke-width="2"/><circle cx="23" cy="27" r="1.7" fill="#d9e0dd"/><circle cx="73" cy="27" r="1.7" fill="#d9e0dd"/><path d="M5 59q10-4 20 0t20 0 20 0 20 0" fill="none" stroke="#77b9c5" stroke-width="2.5"/>',
+      ferry: '<ellipse cx="49" cy="54" rx="40" ry="6" fill="#173d4a" opacity=".22"/><path d="m7 37 82 0-11 15-49 0z" fill="url(#' + baseId + '-hull)" stroke="#354a52" stroke-width="2.5" stroke-linejoin="round"/><path d="m13 39 68 0m-56 7 48 0" stroke="#edc08e" stroke-width="1.5" opacity=".85"/><path d="m23 32 9-18 35 0 13 18z" fill="url(#' + baseId + '-cabin)" stroke="#5c5546" stroke-width="2"/><path d="m19 32 58 0 6 5-66 0z" fill="#d6c8a8" stroke="#5c5546" stroke-width="1.5"/><path d="m36 18 11 0 0 10-15 0zm17 0 11 0 6 10-17 0z" fill="url(#' + baseId + '-glass)" stroke="#506b70" stroke-width="1.5"/><path d="m38 18 0 9m17-9 5 9" stroke="#e5f7f5" stroke-width="1.5"/><path d="m28 32 0 4m8-4 0 4m27-4 0 4m8-4 0 4" stroke="#364d52" stroke-width="1.5"/><path d="m15 52 5 4m18-4 5 4m19-4 5 4m11-4 4 4" stroke="#d9edf0" stroke-width="1.5"/><circle cx="23" cy="34" r="2.3" fill="#d94c3e" stroke="#fff" stroke-width="1"/>'
     };
     svg.innerHTML = `
       <defs>
@@ -176,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <linearGradient id="${baseId}-concrete" x2="1" y2="0"><stop stop-color="#939b99"/><stop offset=".48" stop-color="#d0d0c7"/><stop offset="1" stop-color="#858f8e"/></linearGradient>
         <linearGradient id="${baseId}-hull" x2="0" y2="1"><stop stop-color="#efab67"/><stop offset=".5" stop-color="#c7603d"/><stop offset="1" stop-color="#763d32"/></linearGradient>
         <linearGradient id="${baseId}-cabin" x2="0" y2="1"><stop stop-color="#f4dfac"/><stop offset="1" stop-color="#c9a66e"/></linearGradient>
+        <linearGradient id="${baseId}-glass" x2="0" y2="1"><stop stop-color="#d8f5f1"/><stop offset="1" stop-color="#63a1ae"/></linearGradient>
       </defs>
       ${graphics[shape] || graphics.deck}
     `;
@@ -188,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const level = levels[currentLevel];
     const expectedRoute = level.conditionalRoutes?.[level.riverState] || level.route;
     const slotCount = Math.max(1, route.length, expectedRoute.length);
-    const slotWidth = Math.min(160, cityScene.clientWidth * 0.58 / slotCount);
+    const slotWidth = Math.min(160, cityScene.clientWidth * 0.68 / slotCount);
     pipeTrack.style.setProperty('--crossing-slot-width', `${slotWidth}px`);
     Array.from({ length: Math.min(slotCount, 8) }, (_, index) => route[index] || { empty: true }).forEach((piece, index) => {
       const node = document.createElement('span');
@@ -207,6 +214,10 @@ document.addEventListener('DOMContentLoaded', () => {
       overflow.textContent = `+${route.length - 8}`;
       pipeTrack.appendChild(overflow);
     }
+    scene3D?.setPlan(
+      Array.from({ length: Math.min(slotCount, 8) }, (_, index) => route[index] || { empty: true }),
+      level.riverState === 'high'
+    );
   }
 
   function renderProgram() {
@@ -257,6 +268,22 @@ document.addEventListener('DOMContentLoaded', () => {
     ifElseButton.disabled = !level.requireCondition || isRunning || hasCondition;
   }
 
+  function updateToolVisibility(level) {
+    const routes = level.conditionalRoutes
+      ? Object.values(level.conditionalRoutes)
+      : [level.route];
+    const availablePieces = new Set(routes.flat());
+    document.querySelectorAll('.piece-button[data-piece]').forEach(button => {
+      button.closest('.command-control').hidden = !availablePieces.has(button.dataset.piece);
+    });
+    ifElseButton.closest('.command-control').hidden = !level.requireCondition;
+    const repeatCounts = new Set(level.repeatCounts || []);
+    document.querySelectorAll('.repeat-button').forEach(button => {
+      button.closest('.command-control').hidden =
+        !level.requireLoop || !repeatCounts.has(Number(button.dataset.repeat));
+    });
+  }
+
   function renderLevel() {
     const level = levels[currentLevel];
     levelTitle.textContent = String(currentLevel + 1);
@@ -270,11 +297,15 @@ document.addEventListener('DOMContentLoaded', () => {
     levelCount.textContent = String(currentLevel + 1);
     starsElement.textContent = gasProgress.stars || 0;
     window.KidsGames.renderGameHeader('gas', currentLevel + 1);
+    updateToolVisibility(level);
     repeatCount.value = '1';
     document.querySelectorAll('.repeat-button').forEach(button => button.setAttribute('aria-pressed', 'false'));
     program = level.starterProgram ? level.starterProgram.map(item => ({ ...item })) : [];
     isComplete = false;
     homeStation.classList.remove('lit');
+    cityScene.classList.remove('is-building');
+    scene3D?.setBuilding(false);
+    scene3D?.resetCrossing();
     crossingTraveler.classList.remove('crossing', 'arrived');
     cityLights.classList.remove('lit');
     nextButton.hidden = true;
@@ -351,6 +382,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function animateLeaking(errorIndex, text) {
     renderPipeTrack(errorIndex);
+    cityScene.classList.remove('is-building');
+    scene3D?.setBuilding(false);
+    scene3D?.resetCrossing();
     setMessage(`🧑‍🔧 ${text}`, 'error');
     isRunning = false;
     runButton.disabled = false;
@@ -376,6 +410,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function finishLevel() {
     isComplete = true;
+    cityScene.classList.remove('is-building');
     homeStation.classList.add('lit');
     cityLights.classList.add('lit');
     const firstCompletion = saveWin();
@@ -409,6 +444,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     isRunning = true;
+    cityScene.classList.add('is-building');
+    scene3D?.setBuilding(true);
+    scene3D?.resetCrossing();
     runButton.disabled = true;
     resetButton.disabled = true;
     document.querySelectorAll('.piece-button, .repeat-button').forEach(button => { button.disabled = true; });
@@ -416,20 +454,27 @@ document.addEventListener('DOMContentLoaded', () => {
     homeStation.classList.remove('lit');
     crossingTraveler.classList.remove('crossing', 'arrived');
     cityLights.classList.remove('lit');
-    setMessage('يجري اختبار الجسر والمعدّية...');
+    setMessage('بدأ المهندس بتركيب القطع وفحص ثباتها...');
     renderPipeTrack();
 
     const expectedRoute = level.conditionalRoutes?.[level.riverState] || level.route;
     for (let index = 0; index < Math.max(route.length, expectedRoute.length); index += 1) {
-      await new Promise(resolve => setTimeout(resolve, 260));
+      await new Promise(resolve => setTimeout(resolve, 340));
       if (!route[index] || route[index].shape !== expectedRoute[index]) {
         animateLeaking(index, `المعبر غير مكتمل عند القطعة ${index + 1}. راجع ترتيبها أو عدد التكرار.`);
         return;
       }
-      pipeTrack.children[index]?.classList.add('flowing');
+      const piece = pipeTrack.children[index];
+      piece?.classList.add('installing');
+      scene3D?.installPiece(index);
+      await new Promise(resolve => setTimeout(resolve, 220));
+      piece?.classList.remove('installing');
+      piece?.classList.add('installed', 'flowing');
     }
 
-    setMessage('الجسر جاهز! تعبر الشاحنة الآن إلى الهدف...');
+    setMessage('اكتمل التركيب وفحص السلامة. تعبر الشاحنة الآن إلى الهدف...');
+    scene3D?.setBuilding(false);
+    scene3D?.animateCrossing();
     crossingTraveler.classList.add('crossing');
     await new Promise(resolve => setTimeout(resolve, 1700));
     crossingTraveler.classList.add('arrived');

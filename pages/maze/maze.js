@@ -11,27 +11,32 @@ const levels = [
   {
     title: 'المستوى 1',
     hint: 'اذهب إلى الخضار في أقصر طريق',
-    board: ['#####', '#S..#', '#.#.#', '#..G#', '#####']
+    board: ['#####', '#S..#', '#.#.#', '#..G#', '#####'],
+    tools: ['right', 'down']
   },
   {
     title: 'المستوى 2',
     hint: 'بعض الجدران تمنع الطريق',
-    board: ['#####', '#S#.#', '#...#', '#.#G#', '#####']
+    board: ['#####', '#S#.#', '#...#', '#.#G#', '#####'],
+    tools: ['right', 'down']
   },
   {
     title: 'المستوى 3',
     hint: 'ابدأ بقفزة إلى اليمين، ثم انزل نحو الجزرة',
-    board: ['#####', '#S#.#', '##..#', '###G#', '#####']
+    board: ['#####', '#S#.#', '##..#', '###G#', '#####'],
+    tools: ['down', 'jump']
   },
   {
     title: 'المستوى 4',
     hint: 'خطة أفضل من التعميم العشوائي',
-    board: ['#####', '#S..#', '#.##.', '#...G', '#####']
+    board: ['#####', '#S..#', '#.##.', '#...G', '#####'],
+    tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 5',
     hint: 'الهدف هو العبور بأمان',
-    board: ['#####', '#S#.#', '#...#', '#...G', '#####']
+    board: ['#####', '#S#.#', '#...#', '#...G', '#####'],
+    tools: ['right', 'down', 'repeat2']
   }
 ];
 
@@ -304,6 +309,7 @@ function resetLevel() {
   titleElement.textContent = currentLevel + 1;
   levelNumElement.textContent = currentLevel + 1;
   levelHintElement.textContent = levels[currentLevel].hint;
+  renderTools();
   lastDirection = { x: 1, y: 0 };
   program = [];
   renderProgram();
@@ -311,6 +317,18 @@ function resetLevel() {
   setFeedback('');
   saveProgress();
   updateNextLevelButton();
+}
+
+function renderTools() {
+  const tools = new Set(levels[currentLevel].tools);
+  document.querySelectorAll('.dir-btn').forEach(button => {
+    button.closest('.command-control').hidden = !tools.has(button.dataset.dir);
+  });
+  document.querySelectorAll('.extra-btn[data-repeat]').forEach(button => {
+    button.closest('.command-control').hidden = !tools.has(`repeat${button.dataset.repeat}`);
+  });
+  const jumpButton = document.querySelector('.extra-btn.jump');
+  jumpButton.closest('.command-control').hidden = !tools.has('jump');
 }
 
 function clearProgram() {

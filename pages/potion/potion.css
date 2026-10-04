@@ -445,13 +445,13 @@ body {
   overflow-wrap: anywhere;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, -3px);
+  transform: translate(calc(-50% + var(--horizontal-shift, 0px)), -3px);
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .code-popup.show {
   opacity: 1;
-  transform: translate(-50%, 0);
+  transform: translate(calc(-50% + var(--horizontal-shift, 0px)), 0);
 }
 
 .run-row {

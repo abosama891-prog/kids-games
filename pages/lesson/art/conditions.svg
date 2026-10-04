@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">الشروط واتخاذ القرار</title>
+  <desc id="desc">طريق يتفرع عند إشارة اختيار إلى مسارين مختلفين</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e3dcff"/><stop offset="1" stop-color="#c9e8ff"/></linearGradient></defs>
+  <rect width="640" height="360" rx="30" fill="url(#bg)"/>
+  <path d="M0 276q110-23 215 4t205-2q120-35 220-2v84H0z" fill="#a9d6bd"/>
+  <path d="M76 266h184l103-115h194" fill="none" stroke="#fff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M76 266h184l103-115h194" fill="none" stroke="#a2b9bf" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M260 266 363 151h194" fill="none" stroke="#fff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M260 266 363 151h194" fill="none" stroke="#a2b9bf" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M260 266 374 316h184" fill="none" stroke="#fff" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M260 266 374 316h184" fill="none" stroke="#a2b9bf" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M110 266h122m159-115h100m-89 165h81" stroke="#fff2c4" stroke-width="5" stroke-linecap="round" stroke-dasharray="14 14"/>
+  <circle cx="259" cy="265" r="48" fill="#fff" stroke="#7d78b8" stroke-width="8"/>
+  <path d="M259 228v37m-1 0-29-31m30 31 27-34" fill="none" stroke="#7d78b8" stroke-width="9" stroke-linecap="round"/>
+  <rect x="58" y="208" width="35" height="72" rx="12" fill="#f4ffff" stroke="#2e7e77" stroke-width="6"/>
+  <circle cx="76" cy="228" r="7" fill="#ec786b"/><circle cx="76" cy="244" r="7" fill="#f2cb5c"/><circle cx="76" cy="260" r="7" fill="#64c78d"/>
+  <path d="M549 128h41v43h-41z" fill="#90d8a9" stroke="#278b69" stroke-width="5"/>
+  <path d="m545 128 24-21 25 21" fill="#fff0c3" stroke="#278b69" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="566" cy="316" r="20" fill="#ffd579" stroke="#bd7d32" stroke-width="5"/>
+</svg>

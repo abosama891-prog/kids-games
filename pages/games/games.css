@@ -45,6 +45,18 @@ body {
   background: #fff;
   color: #173d3a;
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 13px 26px rgba(0, 0, 0, 0.19);
+}
+
+.game-card:focus-visible {
+  outline: 3px solid #f4ca45;
+  outline-offset: 3px;
 }
 
 .game-maze { --game-accent: #4285a8; }

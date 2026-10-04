@@ -180,6 +180,69 @@ body {
   min-width: 0;
 }
 
+.lesson-settings-panel {
+  padding: 16px 22px;
+}
+
+.lesson-settings-panel summary {
+  color: var(--header-text);
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.lesson-settings-panel[open] summary {
+  margin-bottom: 12px;
+}
+
+.lesson-settings-help {
+  margin-bottom: 12px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.lesson-settings-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-items: end;
+  gap: 14px;
+}
+
+.lesson-settings-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--header-text);
+  font-weight: 700;
+}
+
+.lesson-settings-form input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f7fafb;
+  color: var(--header-text);
+  font: inherit;
+}
+
+.lesson-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  grid-column: 1 / -1;
+}
+
+.lesson-settings-actions span {
+  color: #215d50;
+  font-weight: 700;
+}
+
+.lesson-settings-actions span.error {
+  color: var(--danger);
+}
+
 .panel-title-row {
   display: flex;
   align-items: center;

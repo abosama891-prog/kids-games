@@ -12,6 +12,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const card = document.createElement('article');
     card.className = `game-card game-${game.key}`;
+    card.tabIndex = 0;
+    card.setAttribute('role', 'link');
+    card.setAttribute('aria-label', `افتح لعبة ${game.title}`);
+    card.addEventListener('click', event => {
+      if (event.target.closest('a')) return;
+      window.location.href = game.href;
+    });
+    card.addEventListener('keydown', event => {
+      if (event.target !== card || !['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      window.location.href = game.href;
+    });
 
     const icon = document.createElement('span');
     icon.className = 'game-icon';

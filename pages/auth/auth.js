@@ -34,9 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
-  if (currentUser) {
-    showRoleSelection(currentUser);
-  }
 
   const cloudReady = window.KidsGamesCloudReady.then(cloud => {
     googleButton.disabled = !cloud.enabled;
@@ -44,6 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
       googleSetupMessage.textContent = cloud.reason === 'missing-config'
         ? 'تسجيل الدخول ومزامنة التقدم يحتاجان إعداد Firebase أولًا.'
         : 'تعذر الاتصال بخدمة الحسابات السحابية.';
+    }
+    if (currentUser) {
+      if (cloud.enabled) redirectByRole(window.KidsGamesAuth.getCurrentUser() || currentUser);
+      else showRoleSelection(currentUser);
     }
     return cloud;
   });
@@ -63,13 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
         setMessage('اسم المستخدم أو كلمة المرور غير صحيحة.', 'error');
         return;
       }
-      showRoleSelection(user);
+      if (cloud.enabled) redirectByRole(user);
+      else showRoleSelection(user);
     } catch (error) {
       console.error('Unable to sign in with username:', error);
-      const message = error.code === 'functions/resource-exhausted'
+      const message = error.code === 'auth/too-many-requests'
         ? 'محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.'
-        : error.code === 'functions/unavailable' || error.code === 'functions/internal'
-          ? 'تعذر الاتصال بخدمة تسجيل الدخول. تحقق من إعداد Cloud Functions.'
+        : error.code === 'auth/network-request-failed'
+          ? 'تعذر الاتصال بخدمة تسجيل الدخول. تحقق من اتصال الإنترنت.'
           : 'اسم المستخدم أو كلمة المرور غير صحيحة.';
       setMessage(message, 'error');
     } finally {
@@ -87,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
       const user = await cloud.signInWithGoogle();
-      showRoleSelection(user);
+      redirectByRole(user);
     } catch (error) {
       const message = error.code === 'auth/popup-closed-by-user'
         ? 'تم إغلاق نافذة Google قبل إكمال الدخول.'
@@ -108,23 +110,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const selectedRole = button.dataset.role;
       if (selectedRole === 'admin' && signedInUser.role !== 'admin') return;
 
-      const cloud = await window.KidsGamesCloudReady;
-      let updatedUser;
-      if (cloud.enabled && cloud.getCurrentUserId?.() === signedInUser.id) {
-        updatedUser = { ...signedInUser, role: selectedRole };
-        if (!(await cloud.saveProfile(updatedUser))) {
-          setMessage('تعذر حفظ نوع الحساب على حسابك.', 'error');
-          return;
-        }
-        signedInUser = window.KidsGamesAuth.getCurrentUser();
-      } else {
-        updatedUser = window.KidsGamesAuth.updateUser(signedInUser.id, { role: selectedRole });
-        if (!updatedUser) {
-          setMessage('تعذر حفظ نوع الحساب.', 'error');
-          return;
-        }
-        signedInUser = window.KidsGamesAuth.setCurrentUser(updatedUser);
+      const updatedUser = window.KidsGamesAuth.updateUser(signedInUser.id, { role: selectedRole });
+      if (!updatedUser) {
+        setMessage('تعذر حفظ نوع الحساب.', 'error');
+        return;
       }
+      signedInUser = window.KidsGamesAuth.setCurrentUser(updatedUser);
       setMessage(`أهلًا ${updatedUser.fullName}`, 'success');
       setTimeout(() => redirectByRole(updatedUser), 350);
     });

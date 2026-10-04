@@ -1,25 +1,60 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+    function signedIn() {
+      return request.auth != null;
+    }
 
-      allow create: if request.auth != null
-        && request.auth.uid == userId
+    function activeAdmin() {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function validNewProfile(userId) {
+      return request.auth.uid == userId
+        && request.resource.data.keys().hasAll([
+          'username', 'email', 'fullName', 'role', 'provider', 'status', 'progress', 'updatedAt'
+        ])
         && request.resource.data.keys().hasOnly([
           'username', 'email', 'fullName', 'role', 'provider', 'status', 'progress', 'updatedAt'
         ])
         && request.resource.data.role == 'child'
         && request.resource.data.status == 'active'
-        && request.resource.data.provider == 'google';
+        && request.resource.data.provider in ['local', 'google']
+        && (
+          (request.resource.data.provider == 'local'
+            && request.auth.token.email.split('@')[0] == request.resource.data.username
+            && request.auth.token.email.split('@')[1] == 'accounts.kids-games.invalid')
+          || (request.resource.data.provider == 'google'
+            && request.auth.token.firebase.sign_in_provider == 'google.com')
+        );
+    }
 
-      allow update: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['email', 'fullName', 'progress', 'updatedAt'])
-        && request.resource.data.role == resource.data.role
-        && request.resource.data.provider == resource.data.provider
-        && request.resource.data.status == resource.data.status;
+    match /users/{userId} {
+      allow read: if signedIn() && (request.auth.uid == userId || activeAdmin());
+
+      allow create: if signedIn() && validNewProfile(userId);
+
+      allow update: if signedIn() && (
+        (request.auth.uid == userId
+          && resource.data.status == 'active'
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['email', 'fullName', 'progress', 'updatedAt'])
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.provider == resource.data.provider
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.username == resource.data.username)
+        || (activeAdmin()
+          && request.auth.uid != userId
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['email', 'fullName', 'role', 'status', 'updatedAt'])
+          && request.resource.data.username == resource.data.username
+          && request.resource.data.provider == resource.data.provider
+          && request.resource.data.progress == resource.data.progress
+          && request.resource.data.role in ['child', 'parent', 'teacher', 'admin']
+          && request.resource.data.status in ['active', 'inactive'])
+      );
 
       allow delete: if false;
     }
@@ -30,6 +65,34 @@ service cloud.firestore {
 
     match /authRateLimits/{key} {
       allow read, write: if false;
+    }
+
+    match /settings/lessons {
+      allow read: if signedIn();
+      allow create, update: if activeAdmin()
+        && request.resource.data.keys().hasOnly(['unlockAt', 'updatedAt'])
+        && request.resource.data.unlockAt.keys().hasAll([
+          'commands', 'sequence', 'loops', 'conditions', 'debugging'
+        ])
+        && request.resource.data.unlockAt.keys().hasOnly([
+          'commands', 'sequence', 'loops', 'conditions', 'debugging'
+        ])
+        && request.resource.data.unlockAt.commands is int
+        && request.resource.data.unlockAt.commands >= 0
+        && request.resource.data.unlockAt.commands <= 39
+        && request.resource.data.unlockAt.sequence is int
+        && request.resource.data.unlockAt.sequence >= 0
+        && request.resource.data.unlockAt.sequence <= 39
+        && request.resource.data.unlockAt.loops is int
+        && request.resource.data.unlockAt.loops >= 0
+        && request.resource.data.unlockAt.loops <= 39
+        && request.resource.data.unlockAt.conditions is int
+        && request.resource.data.unlockAt.conditions >= 0
+        && request.resource.data.unlockAt.conditions <= 39
+        && request.resource.data.unlockAt.debugging is int
+        && request.resource.data.unlockAt.debugging >= 0
+        && request.resource.data.unlockAt.debugging <= 39;
+      allow delete: if activeAdmin();
     }
   }
 }

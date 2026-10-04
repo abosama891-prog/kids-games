@@ -99,6 +99,42 @@ button, input {
   display: none !important;
 }
 
+.app-install-prompt {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.app-install-prompt[hidden] {
+  display: none;
+}
+
+.install-app-button {
+  min-height: 42px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #fff;
+  color: #176b63;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.install-app-button:focus-visible {
+  outline: 3px solid #f4ca45;
+  outline-offset: 3px;
+}
+
+.install-help {
+  max-width: 34rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .game-topbar {
   display: flex;
   align-items: center;

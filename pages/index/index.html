@@ -3,19 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>صالة الألعاب التعليمية</title>
+    <title>🌈 B u d d y 🌈</title>
+    <meta name="theme-color" content="#176b63" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="🌈 B u d d y 🌈" />
+    <link rel="manifest" href="../../manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="../common.css" />
     <link rel="stylesheet" href="index.css" />
   </head>
   <body>
+    <nav class="site-nav" aria-label="القائمة الرئيسية">
+      <div class="site-nav-inner">
+        <a class="contact-button" href="tel:+201019288965">
+          <span aria-hidden="true">📞</span>
+          اتصل بنا
+        </a>
+        <div class="nav-user-area">
+          <details class="account-menu">
+            <summary class="nav-action account-trigger">👤 حسابي</summary>
+            <div class="account-dropdown">
+              <div class="account-details">
+                <strong id="current-user-name" class="user-name"></strong>
+                <span id="current-user-role" class="user-role"></span>
+              </div>
+              <a id="admin-link" class="account-menu-item hidden" href="../admin/index.html">⚙ الإعدادات</a>
+              <button id="logout-button" class="account-menu-item" type="button">↪ تسجيل الخروج</button>
+            </div>
+          </details>
+        </div>
+      </div>
+    </nav>
     <div class="app-shell">
       <header class="hero">
-        <div class="badge">🧩 اختر القسم</div>
-        <h1 class="title">صالة الألعاب التعليمية</h1>
-        <div class="user-toolbar">
-          <span id="current-user-badge" class="user-badge">المستخدم</span>
-          <button id="logout-button" class="logout-button" type="button">تسجيل الخروج</button>
-          <a id="admin-link" class="admin-link hidden" href="../admin/index.html">لوحة الإدارة</a>
+        <h1 class="title">🌈 B u d d y 🌈</h1>
+        <div class="app-install-prompt">
+          <button class="install-app-button" type="button" data-install-app>📲 تثبيت التطبيق</button>
+          <p class="install-help" data-install-help role="status" aria-live="polite" hidden></p>
         </div>
       </header>
 
@@ -49,7 +73,6 @@
       </section>
 
       <section class="sections-section" aria-label="الأقسام">
-        <div class="section-title">اختر القسم</div>
         <div class="sections-grid">
           <a class="section-card section-games" href="../games/index.html" aria-label="قسم الألعاب">
             <span class="section-icon" aria-hidden="true">🎮</span>

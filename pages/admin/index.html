@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>إدارة المستخدمين والصلاحيات | 🌈 Buddy 🌈</title>
+    <title>إدارة المستخدمين والصلاحيات | 🌈 B u d d y 🌈</title>
     <link rel="stylesheet" href="../common.css" />
     <link rel="stylesheet" href="admin.css" />
   </head>
@@ -25,6 +25,21 @@
       <main class="admin-content">
         <div id="account-connection" class="connection-status" role="status" aria-live="polite">جارٍ التحقق من ربط الحساب...</div>
         <div id="admin-message" class="admin-message" role="status" aria-live="polite" hidden></div>
+        <details class="panel page-card lesson-settings-panel">
+          <summary>⚙️ إعدادات فتح الدروس</summary>
+          <p class="lesson-settings-help">حدد عدد المراحل المطلوبة لفتح كل درس.</p>
+          <form id="lesson-settings-form" class="lesson-settings-form">
+            <label>الأوامر<input name="commands" type="number" min="0" max="39" required /></label>
+            <label>ترتيب الأوامر<input name="sequence" type="number" min="0" max="39" required /></label>
+            <label>التكرار<input name="loops" type="number" min="0" max="39" required /></label>
+            <label>الشروط<input name="conditions" type="number" min="0" max="39" required /></label>
+            <label>تصحيح الأخطاء<input name="debugging" type="number" min="0" max="39" required /></label>
+            <div class="lesson-settings-actions">
+              <button id="save-lesson-settings" class="primary-btn" type="submit">حفظ</button>
+              <span id="lesson-settings-message" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </details>
         <section class="panel page-card">
           <div class="panel-title-row">
             <h2>المستخدمون والصلاحيات</h2>
@@ -54,7 +69,7 @@
               <thead>
                 <tr>
                   <th>اسم المستخدم</th>
-                  <th class="email-column">البريد</th>
+                  <th class="email-column">معرّف الدخول</th>
                   <th>الدور</th>
                   <th>الحالة</th>
                   <th>المزود</th>
@@ -81,7 +96,7 @@
             <input id="username" name="username" type="text" autocomplete="username" placeholder="username" required />
           </label>
           <label id="email-field" hidden>
-            البريد الإلكتروني (اختياري)
+            معرّف الدخول
             <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" />
           </label>
           <label>
@@ -106,7 +121,7 @@
             </select>
           </label>
         </div>
-        <p class="form-note">لا يحتاج الحساب الجديد إلى بريد إلكتروني؛ يسجّل الدخول باسم المستخدم وكلمة المرور.</p>
+        <p class="form-note">في الوضع السحابي، تُدار الحسابات وكلمات المرور من Firebase Console؛ ويمكن تعديل الدور والحالة هنا.</p>
         <footer class="dialog-actions">
           <button id="cancel-dialog-button" class="cancel-action" type="button">إلغاء</button>
           <button id="save-user-button" type="submit" class="primary-btn">إضافة المستخدم</button>

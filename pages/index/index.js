@@ -5,9 +5,17 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  const userBadge = document.getElementById('current-user-badge');
-  if (userBadge) {
-    userBadge.textContent = `${currentUser.fullName} • ${currentUser.role === 'admin' ? 'مدير' : currentUser.role === 'parent' ? 'ولي أمر' : currentUser.role === 'teacher' ? 'معلم' : 'طفل'}`;
+  const userName = document.getElementById('current-user-name');
+  const userRole = document.getElementById('current-user-role');
+  if (userName) userName.textContent = currentUser.fullName;
+  if (userRole) {
+    userRole.textContent = currentUser.role === 'admin'
+      ? 'مدير'
+      : currentUser.role === 'parent'
+        ? 'ولي أمر'
+        : currentUser.role === 'teacher'
+          ? 'معلم'
+          : 'طفل';
   }
 
   const logoutButton = document.getElementById('logout-button');
