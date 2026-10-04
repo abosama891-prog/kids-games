@@ -170,10 +170,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function completeLevel() {
     const result = window.KidsGames.completeGameLevel('frog', 1, 3, { currentLevel: 1, unlocked: 1 });
     starsElement.textContent = result.gameStars;
+    window.KidsGames.showLevelVictory(1, 3, result.isFirstCompletion);
     setFeedback(result.isFirstCompletion ? 'رائع! جمعت كل الحشرات وربحت ثلاث نجوم.' : 'أكملت المهمة مرة أخرى! أحسنت.');
   }
 
   function resetGame(clearCommands = true) {
+    window.KidsGames.hideLevelVictory();
     position = 0;
     eatenBugs = new Set();
     if (clearCommands) commands = [];

@@ -695,17 +695,19 @@ function winLevel() {
   });
   starsElement.textContent = result.gameStars;
   hasDrawn = false;
+  window.KidsGames.showLevelVictory(levelNumber, 3, result.isFirstCompletion);
 
   if (currentLevel < levels.length - 1) {
     nextLevelTimeout = setTimeout(() => {
       currentLevel += 1;
       loadLevel();
-    }, 1450);
+    }, 1750);
   }
 }
 
 function loadLevel() {
   clearTimeout(nextLevelTimeout);
+  window.KidsGames.hideLevelVictory();
   clearTimeout(animationTimeout);
   canvasWrap.classList.remove('draw-fail', 'draw-win');
   const level = currentLevelData();

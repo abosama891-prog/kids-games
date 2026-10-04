@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kids-games-v50';
+const CACHE_NAME = 'kids-games-v51';
 const CACHE_PREFIX = 'kids-games-';
 const APP_BASE_URL = new URL('./', self.location);
 const APP_SHELL = [

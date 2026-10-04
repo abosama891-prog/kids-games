@@ -285,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderLevel() {
+    window.KidsGames.hideLevelVictory();
     const level = levels[currentLevel];
     levelTitle.textContent = String(currentLevel + 1);
     missionTitle.textContent = '🧑‍🔧 → 🌉 → 🏠';
@@ -415,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cityLights.classList.add('lit');
     const firstCompletion = saveWin();
     setMessage(firstCompletion ? '🎉 🏙️ ✨　⭐+3' : '🎉 🏙️ ✨', 'success');
+    window.KidsGames.showLevelVictory(currentLevel + 1, 3, firstCompletion);
     runButton.hidden = true;
     nextButton.hidden = currentLevel >= levels.length - 1;
     document.querySelectorAll('.piece-button, .repeat-button').forEach(button => { button.disabled = true; });

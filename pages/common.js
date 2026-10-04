@@ -220,6 +220,51 @@
     }
   }
 
+  let victoryTimeout;
+
+  function hideLevelVictory() {
+    clearTimeout(victoryTimeout);
+    document.querySelector('.level-victory')?.remove();
+  }
+
+  function showLevelVictory(levelNumber, starsAwarded, isFirstCompletion = true) {
+    hideLevelVictory();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'level-victory';
+    overlay.setAttribute('role', 'status');
+    overlay.setAttribute('aria-live', 'assertive');
+
+    const card = document.createElement('section');
+    card.className = 'level-victory-card';
+    const title = document.createElement('h2');
+    title.textContent = 'أحسنت! فزت بالمستوى';
+    const level = document.createElement('p');
+    level.className = 'level-victory-level';
+    level.textContent = `المستوى ${levelNumber}`;
+    const stars = document.createElement('div');
+    stars.className = 'level-victory-stars';
+    stars.setAttribute('aria-label', isFirstCompletion ? `ربحت ${starsAwarded} نجوم` : 'أعدت المستوى بنجاح');
+
+    for (let index = 0; index < 3; index += 1) {
+      const star = document.createElement('span');
+      star.textContent = '★';
+      star.classList.toggle('earned', isFirstCompletion && index < starsAwarded);
+      stars.appendChild(star);
+    }
+
+    const message = document.createElement('p');
+    message.className = 'level-victory-message';
+    message.textContent = isFirstCompletion
+      ? `ربحت ${starsAwarded} ${starsAwarded === 1 ? 'نجمة' : 'نجوم'}!`
+      : 'أعدت المستوى بنجاح!';
+
+    card.append(title, level, stars, message);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    victoryTimeout = window.setTimeout(hideLevelVictory, 1500);
+  }
+
   function goBack(fallbackUrl) {
     const referrer = document.referrer;
     if (referrer.startsWith(`${window.location.origin}/`) && referrer !== window.location.href) {
@@ -248,6 +293,8 @@
     getLessonSettings,
     saveLessonSettings,
     renderGameHeader,
+    showLevelVictory,
+    hideLevelVictory,
     goBack
   };
 

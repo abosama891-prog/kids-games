@@ -522,7 +522,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('successMessage').textContent = 'يا سلام! رجعت الألوان!';
     $('starMessage').textContent = isFirstCompletion ? `+${score} نجوم!` : 'أحسنتِ!';
     $('nextLevelButton').textContent = levelIndex === levelData.length - 1 ? 'من جديد' : 'التالي';
-    successPanel.hidden = false;
+    successPanel.hidden = true;
+    window.KidsGames.showLevelVictory(levelIndex + 1, score, isFirstCompletion);
     setFeedback('وصلتِ!', 'success');
     renderLevels();
   }

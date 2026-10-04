@@ -281,17 +281,19 @@ function winLevel() {
   window.KidsGames.saveProgress(nextProgress);
   starsElement.textContent = result.gameStars;
   window.KidsGames.renderGameHeader('maze', currentLevel + 1);
+  window.KidsGames.showLevelVictory(levelNumber, 3, result.isFirstCompletion);
   if (currentLevel < levels.length - 1) {
     setTimeout(() => {
       currentLevel += 1;
       resetLevel();
-    }, 1700);
+    }, 1900);
   } else {
     setFeedback('');
   }
 }
 
 function resetLevel() {
+  window.KidsGames.hideLevelVictory();
   clearTimeout(boardAnimationTimeout);
   boardWrapElement.classList.remove('maze-fail', 'maze-win');
   const board = levels[currentLevel].board;

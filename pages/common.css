@@ -95,6 +95,81 @@ button, input {
   box-shadow: var(--shadow);
 }
 
+.level-victory {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(20, 54, 49, 0.68);
+  animation: victory-fade-in 180ms ease-out both;
+}
+
+.level-victory-card {
+  width: min(390px, 100%);
+  padding: 28px 24px;
+  border: 4px solid #f4c34f;
+  border-radius: 28px;
+  background: #fffefa;
+  color: #204b45;
+  text-align: center;
+  box-shadow: 0 22px 60px rgba(10, 34, 30, 0.3);
+  animation: victory-pop-in 300ms cubic-bezier(.2, .9, .3, 1.2) both;
+}
+
+.level-victory-card h2 {
+  font-size: clamp(1.5rem, 6vw, 2rem);
+}
+
+.level-victory-level,
+.level-victory-message {
+  margin-top: 8px;
+  font-weight: 800;
+}
+
+.level-victory-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px 0 4px;
+  color: #d9dfdb;
+  font-size: clamp(2.5rem, 12vw, 3.5rem);
+  line-height: 1;
+}
+
+.level-victory-stars .earned {
+  color: #f4b92e;
+  text-shadow: 0 4px 0 #db9820;
+  animation: victory-star-pop 420ms ease-out both;
+}
+
+.level-victory-stars .earned:nth-child(2) { animation-delay: 90ms; }
+.level-victory-stars .earned:nth-child(3) { animation-delay: 180ms; }
+
+@keyframes victory-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes victory-pop-in {
+  from { opacity: 0; transform: scale(.82) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes victory-star-pop {
+  from { opacity: 0; transform: scale(.3) rotate(-25deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .level-victory,
+  .level-victory-card,
+  .level-victory-stars .earned {
+    animation: none;
+  }
+}
+
 .hidden {
   display: none !important;
 }

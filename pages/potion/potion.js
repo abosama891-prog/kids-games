@@ -251,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
       unlocked: Math.max(Number(saved.unlocked) || 1, nextLevel)
     });
     starsElement.textContent = String(award.gameStars);
+    window.KidsGames.showLevelVictory(levelIndex + 1, 3, award.isFirstCompletion);
 
     flowPath.querySelectorAll('.pipe-guide').forEach(path => path.classList.add('flowing'));
     announce('اكتمل تدفق السائل ووصل إلى المرجل.', 'success');
@@ -258,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (levelIndex < levels.length - 1) {
       isBrewing = true;
       setControlsDisabled(true);
-      await wait(1400);
+      await wait(1900);
       levelIndex += 1;
       placedPipes = Array(5).fill(null);
       selectedSlot = 0;
@@ -276,6 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resetLab() {
     if (isBrewing) return;
+    window.KidsGames.hideLevelVictory();
     placedPipes = Array(5).fill(null);
     selectedSlot = 0;
     selectedPipe = null;
@@ -299,6 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
   headerNextButton.addEventListener('click', () => {
     const latest = window.KidsGames.readProgress();
     if (isBrewing || levelIndex + 1 >= window.KidsGames.getUnlockedLevel('potion', latest)) return;
+    window.KidsGames.hideLevelVictory();
     levelIndex += 1;
     placedPipes = Array(5).fill(null);
     selectedSlot = 0;
