@@ -50,6 +50,7 @@ body {
 .game-maze { --game-accent: #4285a8; }
 .game-draw { --game-accent: #d58b37; }
 .game-gas { --game-accent: #e47645; }
+.game-robot { --game-accent: #e47765; }
 
 .game-icon {
   display: grid;
@@ -57,7 +58,7 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--game-accent) 14%, white);
+  background: color-mix(in srgb, var(--game-accent, #4285a8) 14%, white);
   font-size: 2rem;
 }
 
@@ -90,7 +91,7 @@ body {
 .game-progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: var(--game-accent);
+  background: var(--game-accent, #4285a8);
 }
 
 .launch-game {
@@ -99,7 +100,7 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--game-accent);
+  background: var(--game-accent, #e47645);
   color: #fff;
   font-size: 1.2rem;
   text-decoration: none;

@@ -1,45 +1,88 @@
 document.addEventListener('DOMContentLoaded', () => {
   const levels = [
     {
-      title: '1', concept: 'التسلسل', icon: '🧩', color: 'blue', colorName: 'أزرق',
-      hint: '🏭 → ━ → ┗ → ━ → 🏠',
-      route: ['straight', 'elbow', 'straight']
+      title: '1', concept: 'ترتيب الخطوات', ageBand: 'مبتدئ · مناسب للأعمار 6–8', icon: '🌉', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'ضع سطح الجسر ثم منحدر الصعود ثم أكمل السطح.',
+      route: ['deck', 'ramp', 'deck']
     },
     {
-      title: '2', concept: 'ترتيب الأوامر', icon: '🧭', color: 'green', colorName: 'أخضر',
-      hint: '🏭 → ┗ → ━ → ━ → ┗ → 🏠',
-      route: ['elbow', 'straight', 'straight', 'elbow']
+      title: '2', concept: 'دعائم الجسر', ageBand: 'مبتدئ · مناسب للأعمار 6–8', icon: '🪵', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'ابنِ المنحدر والسطح، ولا تنسَ وضع دعامة تحت الجسر.',
+      route: ['ramp', 'deck', 'support', 'deck', 'ramp']
     },
     {
-      title: '3', concept: 'الحلقات التكرارية', icon: '🔁', color: 'blue', colorName: 'أزرق',
-      hint: '🔁 ×5　━　→　🏠',
-      route: ['straight', 'straight', 'straight', 'straight', 'straight', 'elbow'],
+      title: '3', concept: 'التكرار', ageBand: 'مبتدئ · مناسب للأعمار 6–8', icon: '🔁', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'كرّر وضع ألواح الجسر بدل إضافة كل لوح وحده.',
+      route: ['deck', 'deck', 'deck', 'deck', 'deck', 'ramp'],
       requireLoop: true
     },
     {
-      title: '4', concept: 'الشرط If / Else', icon: '🔀', color: 'red', colorName: 'أحمر',
-      hint: '🔴 ? ⬆️　:　⬇️',
-      route: ['straight', 'elbow', 'straight'],
+      title: '4', concept: 'الشرط إذا', ageBand: 'متوسط · مناسب للأعمار 9–11', icon: '🔀', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'إذا كان النهر هادئًا ابنِ جسرًا؛ وإذا ارتفع استخدم المعدّية.',
+      conditionalRoutes: {
+        calm: ['deck', 'ramp', 'deck'],
+        high: ['ferry']
+      },
       requireCondition: true
     },
     {
-      title: '5', concept: 'وإلا Else', icon: '🔀', color: 'blue', colorName: 'أزرق',
-      hint: '🔵 ? ⬆️　:　⬇️',
-      route: ['elbow', 'straight', 'straight', 'straight'],
+      title: '5', concept: 'إذا وإلا', ageBand: 'متوسط · مناسب للأعمار 9–11', icon: '⛴️', riverState: 'high', riverLabel: 'النهر مرتفع',
+      hint: 'اختبر شرط ارتفاع الماء: اختر المعدّية عند ارتفاعه، وإلا ابنِ جسرًا.',
+      conditionalRoutes: {
+        calm: ['deck', 'support', 'deck', 'ramp'],
+        high: ['ferry']
+      },
       requireCondition: true
     },
     {
-      title: '6', concept: 'اكتشاف الأخطاء', icon: '🪛', color: 'red', colorName: 'أحمر',
-      hint: '💧　🔍　🛠️',
-      route: ['straight', 'elbow', 'straight', 'straight'],
-      requireLoop: true,
-      requireCondition: true,
+      title: '6', concept: 'اكتشاف الخطأ', ageBand: 'متوسط · مناسب للأعمار 9–11', icon: '🪛', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'هناك قطعة غير مناسبة في الجسر. اكتشفها واستبدلها.',
+      route: ['deck', 'ramp', 'deck', 'deck'],
       starterProgram: [
-        { type: 'pipe', shape: 'straight', repeat: 1 },
-        { type: 'pipe', shape: 'straight', repeat: 1 },
-        { type: 'pipe', shape: 'straight', repeat: 2 },
-        { type: 'ifElse' }
+        { type: 'piece', shape: 'deck', repeat: 1 },
+        { type: 'piece', shape: 'ramp', repeat: 1 },
+        { type: 'piece', shape: 'deck', repeat: 1 },
+        { type: 'piece', shape: 'ramp', repeat: 1 }
       ]
+    },
+    {
+      title: '7', concept: 'شرط مع تكرار', ageBand: 'متقدم · مناسب للأعمار 12–15', icon: '🧠', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'اختر الجسر أو المعدّية حسب حالة النهر، وكرّر خطوات البناء.',
+      conditionalRoutes: {
+        calm: ['deck', 'deck', 'deck', 'deck', 'deck', 'ramp'],
+        high: ['ferry', 'ferry']
+      },
+      requireLoop: true,
+      requireCondition: true
+    },
+    {
+      title: '8', concept: 'كتابة برنامج أقصر', ageBand: 'متقدم · مناسب للأعمار 12–15', icon: '⚡', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'ابنِ الجسر بأمرين فقط: كرّر الألواح ثم أضف منحدرًا.',
+      route: ['deck', 'deck', 'deck', 'deck', 'ramp'],
+      requireLoop: true,
+      maxInstructions: 2
+    },
+    {
+      title: '9', concept: 'تصحيح برنامج متكرر', ageBand: 'متقدم · مناسب للأعمار 12–15', icon: '🛠️', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'أصلح آخر قطعة في الجسر مع الاحتفاظ بالألواح المتكررة.',
+      route: ['deck', 'ramp', 'deck', 'deck', 'ramp'],
+      requireLoop: true,
+      starterProgram: [
+        { type: 'piece', shape: 'deck', repeat: 1 },
+        { type: 'piece', shape: 'ramp', repeat: 1 },
+        { type: 'piece', shape: 'deck', repeat: 2 },
+        { type: 'piece', shape: 'deck', repeat: 1 }
+      ]
+    },
+    {
+      title: '10', concept: 'مهمة إنقاذ المدينة', ageBand: 'متقدم · مناسب للأعمار 12–15', icon: '🏙️', riverState: 'calm', riverLabel: 'النهر هادئ',
+      hint: 'اختر شرط العبور، واستخدم الدعامات والتكرار لإنقاذ المدينة.',
+      conditionalRoutes: {
+        calm: ['deck', 'deck', 'support', 'ramp', 'deck', 'deck', 'deck'],
+        high: ['ferry', 'ferry']
+      },
+      requireLoop: true,
+      requireCondition: true
     }
   ];
 
@@ -47,19 +90,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const levelTitle = document.getElementById('level-title');
   const missionTitle = document.getElementById('mission-title');
   const conceptLabel = document.getElementById('concept-label');
+  const challengeBand = document.getElementById('challenge-band');
   const levelIcon = document.getElementById('level-icon');
   const levelHint = document.getElementById('level-hint');
   const gasColor = document.getElementById('gas-color');
   const pipeTrack = document.getElementById('pipe-track');
+  const cityScene = document.querySelector('.city-scene');
   const programList = document.getElementById('program-list');
   const message = document.getElementById('mascot-message');
   const messageText = message.querySelector('p');
   const runButton = document.getElementById('run-button');
   const resetButton = document.getElementById('reset-button');
   const nextButton = document.getElementById('next-button');
+  const headerNextButton = document.getElementById('headerNextButton');
   const ifElseButton = document.getElementById('if-else-button');
   const repeatCount = document.getElementById('repeat-count');
   const homeStation = document.getElementById('home-station');
+  const crossingTraveler = document.getElementById('crossing-traveler');
   const cityLights = document.querySelector('.city-lights');
   const branchDiagram = document.getElementById('branch-diagram');
   const upperBranch = document.getElementById('upper-branch');
@@ -68,10 +115,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const levelCount = document.getElementById('level-count');
   let progress = window.KidsGames.readProgress();
   let gasProgress = progress.gas || { currentLevel: 1, unlocked: 1, completed: [] };
-  let currentLevel = Math.max(0, Math.min((gasProgress.currentLevel || 1) - 1, levels.length - 1));
+  let currentLevel = Math.max(0, Math.min(
+    (gasProgress.currentLevel || 1) - 1,
+    window.KidsGames.getUnlockedLevel('gas', progress) - 1,
+    levels.length - 1
+  ));
   let program = [];
   let isRunning = false;
   let isComplete = false;
+  let mouseDrag = null;
+  let touchDrag = null;
+  let suppressPieceClick = false;
 
   function setMessage(text, state = '') {
     messageText.textContent = text;
@@ -81,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function getExpandedRoute() {
     const pieces = [];
     program.forEach((instruction, tokenIndex) => {
-      if (instruction.type !== 'pipe') return;
+      if (instruction.type !== 'piece') return;
       for (let count = 0; count < instruction.repeat; count += 1) {
         pieces.push({ shape: instruction.shape, tokenIndex, repeat: instruction.repeat });
       }
@@ -96,41 +150,34 @@ document.addEventListener('DOMContentLoaded', () => {
       button.className = 'level-tab';
       button.type = 'button';
       button.textContent = String(index + 1);
-      button.setAttribute('aria-label', `المستوى ${index + 1}`);
-      button.disabled = index + 1 > gasProgress.unlocked;
+      button.setAttribute('aria-label', `المستوى ${index + 1}: ${level.concept}`);
+      button.disabled = index + 1 > window.KidsGames.getUnlockedLevel('gas');
       if (index === currentLevel) button.setAttribute('aria-current', 'step');
       button.addEventListener('click', () => selectLevel(index));
       levelList.appendChild(button);
     });
   }
 
-  function createPipeGraphic(shape, color, id) {
+  function createCrossingPieceGraphic(shape, index) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    const baseId = `pipe-${currentLevel}-${id}`;
-    const path = shape === 'straight' ? 'M 8 32 H 88' : 'M 22 7 V 32 Q 22 48 38 48 H 89';
+    const baseId = `crossing-${currentLevel}-${index}`;
     svg.setAttribute('viewBox', '0 0 96 64');
     svg.setAttribute('aria-hidden', 'true');
+    const graphics = {
+      deck: '<path d="M5 29h86v20H5z" fill="url(#' + baseId + '-wood-side)" stroke="#543b2a" stroke-width="3"/><path d="M7 24h82v8H7z" fill="url(#' + baseId + '-wood)" stroke="#6d492e" stroke-width="2"/><path d="M12 25v6m12-6v6m12-6v6m12-6v6m12-6v6m12-6v6m12-6v6" stroke="#f0c98e" stroke-width="1.5" opacity=".75"/><path d="M12 37h72M12 43h72" stroke="#d4a16c" stroke-width="1.5" opacity=".72"/><path d="M17 24v-5m62 5v-5" stroke="#485960" stroke-width="3"/><circle cx="17" cy="19" r="2" fill="#d9e0dd"/><circle cx="79" cy="19" r="2" fill="#d9e0dd"/>',
+      ramp: '<path d="M5 49h31l27-29h28v18H70L43 57H5z" fill="url(#' + baseId + '-wood-side)" stroke="#543b2a" stroke-width="3" stroke-linejoin="round"/><path d="M8 44h29l26-28h25v7H67L40 51H8z" fill="url(#' + baseId + '-wood)" stroke="#6d492e" stroke-width="2" stroke-linejoin="round"/><path d="m15 43 20 0m26-22h18M45 44l14-15" stroke="#edc38a" stroke-width="1.5"/><path d="M22 51 30 43m20-1 8-9m13-15h8" stroke="#59402d" stroke-width="2"/>',
+      support: '<path d="M8 23h80v10H8z" fill="url(#' + baseId + '-wood)" stroke="#5a3e2b" stroke-width="2"/><path d="M33 32h30l7 27H26z" fill="url(#' + baseId + '-concrete)" stroke="#59666a" stroke-width="3"/><path d="M20 59h56M38 36l-5 18m23-18 5 18" stroke="#899598" stroke-width="2"/><path d="M5 60q12-6 24 0t24 0 24 0 19 0" fill="none" stroke="#77b9c5" stroke-width="3"/><path d="M14 26v4m13-4v4m42-4v4m13-4v4" stroke="#edc38a" stroke-width="1.5"/>',
+      ferry: '<path d="M9 38h78L75 53H24z" fill="url(#' + baseId + '-hull)" stroke="#354a52" stroke-width="3" stroke-linejoin="round"/><path d="M19 43h57M29 49h40" stroke="#f2b985" stroke-width="1.5" opacity=".75"/><path d="M32 18h35v20H32z" fill="url(#' + baseId + '-cabin)" stroke="#5c5546" stroke-width="3"/><path d="M27 17h45v5H27z" fill="#ded5bd" stroke="#5c5546" stroke-width="2"/><path d="M37 23h10v9H37zm15 0h10v9H52z" fill="#9ed4de" stroke="#506b70" stroke-width="1.5"/><path d="M5 58q11-7 22 0t22 0 22 0 22 0" fill="none" stroke="#63a9bd" stroke-width="3"/><path d="m16 61 8-2m31 2 9-2m17 2 7-2" stroke="#d3edf0" stroke-width="1.5"/>'
+    };
     svg.innerHTML = `
       <defs>
-        <linearGradient id="${baseId}-metal" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#f7fbfc"/><stop offset=".24" stop-color="#c8d2d6"/>
-          <stop offset=".58" stop-color="#8e9ba1"/><stop offset=".82" stop-color="#dbe3e6"/>
-          <stop offset="1" stop-color="#718087"/>
-        </linearGradient>
-        <linearGradient id="${baseId}-collar" x1="0" y1="0" x2="1" y2="0">
-          <stop stop-color="#66747a"/><stop offset=".35" stop-color="#eef3f4"/>
-          <stop offset=".65" stop-color="#a4b0b5"/><stop offset="1" stop-color="#536168"/>
-        </linearGradient>
+        <linearGradient id="${baseId}-wood" x2="0" y2="1"><stop stop-color="#d29a5d"/><stop offset=".45" stop-color="#a96d3e"/><stop offset="1" stop-color="#80502f"/></linearGradient>
+        <linearGradient id="${baseId}-wood-side" x2="0" y2="1"><stop stop-color="#a56c40"/><stop offset="1" stop-color="#65432c"/></linearGradient>
+        <linearGradient id="${baseId}-concrete" x2="1" y2="0"><stop stop-color="#939b99"/><stop offset=".48" stop-color="#d0d0c7"/><stop offset="1" stop-color="#858f8e"/></linearGradient>
+        <linearGradient id="${baseId}-hull" x2="0" y2="1"><stop stop-color="#efab67"/><stop offset=".5" stop-color="#c7603d"/><stop offset="1" stop-color="#763d32"/></linearGradient>
+        <linearGradient id="${baseId}-cabin" x2="0" y2="1"><stop stop-color="#f4dfac"/><stop offset="1" stop-color="#c9a66e"/></linearGradient>
       </defs>
-      <path d="${path}" fill="none" stroke="#526168" stroke-width="29" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="${path}" fill="none" stroke="url(#${baseId}-metal)" stroke-width="23" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="${path}" fill="none" stroke="${color}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>
-      <path d="${shape === 'straight' ? 'M 11 23 H 85' : 'M 17 10 V 32 Q 17 44 35 44 H 84'}" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".82"/>
-      ${shape === 'straight'
-        ? `<rect x="23" y="18" width="8" height="28" rx="2" fill="url(#${baseId}-collar)"/><rect x="65" y="18" width="8" height="28" rx="2" fill="url(#${baseId}-collar)"/>`
-        : `<rect x="14" y="18" width="16" height="8" rx="2" fill="url(#${baseId}-collar)"/><rect x="56" y="38" width="8" height="16" rx="2" fill="url(#${baseId}-collar)"/>`}
-      <circle cx="${shape === 'straight' ? '8' : '22'}" cy="${shape === 'straight' ? '32' : '7'}" r="4" fill="#e8eef0" stroke="#65747a" stroke-width="2"/>
-      <circle cx="89" cy="${shape === 'straight' ? '32' : '48'}" r="4" fill="#e8eef0" stroke="#65747a" stroke-width="2"/>
+      ${graphics[shape] || graphics.deck}
     `;
     return svg;
   }
@@ -138,15 +185,20 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderPipeTrack(leakAt = -1) {
     pipeTrack.replaceChildren();
     const route = getExpandedRoute();
-    const visiblePieces = route.length ? route : [{ empty: true }];
-    const gasColors = { red: '#e2534d', blue: '#369bd2', green: '#3aa675' };
-    visiblePieces.slice(0, 8).forEach((piece, index) => {
+    const level = levels[currentLevel];
+    const expectedRoute = level.conditionalRoutes?.[level.riverState] || level.route;
+    const slotCount = Math.max(1, route.length, expectedRoute.length);
+    const slotWidth = Math.min(160, cityScene.clientWidth * 0.58 / slotCount);
+    pipeTrack.style.setProperty('--crossing-slot-width', `${slotWidth}px`);
+    Array.from({ length: Math.min(slotCount, 8) }, (_, index) => route[index] || { empty: true }).forEach((piece, index) => {
       const node = document.createElement('span');
       node.className = `pipe-piece${piece.empty ? ' empty' : ''}${piece.repeat > 1 ? ' looped' : ''}${index === leakAt ? ' leaking' : ''}`;
-      node.appendChild(createPipeGraphic(piece.shape || 'straight', piece.empty ? '#a9b5b9' : gasColors[levels[currentLevel].color], index));
+      const shape = piece.shape || 'deck';
+      node.appendChild(createCrossingPieceGraphic(shape, index));
       if (piece.repeat > 1) node.dataset.repeat = `×${piece.repeat}`;
-      node.style.setProperty('--pipe-color', `var(--gas-${levels[currentLevel].color})`);
-      node.setAttribute('aria-label', piece.empty ? 'أنبوب فارغ' : `${piece.shape === 'straight' ? 'مستقيم' : 'منحني'}${piece.repeat > 1 ? `، مكرر ${piece.repeat} مرات` : ''}`);
+      node.style.setProperty('--pipe-color', levels[currentLevel].riverState === 'high' ? '#398ca5' : '#4ba27b');
+      const pieceName = { deck: 'سطح جسر', ramp: 'منحدر', support: 'دعامة', ferry: 'معدّية' }[shape];
+      node.setAttribute('aria-label', piece.empty ? `خانة بناء فارغة ${index + 1}` : `${pieceName}${piece.repeat > 1 ? `، مكرر ${piece.repeat} مرات` : ''}`);
       pipeTrack.appendChild(node);
     });
     if (route.length > 8) {
@@ -162,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!program.length) {
       const empty = document.createElement('span');
       empty.className = 'program-empty';
-      empty.textContent = '🏭　·　·　·　🏠';
+      empty.textContent = '🧑‍🔧　·　·　·　🏠';
       programList.appendChild(empty);
     }
 
@@ -172,12 +224,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const icon = document.createElement('span');
       icon.className = 'token-icon';
       icon.setAttribute('aria-hidden', 'true');
-      icon.textContent = instruction.type === 'ifElse' ? '🔀' : instruction.shape === 'straight' ? '━' : '┗';
+      const pieceIcons = { deck: '🪵', ramp: '↗️', support: '🏗️', ferry: '⛴️' };
+      icon.textContent = instruction.type === 'ifElse' ? '🔀' : pieceIcons[instruction.shape];
       const label = document.createElement('span');
       label.className = 'visually-hidden';
       label.textContent = instruction.type === 'ifElse'
-        ? 'إذا أحمر / وإلا'
-        : `${instruction.repeat > 1 ? `كرر ${instruction.repeat} مرات: ` : ''}${instruction.shape === 'straight' ? 'مستقيم' : 'منحني'}`;
+        ? 'إذا كان النهر هادئًا / وإلا'
+        : `${instruction.repeat > 1 ? `كرر ${instruction.repeat} مرات: ` : ''}${{ deck: 'سطح جسر', ramp: 'منحدر', support: 'دعامة', ferry: 'معدّية' }[instruction.shape]}`;
       const remove = document.createElement('button');
       remove.className = 'remove-token';
       remove.type = 'button';
@@ -199,27 +252,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const level = levels[currentLevel];
     const hasCondition = program.some(instruction => instruction.type === 'ifElse');
     branchDiagram.hidden = !level.requireCondition;
-    upperBranch.classList.toggle('active', hasCondition && level.color === 'red');
-    lowerBranch.classList.toggle('active', hasCondition && level.color !== 'red');
+    upperBranch.classList.toggle('active', hasCondition && level.riverState === 'calm');
+    lowerBranch.classList.toggle('active', hasCondition && level.riverState === 'high');
     ifElseButton.disabled = !level.requireCondition || isRunning || hasCondition;
   }
 
   function renderLevel() {
     const level = levels[currentLevel];
     levelTitle.textContent = String(currentLevel + 1);
-    missionTitle.textContent = '🏭 → 🏠';
+    missionTitle.textContent = '🧑‍🔧 → 🌉 → 🏠';
     conceptLabel.textContent = level.concept;
+    challengeBand.textContent = level.ageBand;
     levelIcon.textContent = level.icon;
     levelHint.textContent = level.hint;
-    gasColor.className = `gas-color ${level.color}`;
-    gasColor.querySelector('span').textContent = `غاز ${level.colorName}`;
-    levelCount.textContent = `${currentLevel + 1} / ${levels.length}`;
-    starsElement.textContent = progress.stars || 0;
+    gasColor.className = `gas-color ${level.riverState}`;
+    gasColor.querySelector('span').textContent = level.riverLabel;
+    levelCount.textContent = String(currentLevel + 1);
+    starsElement.textContent = gasProgress.stars || 0;
+    window.KidsGames.renderGameHeader('gas', currentLevel + 1);
     repeatCount.value = '1';
     document.querySelectorAll('.repeat-button').forEach(button => button.setAttribute('aria-pressed', 'false'));
     program = level.starterProgram ? level.starterProgram.map(item => ({ ...item })) : [];
     isComplete = false;
     homeStation.classList.remove('lit');
+    crossingTraveler.classList.remove('crossing', 'arrived');
     cityLights.classList.remove('lit');
     nextButton.hidden = true;
     runButton.hidden = false;
@@ -227,34 +283,65 @@ document.addEventListener('DOMContentLoaded', () => {
     resetButton.disabled = false;
     document.querySelectorAll('.piece-button, .repeat-button').forEach(button => { button.disabled = false; });
     repeatCount.disabled = false;
-    setMessage(level.concept === 'اكتشاف الأخطاء' ? '🧑‍🔧💧🔍' : '🏭 ➜ 🏠');
+    setMessage(`🧑‍🔧　${level.concept}　➜　🏠`);
     renderLevels();
     renderProgram();
   }
 
   function selectLevel(index) {
-    if (index + 1 > gasProgress.unlocked || isRunning) return;
+    if (index + 1 > window.KidsGames.getUnlockedLevel('gas') || isRunning) return;
     currentLevel = index;
     renderLevel();
   }
 
-  function addPipe(shape) {
+  function addCrossingPiece(shape) {
     if (isRunning || isComplete) return;
-    program.push({ type: 'pipe', shape, repeat: Number(repeatCount.value) || 1 });
+    program.push({ type: 'piece', shape, repeat: Number(repeatCount.value) || 1 });
     repeatCount.value = '1';
     document.querySelectorAll('.repeat-button').forEach(button => button.setAttribute('aria-pressed', 'false'));
     renderProgram();
   }
 
+  function createPieceDrag(button, shape, pointerId, clientX, clientY) {
+    return { button, shape, pointerId, startX: clientX, startY: clientY, moved: false, ghost: null };
+  }
+
+  function movePieceDrag(drag, event) {
+    if (!drag.moved && Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 8) {
+      drag.moved = true;
+      drag.ghost = drag.button.cloneNode(true);
+      drag.ghost.classList.add('piece-drag-ghost');
+      document.body.appendChild(drag.ghost);
+    }
+    if (!drag.moved) return;
+    event.preventDefault();
+    drag.ghost.style.left = `${event.clientX}px`;
+    drag.ghost.style.top = `${event.clientY}px`;
+    pipeTrack.classList.toggle('drop-target', Boolean(document.elementFromPoint(event.clientX, event.clientY)?.closest('#pipe-track')));
+  }
+
+  function finishPieceDrag(drag, event) {
+    if (!drag.moved) return;
+    event.preventDefault();
+    drag.ghost.remove();
+    pipeTrack.classList.remove('drop-target');
+    suppressPieceClick = true;
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    if (target?.closest('#pipe-track')) addCrossingPiece(drag.shape);
+    else setMessage('أفلت القطعة داخل خانات الجسر فوق النهر.', 'error');
+    window.setTimeout(() => { suppressPieceClick = false; }, 0);
+  }
+
   function addConditional() {
     if (isRunning || isComplete || !levels[currentLevel].requireCondition) return;
     if (program.some(instruction => instruction.type === 'ifElse')) return;
-    program.push({ type: 'ifElse' });
+    program.unshift({ type: 'ifElse' });
     renderProgram();
   }
 
   function firstErrorIndex(route) {
-    const expected = levels[currentLevel].route;
+    const level = levels[currentLevel];
+    const expected = level.conditionalRoutes?.[level.riverState] || level.route;
     const length = Math.min(route.length, expected.length);
     for (let index = 0; index < length; index += 1) {
       if (route[index].shape !== expected[index]) return index;
@@ -273,31 +360,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function saveWin() {
-    const wasCompleted = gasProgress.completed.includes(currentLevel + 1);
-    const completed = [...new Set([...gasProgress.completed, currentLevel + 1])].sort((a, b) => a - b);
-    const nextUnlocked = Math.max(gasProgress.unlocked || 1, Math.min(levels.length, currentLevel + 2));
-    gasProgress = {
-      ...gasProgress,
-      completed,
+    const nextUnlocked = Math.max(window.KidsGames.getUnlockedLevel('gas'), Math.min(levels.length, currentLevel + 2));
+    const result = window.KidsGames.completeGameLevel('gas', currentLevel + 1, 3, {
       currentLevel: Math.min(levels.length, currentLevel + 2),
       unlocked: nextUnlocked
-    };
-    progress = {
-      ...progress,
-      stars: (Number(progress.stars) || 0) + (wasCompleted ? 0 : 3),
-      gas: gasProgress
-    };
+    });
+    progress = result.progress;
+    gasProgress = result.gameProgress;
     window.KidsGames.saveProgress(progress);
-    starsElement.textContent = progress.stars;
+    starsElement.textContent = gasProgress.stars;
+    window.KidsGames.renderGameHeader('gas', currentLevel + 1);
     renderLevels();
+    return result.isFirstCompletion;
   }
 
   function finishLevel() {
     isComplete = true;
     homeStation.classList.add('lit');
     cityLights.classList.add('lit');
-    saveWin();
-    setMessage('🎉 🏙️ ✨　⭐+3', 'success');
+    const firstCompletion = saveWin();
+    setMessage(firstCompletion ? '🎉 🏙️ ✨　⭐+3' : '🎉 🏙️ ✨', 'success');
     runButton.hidden = true;
     nextButton.hidden = currentLevel >= levels.length - 1;
     document.querySelectorAll('.piece-button, .repeat-button').forEach(button => { button.disabled = true; });
@@ -313,12 +395,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const level = levels[currentLevel];
     const route = getExpandedRoute();
-    if (level.requireLoop && !program.some(instruction => instruction.type === 'pipe' && instruction.repeat > 1)) {
-      setMessage('🔁 ×2　+', 'error');
+    if (level.requireLoop && !program.some(instruction => instruction.type === 'piece' && instruction.repeat > 1)) {
+      setMessage('اختر زر التكرار قبل إضافة قطعة بناء.', 'error');
       return;
     }
     if (level.requireCondition && !program.some(instruction => instruction.type === 'ifElse')) {
-      setMessage('🔀 🔴⬆️　🔵⬇️', 'error');
+      setMessage('أضف شرط النهر ليختار بين بناء الجسر واستخدام المعدّية.', 'error');
+      return;
+    }
+    if (level.maxInstructions && program.length > level.maxInstructions) {
+      setMessage(`التحدي يحتاج ${level.maxInstructions} أوامر فقط. استخدم التكرار لاختصار البرنامج.`, 'error');
       return;
     }
 
@@ -328,26 +414,69 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.piece-button, .repeat-button').forEach(button => { button.disabled = true; });
     repeatCount.disabled = true;
     homeStation.classList.remove('lit');
+    crossingTraveler.classList.remove('crossing', 'arrived');
     cityLights.classList.remove('lit');
-    setMessage('🧑‍🔧　💨 ➜ 🏠');
+    setMessage('يجري اختبار الجسر والمعدّية...');
     renderPipeTrack();
 
-    for (let index = 0; index < Math.max(route.length, level.route.length); index += 1) {
+    const expectedRoute = level.conditionalRoutes?.[level.riverState] || level.route;
+    for (let index = 0; index < Math.max(route.length, expectedRoute.length); index += 1) {
       await new Promise(resolve => setTimeout(resolve, 260));
-      if (!route[index] || route[index].shape !== level.route[index]) {
-        animateLeaking(index, `💧　#${index + 1}　🔧`);
+      if (!route[index] || route[index].shape !== expectedRoute[index]) {
+        animateLeaking(index, `المعبر غير مكتمل عند القطعة ${index + 1}. راجع ترتيبها أو عدد التكرار.`);
         return;
       }
       pipeTrack.children[index]?.classList.add('flowing');
     }
 
-    await new Promise(resolve => setTimeout(resolve, 350));
+    setMessage('الجسر جاهز! تعبر الشاحنة الآن إلى الهدف...');
+    crossingTraveler.classList.add('crossing');
+    await new Promise(resolve => setTimeout(resolve, 1700));
+    crossingTraveler.classList.add('arrived');
     isRunning = false;
     finishLevel();
   }
 
   document.querySelectorAll('[data-piece]').forEach(button => {
-    button.addEventListener('click', () => addPipe(button.dataset.piece));
+    button.draggable = false;
+    button.addEventListener('click', () => {
+      if (suppressPieceClick) {
+        suppressPieceClick = false;
+        return;
+      }
+      addCrossingPiece(button.dataset.piece);
+    });
+    button.addEventListener('mousedown', event => {
+      if (event.button !== 0 || isRunning || isComplete) return;
+      mouseDrag = createPieceDrag(button, button.dataset.piece, null, event.clientX, event.clientY);
+    });
+    button.addEventListener('pointerdown', event => {
+      if (event.pointerType === 'mouse' || isRunning || isComplete) return;
+      touchDrag = createPieceDrag(button, button.dataset.piece, event.pointerId, event.clientX, event.clientY);
+    });
+  });
+
+  document.addEventListener('mousemove', event => {
+    if (mouseDrag) movePieceDrag(mouseDrag, event);
+  });
+  document.addEventListener('mouseup', event => {
+    if (!mouseDrag) return;
+    finishPieceDrag(mouseDrag, event);
+    mouseDrag = null;
+  });
+  document.addEventListener('pointermove', event => {
+    if (touchDrag && touchDrag.pointerId === event.pointerId) movePieceDrag(touchDrag, event);
+  }, { passive: false });
+  document.addEventListener('pointerup', event => {
+    if (!touchDrag || touchDrag.pointerId !== event.pointerId) return;
+    finishPieceDrag(touchDrag, event);
+    touchDrag = null;
+  });
+  document.addEventListener('pointercancel', event => {
+    if (!touchDrag || touchDrag.pointerId !== event.pointerId) return;
+    touchDrag.ghost?.remove();
+    touchDrag = null;
+    pipeTrack.classList.remove('drop-target');
   });
 
   ifElseButton.addEventListener('click', addConditional);
@@ -390,8 +519,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   resetButton.addEventListener('click', renderLevel);
   nextButton.addEventListener('click', () => {
-    if (currentLevel < levels.length - 1 && currentLevel + 2 <= gasProgress.unlocked) selectLevel(currentLevel + 1);
+    if (currentLevel < levels.length - 1 && currentLevel + 2 <= window.KidsGames.getUnlockedLevel('gas')) selectLevel(currentLevel + 1);
   });
+  headerNextButton.addEventListener('click', () => nextButton.click());
 
   renderLevel();
 });

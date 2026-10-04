@@ -305,6 +305,129 @@ canvas {
   text-align: center;
 }
 
+.draw-app .game-heading {
+  margin-bottom: 12px;
+}
+
+.draw-app .target-mark {
+  color: #536f5b;
+  font-size: clamp(1rem, 4vw, 1.35rem);
+  font-weight: 900;
+}
+
+.draw-app .canvas-wrap {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(8px, 2vw, 14px);
+  border: 1px solid rgba(99, 132, 91, 0.18);
+  background:
+    radial-gradient(ellipse at 10% 8%, rgba(255,255,255,0.8), transparent 42%),
+    linear-gradient(145deg, #edf4e8, #dcebd9);
+  transition: box-shadow 0.2s ease;
+}
+
+.draw-app canvas {
+  width: min(100%, 520px);
+  aspect-ratio: 1;
+  height: auto;
+  border: 2px solid #dbe7d2;
+  border-radius: 15px;
+  box-shadow: 0 8px 18px rgba(55, 80, 51, 0.13), inset 0 0 0 1px rgba(255,255,255,0.7);
+  touch-action: none;
+  user-select: none;
+  cursor: crosshair;
+}
+
+.draw-instruction {
+  margin: 6px 0 12px;
+  color: #52684e;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.draw-app .run-row {
+  gap: 22px;
+  padding-top: 6px;
+}
+
+.draw-app .run-btn {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 15px;
+  background: #f4f8f1;
+  box-shadow: 0 3px 8px rgba(55, 80, 51, 0.1);
+  font-size: 1.55rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.draw-app .run-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: #e8f2e3;
+}
+
+.draw-app .run-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.draw-app .feedback {
+  min-height: 8px;
+}
+
+.draw-app .canvas-wrap.draw-fail {
+  animation: draw-fail-shake 0.55s ease-in-out;
+}
+
+.draw-app .canvas-wrap.draw-win {
+  animation: draw-win-bounce 1.1s ease-in-out;
+  box-shadow: 0 0 30px rgba(248, 194, 60, 0.62);
+}
+
+.draw-app .canvas-wrap.draw-win::after {
+  position: absolute;
+  inset: 8%;
+  display: grid;
+  place-items: center;
+  color: #f3ac26;
+  content: "✨  ⭐  ✨";
+  font-size: clamp(1.5rem, 7vw, 3.5rem);
+  text-shadow: 0 3px 10px rgba(255,255,255,0.95);
+  pointer-events: none;
+  animation: draw-celebrate 0.8s ease-in-out 2;
+}
+
+@keyframes draw-fail-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-7px); }
+  40%, 80% { transform: translateX(7px); }
+}
+
+@keyframes draw-win-bounce {
+  0%, 100% { transform: scale(1); }
+  35% { transform: scale(1.035) rotate(-1deg); }
+  70% { transform: scale(1.02) rotate(1deg); }
+}
+
+@keyframes draw-celebrate {
+  0%, 100% { opacity: 0; transform: scale(0.65) translateY(12px); }
+  50% { opacity: 1; transform: scale(1.15) translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw-app .canvas-wrap.draw-fail,
+  .draw-app .canvas-wrap.draw-win,
+  .draw-app .canvas-wrap.draw-win::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
+
 @media (max-width: 840px) {
   .game-layout {
     grid-template-columns: 1fr;
@@ -321,14 +444,8 @@ canvas {
     padding: 16px;
   }
 
-  .cmd-btn {
-    min-width: 92px;
-    font-size: 0.96rem;
-  }
-
-  .side-actions {
-    flex-direction: column;
-  }
+  .draw-app .canvas-wrap { padding: 7px; }
+  .draw-app .run-row { gap: 15px; }
 }
 
 body {
@@ -613,7 +730,6 @@ canvas {
 
 .run-row #runButton { color: #18876c; }
 .run-row #resetButton { color: #647b71; }
-.run-row #clearButton { color: #b55d48; }
 
 .run-row .run-btn:hover {
   background: transparent;
@@ -649,4 +765,14 @@ canvas {
   .command-control:nth-child(3n) .code-popup { right: auto; left: 0; transform: translateY(-3px); }
   .command-control:nth-child(3n + 1) .code-popup.show,
   .command-control:nth-child(3n) .code-popup.show { transform: translateY(0); }
+}
+
+.topbar.game-topbar {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 420px) {
+  .topbar.game-topbar { display: flex; }
+  .topbar.game-topbar .game-identity { display: grid; }
 }

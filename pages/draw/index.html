@@ -3,23 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>مكتشف الأشكال</title>
+    <title>ارسم طريقك</title>
     <link rel="stylesheet" href="../common.css" />
     <link rel="stylesheet" href="draw.css" />
   </head>
   <body>
     <div class="app-shell draw-app">
-      <header class="topbar page-card">
-        <button class="nav-control back-control" type="button" data-go-back="../index/index.html" aria-label="رجوع">
+      <header class="topbar page-card game-topbar">
+        <button class="nav-control back-control" type="button" data-go-back="../games/index.html" aria-label="رجوع للألعاب">
           ⬅️
         </button>
         <a class="nav-control home-control" href="../index/index.html" aria-label="الرئيسية">
           🏠
         </a>
-        <div class="stat" aria-label="النجوم"><span aria-hidden="true">⭐</span><strong id="stars">0</strong></div>
-        <div class="stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="levelNum">1</strong></div>
-        <span class="game-identity" aria-hidden="true">🐱　✏️</span>
-        <button class="nav-control next-control" id="nextLevelButton" aria-label="المستوى التالي">
+        <div class="stat game-star-stat" aria-label="نجوم الرسم"><strong id="stars" data-game-stars>0</strong><span aria-hidden="true">⭐</span></div>
+        <div class="stat game-level-stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="levelNum" data-game-level>1</strong></div>
+        <span class="game-identity" aria-hidden="true">🐱</span>
+        <span class="game-mark" aria-label="لعبة الرسم">✏️</span>
+        <button class="nav-control next-control" id="nextLevelButton" data-game-next type="button" aria-label="المستوى التالي" hidden>
           ➡️
         </button>
       </header>
@@ -27,52 +28,18 @@
       <main class="game-panel page-card">
         <div class="game-heading">
           <span class="level-mark" id="title" aria-label="المستوى الحالي">1</span>
-          <span class="target-mark" id="targetHint" aria-label="الشكل المطلوب">─</span>
+          <span class="target-mark" id="targetHint" aria-label="الطريق من القطة إلى الهدف">🐱 ➜ 🏠</span>
         </div>
 
         <div class="canvas-wrap">
-          <canvas id="canvas" width="420" height="420"></canvas>
+          <canvas id="canvas" width="420" height="420" aria-label="المس القطة واسحب لرسم طريق إلى الهدف، مع تجنب العوائق"></canvas>
         </div>
 
-        <div class="program" id="program" aria-label="تسلسل الأوامر"></div>
-
-        <section class="command-toolbar" aria-label="الأوامر">
-          <div class="command-control">
-            <button class="cmd-btn draw" data-cmd="draw" aria-label="رسم">✏️</button>
-            <button class="help-q" type="button" aria-label="كود الرسم" aria-expanded="false">?</button>
-            <span class="code-popup" aria-hidden="true">drawForward();</span>
-          </div>
-          <div class="command-control">
-            <button class="cmd-btn right" data-cmd="right" aria-label="دوران لليمين">↪</button>
-            <button class="help-q" type="button" aria-label="كود الدوران لليمين" aria-expanded="false">?</button>
-            <span class="code-popup" aria-hidden="true">turnRight();</span>
-          </div>
-          <div class="command-control">
-            <button class="cmd-btn left" data-cmd="left" aria-label="دوران لليسار">↩</button>
-            <button class="help-q" type="button" aria-label="كود الدوران لليسار" aria-expanded="false">?</button>
-            <span class="code-popup" aria-hidden="true">turnLeft();</span>
-          </div>
-          <div class="command-control">
-            <button class="cmd-btn repeat" data-repeat="2" aria-label="×2">×2</button>
-            <button class="help-q" type="button" aria-label="كود التكرار مرتين" aria-expanded="false">?</button>
-            <span class="code-popup" aria-hidden="true">for (let i = 0; i &lt; 2; i++) drawForward();</span>
-          </div>
-          <div class="command-control">
-            <button class="cmd-btn repeat" data-repeat="3" aria-label="×3">×3</button>
-            <button class="help-q" type="button" aria-label="كود التكرار ثلاث مرات" aria-expanded="false">?</button>
-            <span class="code-popup" aria-hidden="true">for (let i = 0; i &lt; 3; i++) drawForward();</span>
-          </div>
-          <div class="command-control">
-            <button class="cmd-btn repeat" data-repeat="4" aria-label="×4">×4</button>
-            <button class="help-q" type="button" aria-label="كود التكرار أربع مرات" aria-expanded="false">?</button>
-            <span class="code-popup" aria-hidden="true">for (let i = 0; i &lt; 4; i++) drawForward();</span>
-          </div>
-        </section>
+        <p class="draw-instruction" id="levelHint">المس القطة وارسم طريقًا آمنًا إلى الهدف</p>
 
         <div class="run-row">
-          <button class="run-btn" id="runButton" aria-label="تشغيل">▶️</button>
-          <button class="run-btn" id="resetButton" aria-label="إعادة المستوى الحالي">🔄</button>
-          <button class="run-btn clear" id="clearButton" aria-label="مسح الأوامر">🧹</button>
+          <button class="run-btn" id="runButton" type="button" aria-label="تحقق من الطريق">✅</button>
+          <button class="run-btn" id="resetButton" type="button" aria-label="إعادة رسم الطريق">🔄</button>
         </div>
 
         <div class="feedback" id="feedback" role="status" aria-live="polite"></div>

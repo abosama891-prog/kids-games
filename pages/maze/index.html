@@ -9,23 +9,25 @@
   </head>
   <body>
     <div class="app-shell maze-app">
-      <header class="topbar page-card">
-        <button class="nav-control back-control" type="button" data-go-back="../index/index.html" aria-label="رجوع">
+      <header class="topbar page-card game-topbar">
+        <button class="nav-control back-control" type="button" data-go-back="../games/index.html" aria-label="رجوع للألعاب">
           ⬅️
         </button>
         <a class="nav-control home-control" href="../index/index.html" aria-label="الرئيسية">
           🏠
         </a>
-        <div class="stat" aria-label="النجوم"><span aria-hidden="true">⭐</span><strong id="stars">0</strong></div>
-        <div class="stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="levelNum">1</strong></div>
-        <span class="game-identity" aria-hidden="true">🐰　→　🥕</span>
-        <button class="nav-control next-control" id="nextLevelButton" aria-label="المستوى التالي">
+        <div class="stat game-star-stat" aria-label="نجوم المتاهة"><strong id="stars" data-game-stars>0</strong><span aria-hidden="true">⭐</span></div>
+        <div class="stat game-level-stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="levelNum" data-game-level>1</strong></div>
+        <span class="game-identity" aria-hidden="true">🐰</span>
+        <span class="game-mark" aria-label="لعبة المتاهة">🧩</span>
+        <button class="nav-control next-control" id="nextLevelButton" data-game-next type="button" aria-label="المستوى التالي" hidden>
           ➡️
         </button>
       </header>
 
       <main class="game-panel page-card">
         <div class="level-mark" id="title" aria-label="المستوى الحالي">1</div>
+        <p class="level-hint" id="levelHint" role="note"></p>
 
         <div class="board-wrap">
           <div id="board" class="board" aria-label="المتاهة"></div>
@@ -70,9 +72,9 @@
             <span class="code-popup" aria-hidden="true">for (let i = 0; i &lt; 4; i++) move();</span>
           </div>
           <div class="command-control">
-            <button class="extra-btn jump" data-cmd="jump" aria-label="قفزة">🦘</button>
+            <button class="extra-btn jump" data-cmd="jump" type="button" aria-label="قفزة في آخر اتجاه">🦘</button>
             <button class="help-q" type="button" aria-label="كود القفز" aria-expanded="false">?</button>
-            <span class="code-popup" aria-hidden="true">jump(2);</span>
+            <span class="code-popup" aria-hidden="true">jump(2, lastDirection);</span>
           </div>
         </section>
 

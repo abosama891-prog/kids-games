@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const roleButtons = document.querySelectorAll('.role-btn');
   const googleButton = document.getElementById('google-login-button');
   const googleSetupMessage = document.getElementById('google-setup-message');
-  const adminRoleButton = document.querySelector('.role-btn.admin');
   let signedInUser = null;
 
   function setMessage(text, type = 'success') {
@@ -16,16 +15,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function showRoleSelection(user) {
     signedInUser = user;
+    if (user.role === 'admin') {
+      redirectByRole(user);
+      return;
+    }
     loginPanel.hidden = true;
     rolePanel.hidden = false;
-    adminRoleButton.hidden = user.role !== 'admin';
     document.getElementById('signed-in-name').textContent = `تم تسجيل الدخول: ${user.fullName}`;
     setMessage('اختر الدور للمتابعة.');
   }
 
   function redirectByRole(user) {
     if (user.role === 'admin') {
-      window.location.href = '../admin/index.html';
+      window.location.href = '../index/index.html';
       return;
     }
     window.location.href = '../index/index.html';
@@ -36,25 +38,43 @@ document.addEventListener('DOMContentLoaded', () => {
     showRoleSelection(currentUser);
   }
 
-  window.KidsGamesCloudReady.then(cloud => {
+  const cloudReady = window.KidsGamesCloudReady.then(cloud => {
     googleButton.disabled = !cloud.enabled;
     if (!cloud.enabled) {
       googleSetupMessage.textContent = cloud.reason === 'missing-config'
-        ? 'تسجيل Google يحتاج إعداد Firebase أولًا.'
+        ? 'تسجيل الدخول ومزامنة التقدم يحتاجان إعداد Firebase أولًا.'
         : 'تعذر الاتصال بخدمة الحسابات السحابية.';
     }
+    return cloud;
   });
 
-  loginForm.addEventListener('submit', event => {
+  loginForm.addEventListener('submit', async event => {
     event.preventDefault();
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
-    const user = window.KidsGamesAuth.loginWithUsername(username, password);
-    if (!user) {
-      setMessage('اسم المستخدم أو كلمة المرور غير صحيحة.', 'error');
-      return;
+    const submitButton = loginForm.querySelector('[type="submit"]');
+    submitButton.disabled = true;
+    try {
+      const cloud = await cloudReady;
+      const user = cloud.enabled
+        ? await cloud.signInWithUsername(username, password)
+        : window.KidsGamesAuth.loginWithUsername(username, password);
+      if (!user) {
+        setMessage('اسم المستخدم أو كلمة المرور غير صحيحة.', 'error');
+        return;
+      }
+      showRoleSelection(user);
+    } catch (error) {
+      console.error('Unable to sign in with username:', error);
+      const message = error.code === 'functions/resource-exhausted'
+        ? 'محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.'
+        : error.code === 'functions/unavailable' || error.code === 'functions/internal'
+          ? 'تعذر الاتصال بخدمة تسجيل الدخول. تحقق من إعداد Cloud Functions.'
+          : 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+      setMessage(message, 'error');
+    } finally {
+      submitButton.disabled = false;
     }
-    showRoleSelection(user);
   });
 
   googleButton.addEventListener('click', async () => {
@@ -88,16 +108,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const selectedRole = button.dataset.role;
       if (selectedRole === 'admin' && signedInUser.role !== 'admin') return;
 
-      const updatedUser = window.KidsGamesAuth.updateUser(signedInUser.id, { role: selectedRole });
-      if (!updatedUser) {
-        setMessage('تعذر حفظ نوع الحساب.', 'error');
-        return;
-      }
-      signedInUser = window.KidsGamesAuth.setCurrentUser(updatedUser);
       const cloud = await window.KidsGamesCloudReady;
-      if (updatedUser.provider === 'google' && cloud.enabled && !(await cloud.saveProfile(updatedUser))) {
-        setMessage('تعذر حفظ نوع الحساب على حسابك.', 'error');
-        return;
+      let updatedUser;
+      if (cloud.enabled && cloud.getCurrentUserId?.() === signedInUser.id) {
+        updatedUser = { ...signedInUser, role: selectedRole };
+        if (!(await cloud.saveProfile(updatedUser))) {
+          setMessage('تعذر حفظ نوع الحساب على حسابك.', 'error');
+          return;
+        }
+        signedInUser = window.KidsGamesAuth.getCurrentUser();
+      } else {
+        updatedUser = window.KidsGamesAuth.updateUser(signedInUser.id, { role: selectedRole });
+        if (!updatedUser) {
+          setMessage('تعذر حفظ نوع الحساب.', 'error');
+          return;
+        }
+        signedInUser = window.KidsGamesAuth.setCurrentUser(updatedUser);
       }
       setMessage(`أهلًا ${updatedUser.fullName}`, 'success');
       setTimeout(() => redirectByRole(updatedUser), 350);
@@ -106,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('change-account').addEventListener('click', async () => {
     const cloud = await window.KidsGamesCloudReady;
-    if (cloud.enabled) await cloud.signOut();
+    if (cloud.enabled && cloud.getCurrentUserId?.()) await cloud.signOut();
     else window.KidsGamesAuth.logoutUser();
     signedInUser = null;
     rolePanel.hidden = true;

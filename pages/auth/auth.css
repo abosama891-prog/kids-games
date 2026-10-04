@@ -283,14 +283,6 @@ body {
   content: "🧑‍🏫";
 }
 
-.role-btn.admin {
-  background: linear-gradient(180deg, var(--button-gold), #ffe8a9);
-}
-
-.role-btn.admin::before {
-  content: "🛡️";
-}
-
 .role-btn:hover {
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 18px 24px rgba(20, 53, 88, 0.18);

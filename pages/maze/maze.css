@@ -617,6 +617,14 @@ body {
   font-weight: 900;
 }
 
+.level-hint {
+  margin: 0 0 10px;
+  color: #52634e;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+}
+
 .board-wrap {
   display: flex;
   justify-content: center;
@@ -651,6 +659,74 @@ body {
 .cell.wall { background: #ccd8ca; }
 .cell.goal { background: #fff1c9; }
 .cell.player { background: #e0f1f4; }
+
+.board-wrap.maze-fail {
+  animation: maze-fail-shake 0.55s ease-in-out;
+}
+
+.board-wrap.maze-fail .cell.player {
+  animation: rabbit-fail-hop 0.55s ease-in-out;
+}
+
+.board-wrap.maze-win {
+  animation: maze-win-glow 1.2s ease-in-out;
+}
+
+.board-wrap.maze-win .cell.player {
+  z-index: 1;
+  animation: rabbit-win-hop 0.8s ease-in-out 2;
+  box-shadow: 0 0 0 5px rgba(250, 204, 21, 0.42), 0 0 26px rgba(250, 204, 21, 0.9);
+}
+
+.board-wrap.maze-win .cell.player::after {
+  position: absolute;
+  inset: -15px;
+  display: grid;
+  place-items: start center;
+  color: #f0ae19;
+  content: "✨";
+  font-size: 1.2rem;
+  pointer-events: none;
+  animation: win-sparkle 0.8s ease-in-out 2;
+}
+
+@keyframes maze-fail-shake {
+  0%, 100% { transform: translateX(0); background-color: #eef4ed; }
+  20%, 60% { transform: translateX(-8px); background-color: #ffe1d8; }
+  40%, 80% { transform: translateX(8px); background-color: #ffe1d8; }
+}
+
+@keyframes rabbit-fail-hop {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  35% { transform: translateY(-8px) rotate(-14deg); }
+  70% { transform: translateY(0) rotate(14deg); }
+}
+
+@keyframes maze-win-glow {
+  0%, 100% { box-shadow: none; }
+  40%, 75% { box-shadow: 0 0 30px rgba(250, 204, 21, 0.75); background-color: #fff6cf; }
+}
+
+@keyframes rabbit-win-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-22px) scale(1.12); }
+}
+
+@keyframes win-sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(-20deg); }
+  50% { opacity: 1; transform: scale(1.4) rotate(20deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-wrap.maze-fail,
+  .board-wrap.maze-fail .cell.player,
+  .board-wrap.maze-win,
+  .board-wrap.maze-win .cell.player,
+  .board-wrap.maze-win .cell.player::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
 
 .command-toolbar {
   display: grid;
@@ -888,4 +964,14 @@ body {
   .command-control:nth-child(4n) .code-popup { right: auto; left: 0; transform: translateY(-3px); }
   .command-control:nth-child(4n + 1) .code-popup.show,
   .command-control:nth-child(4n) .code-popup.show { transform: translateY(0); }
+}
+
+.topbar.game-topbar {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 420px) {
+  .topbar.game-topbar { display: flex; }
+  .topbar.game-topbar .game-identity { display: grid; }
 }

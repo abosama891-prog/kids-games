@@ -4,15 +4,17 @@
 
   const gameCatalog = [
     { key: 'maze', title: 'المتاهة', icon: '🐰', href: new URL('pages/maze/index.html', APP_BASE_URL).href, levels: 5, accent: '#4a90e2' },
-    { key: 'draw', title: 'الرسم', icon: '🎨', href: new URL('pages/draw/index.html', APP_BASE_URL).href, levels: 8, accent: '#f39c12' },
-    { key: 'gas', title: 'مهندس الغاز الذكي', icon: '🔧', href: new URL('pages/gas/index.html', APP_BASE_URL).href, levels: 6, accent: '#e47645' },
+    { key: 'draw', title: 'الرسم', icon: '🎨', href: new URL('pages/draw/index.html', APP_BASE_URL).href, levels: 10, accent: '#f39c12' },
+    { key: 'gas', title: 'مهندس الجسور والمعدّيات', icon: '🌉', href: new URL('pages/gas/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47645' },
     { key: 'frog', title: 'بركة الضفدع', icon: '🐸', href: new URL('pages/frog/index.html', APP_BASE_URL).href, levels: 1, accent: '#86EFAC' },
-    { key: 'potion', title: 'مختبر الجرعات', icon: '🧪', href: new URL('pages/potion/index.html', APP_BASE_URL).href, levels: 3, accent: '#2DD4BF' }
+    { key: 'potion', title: 'مختبر الجرعات', icon: '🧪', href: new URL('pages/potion/index.html', APP_BASE_URL).href, levels: 3, accent: '#2DD4BF' },
+    { key: 'robot', title: '🌈 B u d d y 🌈', icon: '🌈', href: new URL('pages/robot/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47765' }
   ];
 
   const defaultState = {
     stars: 0,
-    ...Object.fromEntries(gameCatalog.map(game => [game.key, { currentLevel: 1, unlocked: 1, completed: [] }]))
+    unattributedStars: 0,
+    ...Object.fromEntries(gameCatalog.map(game => [game.key, { currentLevel: 1, unlocked: 1, completed: [], stars: 0 }]))
   };
 
   function cloneState(value) {
@@ -37,17 +39,41 @@
       }
       if (!raw) return cloneState(defaultState);
       const parsed = JSON.parse(raw);
-      const state = { stars: Number(parsed.stars || 0) };
+      const savedUnattributedStars = Number(parsed.unattributedStars);
+      const savedTotalStars = Number(parsed.stars);
+      const state = {
+        stars: 0,
+        unattributedStars: Number.isFinite(savedUnattributedStars) && savedUnattributedStars > 0
+          ? Math.floor(savedUnattributedStars)
+          : 0
+      };
+      let gameStars = 0;
       gameCatalog.forEach(game => {
         const savedGame = parsed[game.key] || {};
+        const completed = Array.from(new Set(
+          (Array.isArray(savedGame.completed) ? savedGame.completed : [])
+            .map(Number)
+            .filter(level => Number.isInteger(level) && level >= 1 && level <= game.levels)
+        ));
+        const stars = Number.isFinite(Number(savedGame.stars)) && Number(savedGame.stars) >= 0
+          ? Math.floor(Number(savedGame.stars))
+          : completed.length * 3;
         state[game.key] = {
           ...defaultState[game.key],
           ...savedGame,
-          completed: Array.isArray(savedGame.completed) ? savedGame.completed : []
+          stars,
+          completed
         };
+        gameStars += stars;
       });
+      const legacyTotalStars = Number.isFinite(savedTotalStars) && savedTotalStars > 0
+        ? Math.floor(savedTotalStars)
+        : 0;
+      state.unattributedStars = Math.max(state.unattributedStars, legacyTotalStars - gameStars, 0);
+      state.stars = state.unattributedStars + gameStars;
       return state;
     } catch (error) {
+      console.error('Unable to read saved game progress:', error);
       return cloneState(defaultState);
     }
   }
@@ -71,8 +97,81 @@
   function addStars(amount) {
     const state = readProgress();
     state.stars = (state.stars || 0) + amount;
+    state.unattributedStars = (state.unattributedStars || 0) + amount;
     saveProgress(state);
     return state;
+  }
+
+  function completeGameLevel(gameKey, levelNumber, starsAwarded, updates = {}) {
+    const game = gameCatalog.find(item => item.key === gameKey);
+    if (!game) {
+      throw new RangeError(`Unknown game key: ${gameKey}`);
+    }
+    if (!Number.isInteger(levelNumber) || levelNumber < 1 || levelNumber > game.levels) {
+      throw new RangeError('Level number must be within the game level range.');
+    }
+    if (!Number.isFinite(starsAwarded) || starsAwarded < 0) {
+      throw new RangeError('Stars awarded must be a non-negative number.');
+    }
+
+    const progress = readProgress();
+    if (levelNumber > getUnlockedLevel(gameKey, progress)) {
+      throw new RangeError('Complete the previous level before completing this level.');
+    }
+    const current = progress[gameKey] || { currentLevel: 1, unlocked: 1, completed: [], stars: 0 };
+    const isFirstCompletion = !current.completed.includes(levelNumber);
+    const completed = [...current.completed, levelNumber].sort((a, b) => a - b);
+    const gameStars = (Number(current.stars) || 0) + (isFirstCompletion ? Math.floor(starsAwarded) : 0);
+    const gameProgress = {
+      ...current,
+      ...updates,
+      completed,
+      stars: gameStars
+    };
+    const nextProgress = {
+      ...progress,
+      [gameKey]: gameProgress,
+      stars: (Number(progress.unattributedStars) || 0) + gameCatalog.reduce((total, game) => {
+        return total + (game.key === gameKey ? gameStars : Number(progress[game.key]?.stars) || 0);
+      }, 0)
+    };
+
+    saveProgress(nextProgress);
+    renderGameHeader(gameKey);
+    return { progress: nextProgress, gameProgress, gameStars, totalStars: nextProgress.stars, isFirstCompletion };
+  }
+
+  function getUnlockedLevel(gameKey, progress = readProgress()) {
+    const game = gameCatalog.find(item => item.key === gameKey);
+    if (!game) throw new RangeError(`Unknown game key: ${gameKey}`);
+
+    const user = window.KidsGamesAuth?.getCurrentUser?.();
+    if (user?.role === 'admin') return game.levels;
+
+    const completed = new Set(
+      (Array.isArray(progress[gameKey]?.completed) ? progress[gameKey].completed : [])
+        .map(Number)
+        .filter(level => Number.isInteger(level) && level >= 1 && level <= game.levels)
+    );
+    let unlocked = 1;
+    while (unlocked < game.levels && completed.has(unlocked)) unlocked += 1;
+    return unlocked;
+  }
+
+  function renderGameHeader(gameKey, levelNumber) {
+    const gameProgress = readProgress()[gameKey];
+    const starsElement = document.querySelector('[data-game-stars]');
+    const levelElement = document.querySelector('[data-game-level]');
+    if (starsElement) starsElement.textContent = String(gameProgress?.stars || 0);
+    if (levelElement && levelNumber !== undefined) levelElement.textContent = String(levelNumber);
+    const nextButton = document.querySelector('[data-game-next]');
+    if (nextButton && levelNumber !== undefined) {
+      const unlocked = getUnlockedLevel(gameKey);
+      const game = gameCatalog.find(item => item.key === gameKey);
+      const canAdvance = Boolean(game && levelNumber < unlocked && levelNumber < game.levels);
+      nextButton.hidden = !canAdvance;
+      nextButton.disabled = !canAdvance;
+    }
   }
 
   function goBack(fallbackUrl) {
@@ -96,6 +195,9 @@
     saveProgress,
     setGameProgress,
     addStars,
+    completeGameLevel,
+    getUnlockedLevel,
+    renderGameHeader,
     goBack
   };
 
@@ -251,12 +353,26 @@
   }
 
   function addUser(userPayload) {
+    const username = String(userPayload.username || '').trim();
+    const email = String(userPayload.email || '').trim().toLowerCase();
+    const fullName = String(userPayload.fullName || '').trim();
+    const password = String(userPayload.password || '');
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!username || !fullName || (email && !emailPattern.test(email)) || password.length < 6) return null;
+
     const users = getUsers();
+    if (users.some(user =>
+      user.username.toLocaleLowerCase() === username.toLocaleLowerCase() ||
+      (email && user.email.toLocaleLowerCase() === email)
+    )) return null;
+
     const next = normalizeUser({
       ...userPayload,
-      id: userPayload.id || `user-${Date.now()}`,
-      username: userPayload.username || userPayload.email?.split('@')[0] || 'new-user',
-      password: userPayload.password || '123456',
+      id: userPayload.id || crypto.randomUUID(),
+      fullName,
+      username,
+      email,
+      password,
       role: userPayload.role || 'child',
       provider: userPayload.provider || 'local',
       status: userPayload.status || 'active'
@@ -272,9 +388,22 @@
     const index = users.findIndex(user => user.id === id);
     if (index === -1) return null;
 
+    const nextUsername = updates.username === undefined ? users[index].username : String(updates.username).trim();
+    const nextEmail = updates.email === undefined ? users[index].email : String(updates.email).trim().toLowerCase();
+    const nextFullName = updates.fullName === undefined ? users[index].fullName : String(updates.fullName).trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!nextUsername || !nextFullName || (nextEmail && !emailPattern.test(nextEmail)) || users.some((user, userIndex) =>
+      userIndex !== index &&
+      (user.username.toLocaleLowerCase() === nextUsername.toLocaleLowerCase() ||
+        (nextEmail && user.email.toLocaleLowerCase() === nextEmail))
+    )) return null;
+
     const nextUser = normalizeUser({
       ...users[index],
       ...updates,
+      username: nextUsername,
+      email: nextEmail,
+      fullName: nextFullName,
       role: ROLE_PERMISSIONS[updates.role] ? updates.role : users[index].role,
       status: updates.status === 'inactive' ? 'inactive' : 'active'
     });
@@ -331,7 +460,22 @@
   }
 
   function mergeProgress(localProgress, cloudProgress) {
-    const merged = { stars: Math.max(Number(localProgress.stars || 0), Number(cloudProgress.stars || 0)) };
+    let cloudGameStars = 0;
+    gameCatalog.forEach(game => {
+      const cloudGame = cloudProgress[game.key] || {};
+      const completed = Array.isArray(cloudGame.completed) ? cloudGame.completed : [];
+      cloudGameStars += Number.isFinite(Number(cloudGame.stars))
+        ? Math.max(0, Number(cloudGame.stars))
+        : completed.length * 3;
+    });
+    const cloudUnattributedStars = Math.max(
+      Number(cloudProgress.unattributedStars || 0),
+      Number(cloudProgress.stars || 0) - cloudGameStars,
+      0
+    );
+    const merged = {
+      unattributedStars: Math.max(Number(localProgress.unattributedStars || 0), cloudUnattributedStars)
+    };
     gameCatalog.forEach(game => {
       const localGame = localProgress[game.key] || defaultState[game.key];
       const cloudGame = cloudProgress[game.key] || defaultState[game.key];
@@ -339,9 +483,14 @@
       merged[game.key] = {
         currentLevel,
         unlocked: Math.max(currentLevel, Number(localGame.unlocked || 1), Number(cloudGame.unlocked || 1)),
-        completed: [...new Set([...(localGame.completed || []), ...(cloudGame.completed || [])])]
+        completed: [...new Set([...(localGame.completed || []), ...(cloudGame.completed || [])])],
+        stars: Math.max(
+          Number(localGame.stars || 0),
+          Number.isFinite(Number(cloudGame.stars)) ? Math.max(0, Number(cloudGame.stars)) : (cloudGame.completed || []).length * 3
+        )
       };
     });
+    merged.stars = merged.unattributedStars + gameCatalog.reduce((total, game) => total + merged[game.key].stars, 0);
     return merged;
   }
 
@@ -359,14 +508,17 @@
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-app-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-auth-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-firestore-compat.js`);
+      await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-functions-compat.js`);
 
       const firebase = window.firebase;
       const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
       const auth = app.auth();
       const database = app.firestore();
+      const functions = app.functions(config.functionsRegion || 'us-central1');
       await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      const callFunction = (name, data = {}) => functions.httpsCallable(name)(data).then(result => result.data);
 
-      async function syncAccount(firebaseUser, reloadIfChanged = false) {
+      async function syncAccount(firebaseUser, reloadIfChanged = false, previousLocalProgress = null) {
         const userRef = database.collection('users').doc(firebaseUser.uid);
         const snapshot = await userRef.get();
         const cloudData = snapshot.exists ? snapshot.data() : {};
@@ -376,18 +528,20 @@
           throw new Error('هذا الحساب غير نشط.');
         }
 
+        const token = await firebaseUser.getIdTokenResult();
+        const provider = firebaseUser.providerData.some(item => item.providerId === 'google.com') ? 'google' : 'local';
         const user = normalizeUser({
           id: firebaseUser.uid,
-          username: (firebaseUser.email || '').split('@')[0],
+          username: cloudData.username || token.claims.username || (firebaseUser.email || '').split('@')[0],
           email: firebaseUser.email || '',
-          fullName: firebaseUser.displayName || firebaseUser.email || 'مستخدم Google',
-          role: ROLE_PERMISSIONS[cloudData.role] ? cloudData.role : 'child',
-          provider: 'google',
-          status: 'active'
+          fullName: cloudData.fullName || firebaseUser.displayName || cloudData.username || firebaseUser.email || 'مستخدم Google',
+          role: ROLE_PERMISSIONS[token.claims.role] ? token.claims.role : (ROLE_PERMISSIONS[cloudData.role] ? cloudData.role : 'child'),
+          provider,
+          status: cloudData.status === 'inactive' ? 'inactive' : 'active'
         });
         setCurrentUser(user);
 
-        const localProgress = readProgress();
+        const localProgress = previousLocalProgress || readProgress();
         const progress = cloudData.progress
           ? mergeProgress(localProgress, cloudData.progress)
           : localProgress;
@@ -423,11 +577,43 @@
 
       return {
         enabled: true,
+        projectId: config.projectId,
+        getCurrentUserId() {
+          return auth.currentUser?.uid || null;
+        },
         async signInWithGoogle() {
           const provider = new firebase.auth.GoogleAuthProvider();
           provider.setCustomParameters({ prompt: 'select_account' });
           const result = await auth.signInWithPopup(provider);
           return syncAccount(result.user);
+        },
+        async signInWithUsername(username, password) {
+          const localUser = findUserByIdentifier(username);
+          let previousLocalProgress = null;
+          if (localUser?.provider === 'local') {
+            try {
+              const storedProgress = localStorage.getItem(`${STORAGE_KEY}_${localUser.id}`);
+              previousLocalProgress = storedProgress ? JSON.parse(storedProgress) : null;
+            } catch (error) {
+              console.error('Unable to read legacy local progress:', error);
+            }
+          }
+          const result = await callFunction('authenticateUsername', { username, password });
+          const credential = await auth.signInWithCustomToken(result.token);
+          return syncAccount(credential.user, false, previousLocalProgress);
+        },
+        async createAccount(account) {
+          return callFunction('createAccount', account);
+        },
+        async listAccounts() {
+          const result = await callFunction('listAccounts');
+          return result.users;
+        },
+        async updateAccount(account) {
+          return callFunction('updateAccount', account);
+        },
+        async deleteAccount(account) {
+          return callFunction('deleteAccount', account);
         },
         async signOut() {
           await auth.signOut();
@@ -435,14 +621,9 @@
         },
         async saveProfile(user) {
           if (!auth.currentUser || auth.currentUser.uid !== user.id) return false;
-          await database.collection('users').doc(user.id).set({
-            email: user.email,
-            fullName: user.fullName,
-            role: user.role,
-            provider: user.provider,
-            status: user.status,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
+          await callFunction('setOwnRole', { role: user.role });
+          await auth.currentUser.getIdToken(true);
+          await syncAccount(auth.currentUser);
           return true;
         },
         async saveProgress(progress) {
