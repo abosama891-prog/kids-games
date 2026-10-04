@@ -3,222 +3,749 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>FPS ملاهي خفيفة</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&display=swap" rel="stylesheet">
-<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+<title>🏙️ مدينة شوارع متفرعة - نهائي</title>
 <script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Cairo',sans-serif}
-body{background:#000;overflow:hidden;touch-action:none}
-#canvas{width:100vw;height:100vh;display:block}
-#top{position:fixed;top:0;left:0;right:0;z-index:20;padding:8px;display:none}
-#bar{background:rgba(0,0,0,0.8);border-radius:12px;padding:8px 12px;color:#fff;display:flex;justify-content:space-between;font-size:11px}
-#bar b{color:#FFD93D}
-#mini{position:fixed;top:50px;right:8px;width:90px;height:120px;background:rgba(0,0,0,0.85);border-radius:8px;border:2px solid #fff3;z-index:20;display:none}
-#ctrl{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-between;padding:8px 12px;z-index:20;display:none;background:linear-gradient(to top,rgba(0,0,0,0.7),transparent)}
-.jb{width:50px;height:50px;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);border-radius:12px;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;margin:3px;touch-action:none}
-.jb.on{background:#FF6B6B}
-#act{width:68px;height:68px;background:rgba(0,255,136,0.25);border:2px solid #00ff88;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
-#act.near{background:#00ff88;color:#000;animation:pulse 0.7s infinite}
-@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
-#charSel{position:fixed;inset:0;z-index:100;background:linear-gradient(135deg,#0f0c29,#302b63);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;text-align:center}
-#charSel h1{font-size:22px;margin-bottom:6px}
-#grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-width:340px;margin:12px 0}
-.card{background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);border-radius:14px;padding:10px;cursor:pointer}
-.card.sel{border-color:#FFD93D;background:rgba(255,217,61,0.15)}
-.card div{width:100%;height:90px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:40px}
-.card h3{font-size:11px;margin-top:6px}
-#go{margin-top:10px;background:#FFD93D;color:#000;border:0;padding:12px 32px;border-radius:30px;font-weight:800;font-size:15px;opacity:0.4;pointer-events:none}
-#go.on{opacity:1;pointer-events:auto}
-#modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:60;display:none;align-items:center;justify-content:center;padding:12px}
-#mBox{background:#1e1e2f;border:2px solid #4ECDC4;border-radius:16px;max-width:360px;width:100%;padding:14px;color:#fff}
-.code{background:#0d1117;border-radius:8px;padding:8px;margin:6px 0;font-family:monospace;direction:ltr;text-align:left;font-size:12px}
-.code input{background:#21262d;border:1px solid #444;color:#7ee787;border-radius:5px;padding:3px 5px;width:55px;text-align:center}
-.btn{padding:7px 12px;border-radius:8px;border:0;font-weight:700;margin:3px;cursor:pointer;font-size:12px}
-.btnP{background:#4ECDC4;color:#000} .btnG{background:rgba(255,255,255,0.15);color:#fff}
-#win{position:fixed;inset:0;background:linear-gradient(135deg,#FFD93D,#FF6B6B);z-index:90;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;color:#000}
-#cross{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;z-index:15;pointer-events:none;display:none}
-#cross::before{content:'';position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(255,255,255,0.7)}
-#cross::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(255,255,255,0.7)}
+/* ===== Reset ===== */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block}
+
+/* ===== HUD ===== */
+#ui{position:fixed;inset:0;pointer-events:none}
+.hud{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;gap:8px;background:rgba(0,0,0,.85);padding:8px 12px;border-radius:12px;border:1px solid #FFD93D;font-size:11px;backdrop-filter:blur(6px)}
+.hud b{color:#FFD93D}
+#minimap{position:absolute;top:50px;left:8px;width:115px;height:115px;background:rgba(0,0,0,.9);border:2px solid #FFD93D;border-radius:12px;overflow:hidden}
+#minimap canvas{display:block}
+#cross{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%)}
+#cross::before,#cross::after{content:'';position:absolute;background:#fff;opacity:.8}
+#cross::before{width:2px;height:18px;left:8px;top:0}
+#cross::after{height:2px;width:18px;top:8px;left:0}
+
+/* ===== Prompt ===== */
+#centerPrompt{position:absolute;left:50%;top:62%;transform:translateX(-50%);background:linear-gradient(90deg,#FFD93D,#FF6B6B);color:#000;padding:11px 18px;border-radius:30px;font-weight:900;font-size:13px;display:none;pointer-events:auto;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.6);white-space:nowrap}
+#centerPrompt:active{transform:translateX(-50%) scale(.95)}
+
+/* ===== Controls ===== */
+#controls{position:absolute;bottom:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none}
+.movePad,.rightCtrl{pointer-events:auto}
+.movePad{background:rgba(0,0,0,.65);border:2px solid rgba(255,255,255,.15);border-radius:18px;padding:8px}
+.moveGrid{display:grid;grid-template-columns:54px 54px 54px;grid-template-rows:54px 54px;gap:6px}
+.mBtn{width:54px;height:54px;border-radius:14px;border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:#fff;font-weight:900;font-size:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;user-select:none;touch-action:none;cursor:pointer;transition:transform .05s,background .1s}
+.mBtn small{font-size:8px;opacity:.7;font-weight:400}
+.mBtn:active,.mBtn.pressed{background:#FFD93D;color:#000;transform:scale(.92)}
+#btnW{grid-column:2}
+#btnA{grid-column:1;grid-row:2}
+#btnS{grid-column:2;grid-row:2}
+#btnD{grid-column:3;grid-row:2}
+.rightCtrl{display:flex;flex-direction:column;gap:8px;align-items:center}
+.lookRow{display:flex;gap:6px}
+.lBtn{width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.2);background:rgba(0,0,0,.6);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;touch-action:none}
+.lBtn:active{background:#FFD93D;color:#000}
+#interact{width:76px;height:76px;border-radius:50%;background:radial-gradient(#00ff88,#00aa55);border:3px solid #00ff88;color:#fff;font-size:12px;font-weight:900;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:transform .1s}
+#interact.active{background:radial-gradient(#FFD93D,#FF8A00);border-color:#FFD93D;animation:glow 1s infinite;transform:scale(1.1)}
+#interact span{font-size:20px;line-height:1}
+@keyframes glow{0%,100%{box-shadow:0 0 15px #FFD93D88}50%{box-shadow:0 0 30px #FFD93D}}
+
+/* ===== Toast ===== */
+#toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);border:1px solid #FFD93D;padding:9px 16px;border-radius:30px;font-size:12px;display:none;z-index:300;max-width:90vw;text-align:center}
+
+/* ===== Character Screen ===== */
+#charScreen{position:fixed;inset:0;background:radial-gradient(circle at top,#2a2a5a,#0a0a1a);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto;gap:8px}
+#charScreen h1{font-size:22px;text-align:center}
+#charScreen p{font-size:12px;opacity:.75;text-align:center}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:360px}
+.card{background:rgba(255,255,255,.07);border:2px solid rgba(255,255,255,.12);border-radius:14px;padding:10px;text-align:center;cursor:pointer;transition:all .15s}
+.card.sel{border-color:#FFD93D;background:rgba(255,217,61,.15)}
+.card .ico{font-size:28px;height:60px;display:flex;align-items:center;justify-content:center;border-radius:10px;margin-bottom:4px}
+#enterBtn{margin-top:14px;background:linear-gradient(90deg,#FFD93D,#FF6B6B);color:#000;border:0;padding:12px 30px;border-radius:30px;font-weight:900;font-size:16px;cursor:pointer}
+#enterBtn:active{transform:scale(.96)}
+.mapPrev{width:100%;max-width:360px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:10px}
+.mapPrev h3{font-size:12px;color:#FFD93D;margin-bottom:6px}
+.mapLine{font-family:ui-monospace,monospace;font-size:10px;line-height:1.3;white-space:pre;direction:ltr;text-align:left;background:#0a0a14;padding:8px;border-radius:8px}
+
+/* ===== Gate Modal ===== */
+#gateUI{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;align-items:center;justify-content:center;padding:12px}
+.gBox{background:#1c1c33;border:2px solid #FFD93D;border-radius:18px;padding:16px;width:100%;max-width:380px;max-height:90vh;overflow:auto}
+.gHead{display:flex;gap:10px;align-items:center}
+.gHead .gIco{font-size:30px}
+.gHead .gTitle{font-weight:900;color:#FFD93D}
+.gHead .gStreet{font-size:10px;opacity:.6}
+.gQ{margin:10px 0;font-size:13px}
+.gCode{background:#080814;border:1px solid #333;border-radius:8px;padding:8px;font-family:ui-monospace,monospace;font-size:11px;direction:ltr;text-align:left;white-space:pre-wrap}
+.gOpts{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.gOpt{padding:10px;border:2px solid #333;border-radius:10px;background:rgba(255,255,255,.05);cursor:pointer;font-size:12px;transition:all .15s}
+.gOpt:hover{background:rgba(255,255,255,.1)}
+.gFb{display:none;padding:8px;border-radius:8px;font-size:12px;margin-top:6px}
+.gActions{display:flex;gap:6px;margin-top:8px}
+.gActions button{flex:1;padding:10px;border-radius:10px;border:0;font-weight:700;cursor:pointer;font-size:13px}
+#closeGate{background:#333;color:#fff}
+#hintBtn{background:#FFD93D;color:#000}
 </style>
 </head>
 <body>
-<canvas id="canvas"></canvas>
-<div id="cross"></div>
-<div id="top"><div id="bar"><span>👁️ <b id="pName">لاعب</b></span><span><b id="d">0</b>م | <b id="pc">0/5</b></span></div></div>
-<div id="mini"><canvas id="mc" width="90" height="120"></canvas></div>
-<div id="ctrl"><div style="display:flex;flex-direction:column;align-items:center"><div style="display:flex;justify-content:center"><div class="jb" data-k="w">W</div></div><div style="display:flex"><div class="jb" data-k="a">A</div><div class="jb" data-k="s">S</div><div class="jb" data-k="d">D</div></div></div><div id="act"><span>E</span></div></div>
+<canvas id="cv"></canvas>
 
-<div id="charSel">
-<h1>🎢 ملاهي البرمجة - منظور أول</h1>
-<p style="font-size:11px;opacity:0.7">الشخصية مش هتظهر - هتبقى عينيك بس<br>صور الملاهي مدمجة في المباني حواليك</p>
-<div id="grid">
-<div class="card" data-id="0" data-name="كابتن كود"><div style="background:#2b6cff">🧢</div><h3>كابتن كود</h3></div>
-<div class="card" data-id="1" data-name="الأميرة لوجيك"><div style="background:#FFD93D">👑</div><h3>الأميرة لوجيك</h3></div>
-<div class="card" data-id="2" data-name="المبرمج"><div style="background:#2ecc71">💻</div><h3>المبرمج الصغير</h3></div>
-<div class="card" data-id="3" data-name="أنت"><div style="background:linear-gradient(45deg,#ff6b6b,#4ecdc4)">📷</div><h3>صورتك</h3></div>
-</div>
-<p style="font-size:10px;opacity:0.6;margin-top:8px">👁️ منظور أول FPS • 🖼️ صور ملاهي على الجدران • 🚶 شخصية مخفية</p>
-<button id="go">ادخل الملاهي 🚀</button>
+<div id="ui">
+  <div class="hud">
+    <div>🏪 <b id="solved">0</b>/5 | 💰 <span id="money">0</span> | <span id="streetName">البداية</span></div>
+    <div>⬆W ⬇S ⬅A ➡D</div>
+  </div>
+  <div id="minimap"><canvas id="mini" width="115" height="115"></canvas></div>
+  <div id="cross"></div>
+  <div id="centerPrompt">🎯 افتح المحل</div>
+
+  <div id="controls">
+    <div class="movePad">
+      <div style="font-size:9px;opacity:.6;text-align:center;margin-bottom:4px">شوارع متفرعة</div>
+      <div class="moveGrid">
+        <div class="mBtn" id="btnW">W<small>قدام</small></div>
+        <div class="mBtn" id="btnA">A<small>شمال</small></div>
+        <div class="mBtn" id="btnS">S<small>ورا</small></div>
+        <div class="mBtn" id="btnD">D<small>يمين</small></div>
+      </div>
+    </div>
+    <div class="rightCtrl">
+      <div class="lookRow">
+        <div class="lBtn" id="lookLeft">◀</div>
+        <div class="lBtn" id="lookRight">▶</div>
+      </div>
+      <div id="interact"><span>🚪</span>E</div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
 </div>
 
-<div id="modal"><div id="mBox"><h2 id="mT"></h2><p id="mS" style="font-size:11px;opacity:0.8;margin:6px 0"></p><div id="mB"></div></div></div>
-<div id="win"><h1>🏆 وصلت يا <span id="winN">بطل</span>!</h1><p>300م في ملاهي واقعية</p><button class="btn btnP" style="background:#000;color:#FFD93D;margin-top:10px" onclick="location.reload()">العب تاني</button></div>
+<div id="charScreen">
+  <h1>🗺️ مدينة شوارع متفرعة</h1>
+  <p>5 محلات في حواري مختلفة - لازم تدخل شوارع جانبية!</p>
+  <div class="grid">
+    <div class="card sel"><div class="ico" style="background:#FFD93D">👑</div>الأميرة</div>
+    <div class="card"><div class="ico" style="background:#3B82F6">🧢</div>كابتن كود</div>
+    <div class="card"><div class="ico" style="background:#10B981">💻</div>المبرمج</div>
+    <div class="card"><div class="ico" style="background:linear-gradient(90deg,#f77,#7ff)">📷</div>صورتك</div>
+  </div>
+  <button id="enterBtn">🚀 ادخل المدينة</button>
+  <div class="mapPrev">
+    <h3>🗺️ الخريطة:</h3>
+    <div class="mapLine">START
+  |
+[رئيسي]
+  +-- غربي: 🎮 ألعاب
+  +-- شرقي: 🧸 دباديب
+  |
+[ميدان]
+  |
+[خلفي]-- غربي: 🎯 حظ
+      -- شرقي: 🎁 هدايا
+  |
+🎟️ نهاية</div>
+  </div>
+</div>
+
+<div id="gateUI"><div class="gBox" id="gBox"></div></div>
 
 <script type="module">
 import * as THREE from 'three';
-let scene,camera,renderer;
-let keys={w:false,a:false,s:false,d:false}, yaw=0, pitch=0;
-let pos=new THREE.Vector3(0,1.7,18);
-let gates=[], solved=[false,false,false,false,false], curr=-1, batteries=[], collected=[false,false,false];
-let sel=0, selName="لاعب";
-let gateData=[
-{p:-42,t:"حاجز فيريس: المتغيرات",s:"اجمع 3 بطاريات"},
-{p:-92,t:"حاجز الرولر: الحلقات",s:"القطار محتاج 4 لفات"},
-{p:-142,t:"حاجز التصادم: الشروط",s:"فعل الشرطين"},
-{p:-192,t:"حاجز الكاروسيل: الدوال",s:"شغل الدالة"},
-{p:-252,t:"البوابة الذهبية",s:"صلح الأقواس"}
+
+/* ============ Setup ============ */
+const canvas = document.getElementById('cv');
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0a1e);
+scene.fog        = new THREE.Fog(0x0a0a1e, 25, 90);
+
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 500);
+camera.position.set(0, 1.7, 28);
+camera.rotation.order = 'YXZ';
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+
+scene.add(new THREE.AmbientLight(0xffffff, .65));
+const sun = new THREE.DirectionalLight(0xFFD93D, 1);
+sun.position.set(20, 25, 10);
+sun.castShadow = true;
+sun.shadow.camera.left   = -60;
+sun.shadow.camera.right  =  60;
+sun.shadow.camera.top    =  60;
+sun.shadow.camera.bottom = -60;
+sun.shadow.camera.far    = 120;
+scene.add(sun);
+
+/* ============ Textures ============ */
+function makeTex(draw){
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const ctx = c.getContext('2d');
+  draw(ctx, 256);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+const brick = makeTex((ctx,s)=>{
+  ctx.fillStyle='#7a3a1a'; ctx.fillRect(0,0,s,s);
+  ctx.fillStyle='#8d4a2a';
+  for(let y=0; y<s; y+=32) for(let x=0; x<s; x+=64)
+    ctx.fillRect(x + (y%64 ? 32 : 0), y, 60, 28);
+});
+const sideTex = makeTex((ctx,s)=>{
+  ctx.fillStyle='#444'; ctx.fillRect(0,0,s,s);
+  ctx.strokeStyle='#555'; ctx.lineWidth=2;
+  for(let i=0; i<s; i+=64) ctx.strokeRect(0, i, s, 64);
+});
+
+/* ============ Roads ============ */
+const streets = [];
+function addRoad(x1,z1,x2,z2,w=6){
+  const len  = Math.hypot(x2-x1, z2-z1);
+  const midX = (x1+x2)/2, midZ = (z1+z2)/2;
+  const ang  = Math.atan2(z2-z1, x2-x1);
+
+  const road = new THREE.Mesh(
+    new THREE.PlaneGeometry(len, w),
+    new THREE.MeshStandardMaterial({ color:0x232323 })
+  );
+  road.rotation.x = -Math.PI/2;
+  road.rotation.z = -ang;
+  road.position.set(midX, 0.01, midZ);
+  road.receiveShadow = true;
+  scene.add(road);
+
+  for(let i=0; i<len; i+=4){
+    const t = i/len;
+    const x = x1 + (x2-x1)*t, z = z1 + (z2-z1)*t;
+    const l = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.3, 1.5),
+      new THREE.MeshBasicMaterial({ color:0xFFD93D })
+    );
+    l.rotation.x = -Math.PI/2;
+    l.rotation.z = -ang;
+    l.position.set(x, 0.02, z);
+    scene.add(l);
+  }
+  streets.push({x1,z1,x2,z2,w});
+}
+addRoad(  0, 30,   0,-10, 8);
+addRoad(  0,-10, -18,-10, 6);
+addRoad(  0,-10,  18,-10, 6);
+addRoad(-18,-10, -18,-28, 6);
+addRoad( 18,-10,  18,-28, 6);
+addRoad(-18,-28,  18,-28, 6);
+addRoad(  0,-28,   0,-50, 7);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(200,200),
+  new THREE.MeshStandardMaterial({ color:0x111111 })
+);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = -0.02;
+ground.receiveShadow = true;
+scene.add(ground);
+
+/* ============ Buildings & Gates ============ */
+const colliders = [];
+const gates     = [];
+
+/* dir = +1 → يفتح ناحية الشمال (+Z)
+   dir = -1 → يفتح ناحية الجنوب (-Z) */
+const shopsData = [
+  { x:-18, z: -2, w:7, h:6.5, d:6, color:0xFF4B4B, title:'🎮 محل ألعاب الفيديو - فرع غربي', icon:'🎮', p:0, dir:-1 },
+  { x: 18, z: -2, w:7, h:6.5, d:6, color:0xFFD93D, title:'🧸 محل الدباديب - فرع شرقي',       icon:'🧸', p:1, dir:-1 },
+  { x:-18, z:-20, w:7, h:6.5, d:6, color:0x4ADE80, title:'🎯 محل ألعاب الحظ - حارة غربية',    icon:'🎯', p:2, dir:-1 },
+  { x: 18, z:-20, w:7, h:6.5, d:6, color:0x60A5FA, title:'🎁 محل هدايا الألعاب - حارة شرقية', icon:'🎁', p:3, dir:-1 },
+  { x:  0, z:-46, w:8, h:7,   d:6, color:0xF472B6, title:'🎟️ بوابة النهاية - الميدان الكبير', icon:'🎟️', p:4, dir: 1 },
 ];
 
-document.querySelectorAll('.card').forEach(c=>{
- c.addEventListener('click',()=>{
-  document.querySelectorAll('.card').forEach(x=>x.classList.remove('sel')); c.classList.add('sel');
-  sel=parseInt(c.dataset.id); selName=c.dataset.name; document.getElementById('go').classList.add('on');
- });
-});
-document.getElementById('go').addEventListener('click',()=>{
- if(!document.getElementById('go').classList.contains('on')) return;
- document.getElementById('charSel').style.display='none';
- document.getElementById('top').style.display='block';
- document.getElementById('mini').style.display='block';
- document.getElementById('ctrl').style.display='flex';
- document.getElementById('cross').style.display='block';
- document.getElementById('pName').innerText=selName;
- document.getElementById('winN').innerText=selName;
- init();
-});
+function addBuilding(x, z, w, h, d, color, title, icon, pIdx, dir = 1){
+  const g = new THREE.Group();
+  g.position.set(x, 0, z);
 
-function init(){
-scene=new THREE.Scene(); scene.background=new THREE.Color(0x87CEEB); scene.fog=new THREE.Fog(0x87CEEB,50,160);
-camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,0.1,500);
-renderer=new THREE.WebGLRenderer({canvas:document.getElementById('canvas'),antialias:true}); rend
-erer.setSize(innerWidth,innerHeight); renderer.setPixelRatio(1);
-scene.add(new THREE.AmbientLight(0xffffff,0.8));
-let sun=new THREE.DirectionalLight(0xffffff,1); sun.position.set(50,70,20); scene.add(sun);
-let grass=new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({color:0x2d8a1e})); grass.rotation.x=-Math.PI/2; grass.position.y=0; scene.add(grass);
-let road=new THREE.Mesh(new THREE.PlaneGeometry(12,360),new THREE.MeshStandardMaterial({color:0x222222})); road.rotation.x=-Math.PI/2; road.position.y=0.02; scene.add(road);
-for(let z=20;z>-330;z-=4){let l=new THREE.Mesh(new THREE.PlaneGeometry(0.45,2),new THREE.MeshBasicMaterial({color:0xffffff})); l.rotation.x=-Math.PI/2; l.position.set(0,0.04,z); scene.add(l);}
+  const box = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshStandardMaterial({ color, map:brick })
+  );
+  box.position.y = h/2;
+  box.castShadow = true;
+  box.receiveShadow = true;
+  g.add(box);
 
-// buildings with park images integrated as colored facades with icons
-for(let i=0;i<16;i++){
- let z=10 - i*18;
- let side = i%2==0 ? -1 : 1;
- let x = side*9;
- let h = 5+Math.random()*3;
- let colors=[0xff6b6b,0x4ecdc4,0xffe66d,0x6c5ce7,0xff8a5b];
- let building=new THREE.Mesh(new THREE.BoxGeometry(2.5,h,11),new THREE.MeshStandardMaterial({color:colors[i%5]}));
- building.position.set(x,h/2,z); scene.add(building);
- // billboard with ride icon (instead of heavy photo)
- let canvas=document.createElement('canvas'); canvas.width=256; canvas.height=128;
- let ctx=canvas.getContext('2d');
- ctx.fillStyle=['#ff6b6b','#4ecdc4','#ffe66d','#6c5ce7','#ff8a5b'][i%5];
- ctx.fillRect(0,0,256,128);
- ctx.fillStyle='#000'; ctx.font='bold 48px Arial'; ctx.textAlign='center';
- let icons=['🎡','🎢','🎠','🎪','🎯','🎰','🎨','🎭'];
- ctx.fillText(icons[i%8],128,80);
- let tex=new THREE.CanvasTexture(canvas);
- let bill=new THREE.Mesh(new THREE.PlaneGeometry(9,4.5),new THREE.MeshBasicMaterial({map:tex,transparent:true}));
- bill.position.set(x + (side>0?-1.6:1.6), h/2+1, z);
- bill.rotation.y = side>0 ? Math.PI/2 : -Math.PI/2;
- scene.add(bill);
+  if(title){
+    const c = document.createElement('canvas');
+    c.width = 512; c.height = 96;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#000'; ctx.fillRect(0,0,512,96);
+    ctx.fillStyle = '#' + color.toString(16).padStart(6,'0');
+    ctx.fillRect(0, 0, 512, 6);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 22px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, 256, 58);
+    const tex = new THREE.CanvasTexture(c);
+    const sign = new THREE.Mesh(
+      new THREE.PlaneGeometry(w*0.9, 0.9),
+      new THREE.MeshBasicMaterial({ map: tex })
+    );
+    sign.position.set(0, h - 0.6, dir * (d/2 + 0.22));
+    if(dir < 0) sign.rotation.y = Math.PI;
+    g.add(sign);
+
+    const glass = new THREE.Mesh(
+      new THREE.BoxGeometry(w*0.75, 2.5, 0.15),
+      new THREE.MeshStandardMaterial({ color:0xaaccff, transparent:true, opacity:.5 })
+    );
+    glass.position.set(0, 1.5, dir * (d/2 + 0.1));
+    g.add(glass);
+
+    const trig = new THREE.Mesh(
+      new THREE.BoxGeometry(4, 3, 4),
+      new THREE.MeshBasicMaterial({ visible:false })
+    );
+    trig.position.set(0, 1.5, dir * (d/2 + 2.8));
+    trig.userData = { type:'gate', idx:pIdx };
+    g.add(trig);
+
+    gates.push({ mesh:trig, idx:pIdx, title, icon, solved:false, x, z });
+  }
+
+  scene.add(g);
+  colliders.push({ x, z, w:w+0.8, d:d+0.8 });
+
+  const side = new THREE.Mesh(
+    new THREE.PlaneGeometry(w+1, d+1),
+    new THREE.MeshStandardMaterial({ map:sideTex, color:0x555555 })
+  );
+  side.rotation.x = -Math.PI/2;
+  side.position.set(x, 0.015, z);
+  side.receiveShadow = true;
+  scene.add(side);
 }
 
-gateData.forEach((gd,i)=>{
- let gg=new THREE.Group();
- let wall=new THREE.Mesh(new THREE.BoxGeometry(12,5,0.8),new THREE.MeshStandardMaterial({color:0xff2222,emissive:0x440000,transparent:true,opacity:0.9}));
- wall.position.y=2.5; gg.add(wall);
- gg.position.set(0,0,gd.p); scene.add(gg); gates.push({g:gg,w:wall,p:gd.p,i:i});
-});
+shopsData.forEach(s => addBuilding(s.x, s.z, s.w, s.h, s.d, s.color, s.title, s.icon, s.p, s.dir));
 
-[[-1.5,-38,5],[1.2,-45,10],[2.5,-32,15]].forEach((p,i)=>{
- let b=new THREE.Mesh(new THREE.SphereGeometry(0.45,10,10),new THREE.MeshStandardMaterial({color:0x00ff88,emissive:0x00aa44}));
- b.position.set(p[0],0.8,p[1]); b.userData={i:i}; scene.add(b); batteries.push(b);
-});
+[
+  [-8,  20, 5, 7, 10, 0x333333],
+  [ 8,  20, 5, 7, 10, 0x333333],
+  [-8,   5, 5, 6,  8, 0x333333],
+  [ 8,   5, 5, 6,  8, 0x333333],
+  [-12,-10, 4, 6,  4, 0x333333],
+  [ 12,-10, 4, 6,  4, 0x333333],
+  [-10,-28, 6, 6,  4, 0x333333],
+  [ 10,-28, 6, 6,  4, 0x333333],
+  [  0, 10,12, 5,  2, 0x333333],
+].forEach(b => addBuilding(b[0], b[1], b[2], b[3], b[4], b[5], null, null, null, 1));
 
-let castle=new THREE.Mesh(new THREE.BoxGeometry(20,12,10),new THREE.MeshStandardMaterial({color:0xFFD700}));
-castle.position.set(0,6,-308); scene.add(castle);
+/* ============ Street Signs ============ */
+function addStreetSign(x, z, text){
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#FFD93D'; ctx.fillRect(0,0,256,64);
+  ctx.fillStyle = '#000';
+  ctx.font = 'bold 16px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, 128, 38);
+  const tex = new THREE.CanvasTexture(c);
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(3, 0.7),
+    new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })
+  );
+  sign.position.set(x, 2.5, z);
+  scene.add(sign);
+}
+addStreetSign(  0, 15, '⬆ رئيسي');
+addStreetSign( -9,-10, '⬅ غربي: ألعاب');
+addStreetSign(  9,-10, 'شرقي: دباديب ➡');
+addStreetSign(  0,-10, '⬇ ميدان');
+addStreetSign(  0,-28, 'خلفي يربط');
+addStreetSign(  0,-38, '🎟️ النهاية');
 
-loop();
+/* ============ State ============ */
+let yaw = 0, pitch = 0;
+const move = { w:false, a:false, s:false, d:false };
+let isLocked  = false;
+let gateOpen  = false;
+const solved  = [false,false,false,false,false];
+let money     = 0;
+let nearest   = null;
+
+/* ============ Toast & HUD ============ */
+const toastEl = document.getElementById('toast');
+function toast(t){
+  toastEl.textContent = t;
+  toastEl.style.display = 'block';
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.style.display = 'none', 2300);
 }
 
-function loop(){
- requestAnimationFrame(loop);
- let speed=0.22, strafe=0.15;
- let moveX=0, moveZ=0;
- if(keys.w){ moveX+= -Math.sin(yaw)*speed; moveZ+= -Math.cos(yaw)*speed; }
- if(keys.s){ moveX+= Math.sin(yaw)*speed; moveZ+= Math.cos(yaw)*speed; }
- if(keys.a){ moveX+= -Math.cos(yaw)*strafe; moveZ+= Math.sin(yaw)*strafe; }
- if(keys.d){ moveX+= Math.cos(yaw)*strafe; moveZ+= -Math.sin(yaw)*strafe; }
- let np=pos.clone(); np.x+=moveX; np.z+=moveZ;
- if(Math.abs(np.x)<5){
-  let blocked=false;
-  gates.forEach(g=>{if(!solved[g.i] && Math.abs(np.z-g.p)<0.9) blocked=true;});
-  if(!blocked) pos.copy(np);
- }
- batteries.forEach(b=>{b.rotation.y+=0.04; if(!collected[b.userData.i] && pos.distanceTo(b.position)<1.4){collected[b.userData.i]=true; b.visible=false; document.getElementById('act').classList.add('near'); setTimeout(()=>document.getElementById('act').classList.remove('near'),400);}});
- gates.forEach(g=>{if(!solved[g.i] && Math.abs(pos.z-g.p)<6){document.getElementById('act').classList.add('near'); curr=g.i;}});
- document.getElementById('d').innerText=Math.max(0,Math.floor(18-pos.z));
- document.getElementById('pc').innerText=solved.filter(Boolean).length+'/5';
- camera.position.copy(pos);
- camera.rotation.order='YXZ';
- camera.rotation.y=yaw;
- camera.rotation.x=pitch;
- drawMini();
- renderer.render(scene,camera);
+function updateHUD(){
+  document.getElementById('solved').textContent = solved.filter(Boolean).length;
+  document.getElementById('money').textContent  = money;
+  const z = camera.position.z, x = camera.position.x;
+  let name = 'بداية';
+  if(z > 5)                    name = 'بداية الشارع الرئيسي';
+  else if(z > -12)             name = 'شارع رئيسي';
+  else if(z > -18 && x < -6)   name = 'فرع غربي → ألعاب';
+  else if(z > -18 && x >  6)   name = 'فرع شرقي → دباديب';
+  else if(z > -32 && x < -6)   name = 'حارة غربية → حظ';
+  else if(z > -32 && x >  6)   name = 'حارة شرقية → هدايا';
+  else if(z > -40)             name = 'شارع خلفي';
+  else                         name = 'الميدان الكبير - النهاية';
+  document.getElementById('streetName').textContent = name;
 }
 
+/* ============ Pointer Lock + Mouse Look ============ */
+let dragging = false, dragX = 0;
+
+canvas.addEventListener('click', () => {
+  if(document.getElementById('charScreen').style.display === 'none' && !isLocked){
+    try { const p = canvas.requestPointerLock?.(); if(p && p.catch) p.catch(()=>{}); } catch(_){}
+  }
+});
+document.addEventListener('pointerlockchange', () => {
+  isLocked = document.pointerLockElement === canvas;
+});
+document.addEventListener('mousemove', e => {
+  if(isLocked){
+    yaw   -= e.movementX * 0.0025;
+    pitch -= e.movementY * 0.0025;
+    pitch  = Math.max(-1.1, Math.min(1.1, pitch));
+  } else if(dragging){
+    yaw   -= (e.clientX - dragX) * 0.005;
+    dragX  = e.clientX;
+  }
+});
+canvas.addEventListener('mousedown', e => {
+  if(isLocked) return;
+  dragging = true; dragX = e.clientX;
+});
+document.addEventListener('mouseup', () => dragging = false);
+
+/* ============ Touch Look ============ */
+let lookTouchX = null;
+document.addEventListener('touchstart', e => {
+  const t = e.target;
+  if(t.closest && (t.closest('#controls') || t.closest('#centerPrompt') ||
+     t.closest('#gateUI')   || t.closest('#charScreen'))){
+    lookTouchX = null;
+    return;
+  }
+  if(e.touches.length === 1) lookTouchX = e.touches[0].clientX;
+}, { passive:true });
+
+document.addEventListener('touchmove', e => {
+  if(lookTouchX == null) return;
+  const dx = e.touches[0].clientX - lookTouchX;
+  yaw -= dx * 0.008;
+  lookTouchX = e.touches[0].clientX;
+}, { passive:true });
+
+document.addEventListener('touchend',    () => lookTouchX = null);
+document.addEventListener('touchcancel', () => lookTouchX = null);
+
+/* ============ Movement Buttons ============ */
+function bindBtn(id, key){
+  const el = document.getElementById(id);
+  const on  = () => { move[key] = true;  el.classList.add('pressed'); };
+  const off = () => { move[key] = false; el.classList.remove('pressed'); };
+
+  el.addEventListener('touchstart', e => { e.preventDefault(); on();  }, { passive:false });
+  el.addEventListener('touchend',   e => { e.preventDefault(); off(); }, { passive:false });
+  el.addEventListener('touchcancel', off);
+  el.addEventListener('mousedown', e => { e.preventDefault(); on(); });
+  el.addEventListener('mouseup',   off);
+  el.addEventListener('mouseleave', off);
+}
+bindBtn('btnW','w'); bindBtn('btnA','a'); bindBtn('btnS','s'); bindBtn('btnD','d');
+
+/* ============ Keyboard ============ */
+addEventListener('keydown', e => {
+  if(gateOpen) return;
+  switch(e.code){
+    case 'KeyW': case 'ArrowUp':    move.w = true; break;
+    case 'KeyA': case 'ArrowLeft':  move.a = true; break;
+    case 'KeyS': case 'ArrowDown':  move.s = true; break;
+    case 'KeyD': case 'ArrowRight': move.d = true; break;
+    case 'KeyE': case 'Enter':      tryInteract(); break;
+  }
+});
+addEventListener('keyup', e => {
+  switch(e.code){
+    case 'KeyW': case 'ArrowUp':    move.w = false; break;
+    case 'KeyA': case 'ArrowLeft':  move.a = false; break;
+    case 'KeyS': case 'ArrowDown':  move.s = false; break;
+    case 'KeyD': case 'ArrowRight': move.d = false; break;
+  }
+});
+
+/* ============ Look Buttons ============ */
+function bindLook(id, dir){
+  const el = document.getElementById(id);
+  let interval = null;
+  const start = e => {
+    e.preventDefault();
+    yaw += dir * 0.12;
+    interval = setInterval(() => { yaw += dir * 0.06; }, 60);
+  };
+  const stop = () => { clearInterval(interval); interval = null; };
+  el.addEventListener('touchstart', start, { passive:false });
+  el.addEventListener('touchend',   stop);
+  el.addEventListener('touchcancel', stop);
+  el.addEventListener('mousedown',  start);
+  el.addEventListener('mouseup',    stop);
+  el.addEventListener('mouseleave', stop);
+}
+bindLook('lookLeft',  +1);
+bindLook('lookRight', -1);
+
+/* ============ Collision ============ */
+function checkCollision(nx, nz){
+  for(const b of colliders){
+    if(Math.abs(nx - b.x) < b.w/2 + 0.6 &&
+       Math.abs(nz - b.z) < b.d/2 + 0.6) return true;
+  }
+  return false;
+}
+
+/* ============ Nearest Gate ============ */
+function checkNear(){
+  let best = null, md = 1e9;
+  for(const g of gates){
+    if(g.solved) continue;
+    const wp = new THREE.Vector3();
+    g.mesh.getWorldPosition(wp);
+    const d = camera.position.distanceTo(wp);
+    if(d < 5.5 && d < md){ md = d; best = g; }
+  }
+  nearest = best;
+
+  const prompt = document.getElementById('centerPrompt');
+  const btn    = document.getElementById('interact');
+  if(best){
+    prompt.style.display = 'block';
+    prompt.textContent = `${best.icon} افتح ${best.title} - E`;
+    btn.classList.add('active');
+    btn.innerHTML = `<span>${best.icon}</span>افتح`;
+  } else {
+    prompt.style.display = 'none';
+    btn.classList.remove('active');
+    btn.innerHTML = `<span>🚪</span>E`;
+  }
+}
+
+/* ============ Puzzles ============ */
+const puzzles = [
+  { title:'🎮 محل ألعاب الفيديو', street:'فرع غربي', q:'أي أمر يحرك اللاعب قدام؟',
+    code:'// W = قدام\n???();', opts:['eatPizza();','moveForward();','sleep();'],
+    ans:1, ex:'moveForward() = W قدام!' },
+  { title:'🧸 محل الدباديب', street:'فرع شرقي', q:'رتب الدباديب على الرف',
+    code:'1. ???\n2. حط التاني\n3. حط التالت', opts:['حطهم كلهم مرة واحدة','حط أول دبدوب'],
+    ans:1, ex:'الترتيب مهم!' },
+  { title:'🎯 محل ألعاب الحظ', street:'حارة غربية', q:'عايز تكسب 4 مرات - تكرر كام؟',
+    code:'repeat( ? ){\n  العب\n}', opts:['1','4'],
+    ans:1, ex:'4 مرات = 4 محاولات' },
+  { title:'🎁 محل هدايا', street:'حارة شرقية', q:'معاك 100ج واللعبة 60ج - تشتري؟',
+    code:'if( money >= 60 ) buy', opts:['لا','نعم - 100 >=60'],
+    ans:1, ex:'الشرط متحقق!' },
+  { title:'🎟️ بوابة النهاية', street:'الميدان الكبير', q:'فين الخطأ؟',
+    code:'for(i=0; i<5; i++{\n  افتح\n}', opts:['ناقص )','for غلط'],
+    ans:0, ex:'لازم )' },
+];
+const LETTERS = ['أ','ب','ج','د'];
+
+function tryInteract(){
+  if(!nearest){
+    toast('🚶 قرب من محل - اتبع اللافتات الصفراء');
+    return;
+  }
+  openGate(nearest.idx);
+}
+
+document.getElementById('centerPrompt').addEventListener('click', tryInteract);
+document.getElementById('interact').addEventListener('click', tryInteract);
+
+/* ============ Gate Modal ============ */
+function openGate(idx){
+  const p = puzzles[idx];
+  const box = document.getElementById('gBox');
+  box.innerHTML = `
+    <div class="gHead">
+      <div class="gIco">${shopsData[idx].icon}</div>
+      <div>
+        <div class="gTitle">${p.title}</div>
+        <div class="gStreet">📍 ${p.street}</div>
+      </div>
+    </div>
+    <p class="gQ"><b>🎯</b> ${p.q}</p>
+    <div class="gCode">${p.code}</div>
+    <div class="gOpts" id="opts"></div>
+    <div class="gFb" id="fb"></div>
+    <div class="gActions">
+      <button id="closeGate">إغلاق</button>
+      <button id="hintBtn">💡 تلميح</button>
+    </div>
+  `;
+
+  document.getElementById('gateUI').style.display = 'flex';
+  gateOpen = true;
+
+  if(document.pointerLockElement) document.exitPointerLock();
+
+  const optsEl = box.querySelector('#opts');
+  p.opts.forEach((t, i) => {
+    const d = document.createElement('div');
+    d.className = 'gOpt';
+    d.textContent = LETTERS[i] + ' - ' + t;
+    d.onclick = () => {
+      if(i === p.ans){
+        d.style.borderColor = '#00ff88';
+        d.style.background  = 'rgba(0,255,136,.12)';
+        const fb = document.getElementById('fb');
+        fb.style.display    = 'block';
+        fb.style.background = 'rgba(0,255,136,.12)';
+        fb.style.border     = '1px solid #00ff88';
+        fb.innerHTML = `✅ صح! ${p.ex}<br>🎉 +20💰`;
+        setTimeout(() => {
+          solved[idx] = true;
+          money += 20;
+          updateHUD();
+          const g = gates.find(x => x.idx === idx);
+          if(g) g.solved = true;
+          closeGate();
+          toast(`فتحت ${p.title}!`);
+          if(solved.filter(Boolean).length === 5) toast('🏆 خلصت كل الشوارع!');
+        }, 900);
+      } else {
+        d.style.borderColor = '#ff4444';
+        d.style.background  = 'rgba(255,68,68,.12)';
+        const fb = document.getElementById('fb');
+        fb.style.display    = 'block';
+        fb.style.background = 'rgba(255,68,68,.12)';
+        fb.style.border     = '1px solid #ff4444';
+        fb.textContent      = '❌ غلط - جرب تاني';
+      }
+    };
+    optsEl.appendChild(d);
+  });
+
+  document.getElementById('closeGate').onclick = closeGate;
+  document.getElementById('hintBtn').onclick   = () => {
+    const fb = document.getElementById('fb');
+    fb.style.display    = 'block';
+    fb.style.background = 'rgba(255,217,61,.15)';
+    fb.style.border     = '1px solid #FFD93D';
+    fb.textContent      = '💡 ' + p.ex;
+  };
+}
+
+function closeGate(){
+  document.getElementById('gateUI').style.display = 'none';
+  gateOpen = false;
+}
+
+/* ============ Enter Button ============ */
+document.getElementById('enterBtn').onclick = () => {
+  document.getElementById('charScreen').style.display = 'none';
+  try { const pr = canvas.requestPointerLock?.(); if(pr && pr.catch) pr.catch(()=>{}); } catch(_){}
+  toast('🗺️ اتبع اللافتات - ادخل حواري جانبية!');
+};
+
+document.querySelectorAll('.card').forEach(c => {
+  c.onclick = () => {
+    document.querySelectorAll('.card').forEach(x => x.classList.remove('sel'));
+    c.classList.add('sel');
+  };
+});
+
+/* ============ Minimap ============ */
+const mini = document.getElementById('mini');
+const mctx = mini.getContext('2d');
 function drawMini(){
- let c=document.getElementById('mc'), ctx=c.getContext('2d');
- ctx.fillStyle='#0a0a0a'; ctx.fillRect(0,0,90,120);
- ctx.fillStyle='#3a3a3a'; ctx.fillRect(35,0,20,120);
- gates.forEach(g=>{let y=((g.p+310)/330)*120; ctx.fillStyle=solved[g.i]?'#0f8':'#f33'; ctx.fillRect(33,y,24,4);});
- let py=((pos.z+310)/330)*120, px=45+pos.x*2;
- ctx.fillStyle='#FFD93D'; ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fill();
+  mctx.fillStyle = '#111';
+  mctx.fillRect(0, 0, 115, 115);
+
+  mctx.strokeStyle = '#FFD93D';
+  mctx.lineWidth = 3;
+  mctx.beginPath(); mctx.moveTo(57, 100); mctx.lineTo(57, 50); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(57, 50);  mctx.lineTo(22, 50); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(57, 50);  mctx.lineTo(92, 50); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(22, 50);  mctx.lineTo(22, 20); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(92, 50);  mctx.lineTo(92, 20); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(22, 20);  mctx.lineTo(92, 20); mctx.stroke();
+  mctx.beginPath(); mctx.moveTo(57, 20);  mctx.lineTo(57,  5); mctx.stroke();
+
+  const pos = [
+    {x:22,y:40},{x:92,y:40},{x:22,y:20},{x:92,y:20},{x:57,y:5}
+  ];
+  pos.forEach((sp, i) => {
+    mctx.fillStyle = solved[i] ? '#00ff88' : '#FF4B4B';
+    mctx.beginPath();
+    mctx.arc(sp.x, sp.y, 5, 0, Math.PI*2);
+    mctx.fill();
+  });
+
+  const px = 57 + (camera.position.x / 18) * 35;
+  const pz = 100 - ((camera.position.z - 28) / -78) * 95;
+  mctx.fillStyle = '#fff';
+  mctx.beginPath();
+  mctx.arc(
+    Math.max(5, Math.min(110, px)),
+    Math.max(5, Math.min(110, pz)),
+    3, 0, Math.PI*2
+  );
+  mctx.fill();
 }
 
-function openP(i){
- let gd=gateData[i];
- document.getElementById('mT').innerText=gd.t;
- document.getElementById('mS').innerText=gd.s;
- let html="";
- if(i==0) html+="<div class='code'>x=<input id='v0' value='"+(collected[0]?5:'')+"'> y=<input id='v1' value='"+(collected[1]?10:'')+"'> z=<input id='v2' value='"+(collected[2]?15:'')+"'></div><button class='btn btnP' onclick='check0()'>افتح 🔓</button>";
- if(i==1) html+="<div class='code'>for(i=0;i&lt;<input id='l1'>;i++)</div><button class='btn btnP' onclick='if(l1.value==\"4\")solve("+i+"); else alert(\"لازم 4\")'>شغل</button>";
- if(i==2) html+="<div class='code'><label><input type='checkbox' id='c1'> تذكرة</label><br><label><input type='checkbox' id='c2'> كود</label></div><button class='btn btnP' onclick='if(c1.checked&&c2.checked)solve("+i+"); else alert(\"فعل الاتنين\")'>جرب</button>";
- if(i==3) html+="<div class='code'><input id='fc' placeholder='startRide();' style='width:140px'></div><button class='btn btnP' onclick='let v=fc.value.trim(); if(v==\"startRide();\"||v==\"startRide()\")solve("+i+"); else alert(\"اكتب startRide();\")'>شغل</button>";
- if(i==4) html+="<div class='code'>صلح )</div><button class='btn btnP' id='b1' onclick='this._a=true; this.textContent=\"✅\";'>قوس 1</button> <button class='btn btnP' id='b2' onclick='this._b=true; this.textContent=\"✅\"; if(document.getElementById(\"b1\")._a && this._b) solve(4);'>قوس 2</button>";
- html+="<button class='btn btnG' onclick='closeM()'>إلغاء</button><div id='err' style='color:#f66;font-size:11px'></div>";
- document.getElementById('mB').innerHTML=html;
- document.getElementById('modal').style.display='flex';
-}
-window.check0=function(){let a=v0.value,b=v1.value,c=v2.value; if(a=='5'&&b=='10'&&c=='15')solve(curr); else err.innerText='لازم 5,10,15';};
-window.solve=function(i){solved[i]=true; gates[i].w.material.color.set(0x00ff88); gates[i].g.scale.y=0.1; closeM(); document.getElementById('act').classList.remove('near'); if(solved.filter(Boolean).length==5) setTimeout(()=>{document.getElementById('win').style.display='flex';},400);};
-window.closeM=function(){document.getElementById('modal').style.display='none';};
+/* ============ Main Loop ============ */
+let last = performance.now();
 
-document.querySelectorAll('.jb').forEach(b=>{
- let k=b.dataset.k;
- let s=()=>{keys[k]=true; b.classList.add('on');}, e=()=>{keys[k]=false; b.classList.remove('on');};
- b.addEventListener('touchstart',ev=>{ev.preventDefault(); s();}); b.addEventListener('touchend',e); b.addEventListener('mousedown',s); b.addEventListener('mouseup',e); b.addEventListener('mouseleave',e);
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now;
+
+  if(gateOpen){
+    move.w = move.a = move.s = move.d = false;
+  }
+
+  const speed = 4.5 * dt;
+
+  const f = new THREE.Vector3();
+  camera.getWorldDirection(f);
+  f.y = 0;
+  f.normalize();
+
+  const r = new THREE.Vector3().crossVectors(f, new THREE.Vector3(0, 1, 0));
+
+  let nx = camera.position.x;
+  let nz = camera.position.z;
+  if(move.w){ nx += f.x * speed; nz += f.z * speed; }
+  if(move.s){ nx -= f.x * speed; nz -= f.z * speed; }
+  if(move.a){ nx -= r.x * speed; nz -= r.z * speed; }
+  if(move.d){ nx += r.x * speed; nz += r.z * speed; }
+
+  if(!checkCollision(nx, camera.position.z)) camera.position.x = nx;
+  if(!checkCollision(camera.position.x, nz)) camera.position.z = nz;
+
+  camera.rotation.y = yaw;
+  camera.rotation.x = pitch;
+
+  checkNear();
+  updateHUD();
+  drawMini();
+  renderer.render(scene, camera);
+}
+loop(performance.now());
+
+/* ============ Resize ============ */
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
 });
-document.getElementById('act').addEventListener('click',()=>{if(curr>=0 && !solved[curr]) openP(curr);});
-let sx=0, sy=0;
-document.getElementById('canvas').addEventListener('touchstart',e=>{sx=e.touches[0].clientX; sy=e.touches[0].clientY;});
-document.getElementById('canvas').addEventListener('touchmove',e=>{
- let dx=e.touches[0].clientX-sx, dy=e.touches[0].clientY-sy;
- yaw-=dx*0.008; pitch=Math.max(-0.6,Math.min(0.6,pitch-dy*0.008));
- sx=e.touches[0].clientX; sy=e.touches[0].clientY;
- e.preventDefault();
-},{passive:false});
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight);});
 </script>
 </body>
 </html>
