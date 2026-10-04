@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>مغامرة المتاهة</title>
+    <link rel="stylesheet" href="../common.css" />
+    <link rel="stylesheet" href="maze.css" />
+  </head>
+  <body>
+    <div class="app-shell maze-app">
+      <header class="topbar page-card game-topbar">
+        <button class="nav-control back-control" type="button" data-go-back="../games/index.html" aria-label="رجوع للألعاب">
+          ⬅️
+        </button>
+        <a class="nav-control home-control" href="../index/index.html" aria-label="الرئيسية">
+          🏠
+        </a>
+        <div class="stat game-star-stat" aria-label="نجوم المتاهة"><strong id="stars" data-game-stars>0</strong><span aria-hidden="true">⭐</span></div>
+        <div class="stat game-level-stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="levelNum" data-game-level>1</strong></div>
+        <span class="game-identity" aria-hidden="true">🐰</span>
+        <span class="game-mark" aria-label="لعبة المتاهة">🧩</span>
+        <button class="nav-control next-control" id="nextLevelButton" data-game-next type="button" aria-label="المستوى التالي" hidden>
+          ➡️
+        </button>
+      </header>
+
+      <main class="game-panel page-card">
+        <div class="level-mark" id="title" aria-label="المستوى الحالي">1</div>
+        <p class="level-hint" id="levelHint" role="note"></p>
+
+        <div class="board-wrap">
+          <div id="board" class="board" aria-label="المتاهة"></div>
+        </div>
+
+        <div class="program-box" id="program" aria-label="تسلسل الأوامر"></div>
+
+        <section class="command-toolbar" aria-label="الأوامر">
+          <div class="command-control">
+            <button class="dir-btn" data-dir="up" aria-label="↑">↑</button>
+            <button class="help-q" type="button" aria-label="كود السهم للأعلى" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">moveUp();</span>
+          </div>
+          <div class="command-control">
+            <button class="dir-btn" data-dir="right" aria-label="→">→</button>
+            <button class="help-q" type="button" aria-label="كود السهم لليمين" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">moveRight();</span>
+          </div>
+          <div class="command-control">
+            <button class="dir-btn" data-dir="down" aria-label="↓">↓</button>
+            <button class="help-q" type="button" aria-label="كود السهم للأسفل" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">moveDown();</span>
+          </div>
+          <div class="command-control">
+            <button class="dir-btn" data-dir="left" aria-label="←">←</button>
+            <button class="help-q" type="button" aria-label="كود السهم لليسار" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">moveLeft();</span>
+          </div>
+          <div class="command-control">
+            <button class="extra-btn" data-repeat="2" aria-label="×2">×2</button>
+            <button class="help-q" type="button" aria-label="كود التكرار مرتين" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">for (let i = 0; i &lt; 2; i++) move();</span>
+          </div>
+          <div class="command-control">
+            <button class="extra-btn" data-repeat="3" aria-label="×3">×3</button>
+            <button class="help-q" type="button" aria-label="كود التكرار ثلاث مرات" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">for (let i = 0; i &lt; 3; i++) move();</span>
+          </div>
+          <div class="command-control">
+            <button class="extra-btn" data-repeat="4" aria-label="×4">×4</button>
+            <button class="help-q" type="button" aria-label="كود التكرار أربع مرات" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">for (let i = 0; i &lt; 4; i++) move();</span>
+          </div>
+          <div class="command-control">
+            <button class="extra-btn jump" data-cmd="jump" type="button" aria-label="قفزة في آخر اتجاه">🦘</button>
+            <button class="help-q" type="button" aria-label="كود القفز" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">jump(2, lastDirection);</span>
+          </div>
+        </section>
+
+        <div class="run-row">
+          <button class="run-btn success" id="runButton" aria-label="تشغيل">▶️</button>
+          <button class="run-btn reset" id="resetButton" aria-label="إعادة المستوى الحالي">🔄</button>
+          <button class="run-btn clear" id="clearButton" aria-label="مسح الأوامر">🧹</button>
+        </div>
+
+        <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <script src="../common.js"></script>
+    <script src="maze.js"></script>
+  </body>
+</html>

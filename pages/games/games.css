@@ -1,0 +1,119 @@
+body {
+  display: block;
+  min-height: 100vh;
+  padding: 20px 14px 36px;
+  background: linear-gradient(155deg, #176b63 0%, #2d8b7e 55%, #e5a14a 145%);
+}
+
+.games-page {
+  width: min(820px, 100%);
+  margin: 0 auto;
+}
+
+.games-header {
+  margin-bottom: 18px;
+}
+
+.page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.games-header h1 {
+  color: #fff;
+  font-size: 1.8rem;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+}
+
+.game-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 12px;
+  min-height: 104px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border-top: 5px solid var(--game-accent, #4285a8);
+  background: #fff;
+  color: #173d3a;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14);
+}
+
+.game-maze { --game-accent: #4285a8; }
+.game-draw { --game-accent: #d58b37; }
+.game-gas { --game-accent: #e47645; }
+.game-robot { --game-accent: #e47765; }
+
+.game-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--game-accent, #4285a8) 14%, white);
+  font-size: 2rem;
+}
+
+.game-details {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.game-details h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.level-count {
+  color: #5f7183;
+  direction: ltr;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: right;
+}
+
+.game-progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eef0;
+}
+
+.game-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--game-accent, #4285a8);
+}
+
+.launch-game {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--game-accent, #e47645);
+  color: #fff;
+  font-size: 1.2rem;
+  text-decoration: none;
+}
+
+.launch-game:focus-visible {
+  outline: 3px solid #f4ca45;
+  outline-offset: 3px;
+}
+
+@media (max-width: 420px) {
+  body { padding: 14px 10px 24px; }
+  .games-header h1 { font-size: 1.5rem; }
+  .games-grid { grid-template-columns: 1fr; gap: 9px; }
+  .game-card { min-height: 86px; }
+}

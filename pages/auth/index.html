@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تسجيل الدخول | صالة الألعاب التعليمية</title>
+    <link rel="stylesheet" href="../common.css" />
+    <link rel="stylesheet" href="auth.css" />
+  </head>
+  <body>
+    <div class="auth-shell">
+      <main class="auth-card">
+        <div class="auth-header">
+          <div class="brand-bubble">🎮</div>
+          <span class="pill">🌈 B u d d y 🌈</span>
+          <h1>اهلا بك في اللعبة</h1>
+        </div>
+
+        <section id="login-panel" class="auth-panel">
+          <form id="login-form" class="login-form">
+            <label for="username">اسم المستخدم أو البريد الإلكتروني</label>
+            <input id="username" name="username" autocomplete="username" required placeholder="مثال: child" />
+            <label for="password">كلمة المرور</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="أدخل كلمة المرور" />
+            <button class="submit-btn" type="submit">دخول</button>
+          </form>
+
+          <div class="divider"><span>أو</span></div>
+
+          <div class="google-panel">
+            <button id="google-login-button" class="google-btn" type="button">تسجيل الدخول بحساب Google</button>
+            <p id="google-setup-message" class="google-setup-message" aria-live="polite"></p>
+          </div>
+        </section>
+
+        <section id="role-panel" class="auth-panel role-panel" hidden>
+          <h2>اختر نوع الحساب</h2>
+          <p id="signed-in-name" class="signed-in-name"></p>
+          <div id="role-options" class="role-options">
+            <button class="role-btn child" type="button" data-role="child">طفل</button>
+            <button class="role-btn parent" type="button" data-role="parent">ولي أمر</button>
+            <button class="role-btn teacher" type="button" data-role="teacher">معلم</button>
+          </div>
+          <button id="change-account" class="change-account" type="button">العودة لتسجيل الدخول</button>
+        </section>
+
+        <div id="auth-message" class="auth-message" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <script src="../common.js"></script>
+    <script src="auth.js"></script>
+  </body>
+</html>

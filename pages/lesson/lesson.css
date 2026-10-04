@@ -1,0 +1,184 @@
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 12px;
+}
+
+.lesson-page {
+  width: min(900px, 100%);
+}
+
+.lesson-header {
+  background: linear-gradient(135deg, #176b63, #2d8b7e);
+  color: #fff;
+  text-align: center;
+  padding: 28px 20px;
+  margin-bottom: 22px;
+  border: none;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.tag {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  padding: 7px 12px;
+  margin-bottom: 12px;
+  font-weight: 900;
+}
+
+.lesson-header h1 {
+  font-size: clamp(2rem, 5vw, 2.6rem);
+  margin-bottom: 6px;
+}
+
+.lesson-header p {
+  opacity: 0.96;
+  font-weight: 700;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.info-card {
+  padding: 20px 18px;
+  transition: transform 0.2s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-2px);
+}
+
+.info-card h2 {
+  margin-bottom: 10px;
+  font-size: 1.4rem;
+}
+
+.info-card p,
+.steps li {
+  color: #42576a;
+  line-height: 1.8;
+  font-weight: 600;
+}
+
+.example-box {
+  margin-top: 14px;
+  background: #f0f7f1;
+  border: 2px dashed #18876c;
+  border-radius: 14px;
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.warning-box {
+  background: #fffaf1;
+  border-color: #f59e0b;
+}
+
+.highlight-card {
+  background: linear-gradient(180deg, rgba(255, 247, 237, 0.8), rgba(255, 255, 255, 1));
+}
+
+code {
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-family: "Courier New", monospace;
+  color: #176b63;
+  border: 1px solid #e5e7eb;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.compare-item {
+  background: #f9fafb;
+  border-radius: 14px;
+  padding: 16px 10px;
+  text-align: center;
+}
+
+.compare-item .emoji {
+  font-size: 2.2rem;
+  margin-bottom: 4px;
+}
+
+.steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+}
+
+.steps li {
+  background: #f7f9fa;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.sequence {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-weight: 800;
+  color: #2e4053;
+}
+
+.footer-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+.back-btn,
+.play-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-weight: 900;
+  color: #fff;
+}
+
+.back-btn {
+  background: #176b63;
+}
+
+.play-btn {
+  background: #18876c;
+}
+
+@media (max-width: 560px) {
+  .page-navigation {
+    margin-bottom: 18px;
+  }
+
+  .compare-grid {
+    grid-template-columns: 1fr;
+  }
+}

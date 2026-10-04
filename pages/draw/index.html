@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ارسم طريقك</title>
+    <link rel="stylesheet" href="../common.css" />
+    <link rel="stylesheet" href="draw.css" />
+  </head>
+  <body>
+    <div class="app-shell draw-app">
+      <header class="topbar page-card game-topbar">
+        <button class="nav-control back-control" type="button" data-go-back="../games/index.html" aria-label="رجوع للألعاب">
+          ⬅️
+        </button>
+        <a class="nav-control home-control" href="../index/index.html" aria-label="الرئيسية">
+          🏠
+        </a>
+        <div class="stat game-star-stat" aria-label="نجوم الرسم"><strong id="stars" data-game-stars>0</strong><span aria-hidden="true">⭐</span></div>
+        <div class="stat game-level-stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="levelNum" data-game-level>1</strong></div>
+        <span class="game-identity" aria-hidden="true">🐱</span>
+        <span class="game-mark" aria-label="لعبة الرسم">✏️</span>
+        <button class="nav-control next-control" id="nextLevelButton" data-game-next type="button" aria-label="المستوى التالي" hidden>
+          ➡️
+        </button>
+      </header>
+
+      <main class="game-panel page-card">
+        <div class="game-heading">
+          <span class="level-mark" id="title" aria-label="المستوى الحالي">1</span>
+          <span class="target-mark" id="targetHint" aria-label="الطريق من القطة إلى الهدف">🐱 ➜ 🏠</span>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="canvas" width="420" height="420" aria-label="المس القطة واسحب لرسم طريق إلى الهدف، مع تجنب العوائق"></canvas>
+        </div>
+
+        <p class="draw-instruction" id="levelHint">المس القطة وارسم طريقًا آمنًا إلى الهدف</p>
+
+        <div class="run-row">
+          <button class="run-btn" id="runButton" type="button" aria-label="تحقق من الطريق">✅</button>
+          <button class="run-btn" id="resetButton" type="button" aria-label="إعادة رسم الطريق">🔄</button>
+        </div>
+
+        <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+      </main>
+    </div>
+
+    <script src="../common.js"></script>
+    <script src="draw.js"></script>
+  </body>
+</html>

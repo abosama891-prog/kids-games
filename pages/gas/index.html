@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#176b63" />
+    <title>مهندس الجسور والمعدّيات | أنقذ المدينة</title>
+    <link rel="stylesheet" href="../common.css" />
+    <link rel="stylesheet" href="gas.css" />
+  </head>
+  <body>
+    <div class="app-shell gas-app">
+      <header class="topbar page-card game-topbar gas-topbar">
+        <button class="nav-control back-control" type="button" data-go-back="../games/index.html" aria-label="رجوع للألعاب">⬅️</button>
+        <a class="nav-control home-control" href="../index/index.html" aria-label="الرئيسية">🏠</a>
+        <div class="stat game-star-stat" aria-label="نجوم مهندس الجسور والمعدّيات"><strong id="stars" data-game-stars>0</strong><span aria-hidden="true">⭐</span></div>
+        <div class="stat game-level-stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="level-count" data-game-level>1</strong></div>
+        <span class="game-identity" aria-hidden="true">🧑‍🔧</span>
+        <span class="game-mark" aria-label="لعبة مهندس الجسور والمعدّيات">🌉</span>
+        <button class="nav-control next-control" id="headerNextButton" data-game-next type="button" aria-label="المستوى التالي" disabled hidden>➡️</button>
+      </header>
+
+      <main class="game-panel page-card gas-panel">
+        <div class="level-info gas-level-info">
+          <span id="level-icon" class="level-mark" aria-hidden="true">🌉</span>
+          <h1 id="level-title">1</h1>
+          <span id="concept-label" class="visually-hidden"></span>
+          <p id="level-hint" class="level-hint">ابنِ جسرًا آمنًا لعبور النهر إلى البلدة.</p>
+          <span id="mission-title" class="visually-hidden" aria-live="polite"></span>
+        </div>
+
+        <p id="challenge-band" class="challenge-band" aria-live="polite"></p>
+        <nav id="level-list" class="level-list" aria-label="اختيار المستوى"></nav>
+
+        <div class="board-wrap gas-board-wrap">
+          <div class="city-scene">
+            <img class="city-art" src="crossing.svg" alt="" />
+            <div class="station factory-station" aria-label="ضفة البداية">
+              <svg viewBox="0 0 64 64" aria-hidden="true">
+                <defs><linearGradient id="worker-vest" x2="0" y2="1"><stop stop-color="#ffd66e"/><stop offset="1" stop-color="#e39b39"/></linearGradient><linearGradient id="worker-shirt" x2="0" y2="1"><stop stop-color="#477b87"/><stop offset="1" stop-color="#285562"/></linearGradient></defs>
+                <path d="M11 61c1-14 8-22 21-22s20 8 21 22z" fill="url(#worker-shirt)" stroke="#354e50" stroke-width="2"/>
+                <path d="m22 43 10 12 10-12 7 18H15z" fill="url(#worker-vest)" stroke="#785d37" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M30 52h4v9h-4zM18 58h28" fill="none" stroke="#f7e4a9" stroke-width="2"/>
+                <ellipse cx="32" cy="28" rx="15" ry="17" fill="#d79a70" stroke="#805b49" stroke-width="2"/>
+                <path d="M18 27c1-11 7-17 15-17s14 6 14 17l-5-4-3-7c-4 5-11 8-21 8z" fill="#593e32"/>
+                <path d="M15 22c1-9 8-15 17-15s16 6 17 15z" fill="#f3bd4e" stroke="#795b31" stroke-width="2"/>
+                <path d="M12 22h40" stroke="#d79435" stroke-width="4" stroke-linecap="round"/>
+                <ellipse cx="27" cy="29" rx="1.5" ry="2" fill="#372f2c"/><ellipse cx="38" cy="29" rx="1.5" ry="2" fill="#372f2c"/>
+                <path d="M28 37q4 3 8 0" fill="none" stroke="#8f5144" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <small>نقطة البداية</small>
+            </div>
+            <span id="gas-color" class="gas-color"><i></i><span>النهر هادئ</span></span>
+            <div class="pipeline-shell"><div id="pipe-track" class="pipe-track" aria-label="قطع بناء المعبر"></div></div>
+            <svg id="crossing-traveler" class="crossing-traveler" viewBox="0 0 72 48" aria-hidden="true">
+              <defs><linearGradient id="truck-body" x2="0" y2="1"><stop stop-color="#ffd36b"/><stop offset="1" stop-color="#df8c35"/></linearGradient><linearGradient id="truck-glass" x2="0" y2="1"><stop stop-color="#d5f3f3"/><stop offset="1" stop-color="#74afba"/></linearGradient></defs>
+              <path d="M5 17h37v21H5z" fill="url(#truck-body)" stroke="#704d30" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M42 23h13l10 10v5H42z" fill="#e9a747" stroke="#704d30" stroke-width="2.5" stroke-linejoin="round"/>
+              <path d="M46 25h8l7 7H46z" fill="url(#truck-glass)" stroke="#617477" stroke-width="1.5"/>
+              <path d="M10 21h27m-27 5h27m-27 5h27" stroke="#f8dfa0" stroke-width="2"/>
+              <circle cx="19" cy="38" r="6" fill="#394347"/><circle cx="19" cy="38" r="2.6" fill="#d8ddda"/>
+              <circle cx="53" cy="38" r="6" fill="#394347"/><circle cx="53" cy="38" r="2.6" fill="#d8ddda"/>
+            </svg>
+            <div id="home-station" class="station home-station" aria-label="البلدة على الضفة الأخرى">
+              <svg viewBox="0 0 80 80" aria-hidden="true">
+                <defs><linearGradient id="house-wall" x2="0" y2="1"><stop stop-color="#fff2c8"/><stop offset="1" stop-color="#e6b969"/></linearGradient><linearGradient id="house-roof" x2="0" y2="1"><stop stop-color="#d87555"/><stop offset="1" stop-color="#9f463b"/></linearGradient></defs>
+                <path d="m9 36 31-25 31 25v35H9z" fill="url(#house-wall)" stroke="#805746" stroke-width="3" stroke-linejoin="round"/>
+                <path d="m5 37 35-29 35 29-6 7-29-23L11 44z" fill="url(#house-roof)" stroke="#7e4438" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M33 49h14v22H33z" fill="#8b5d48"/><path d="M17 45h11v12H17zM53 45h11v12H53z" fill="#9ed8e5" stroke="#705c4d" stroke-width="2"/>
+                <path d="M19 47h7M55 47h7" stroke="#fff" stroke-width="2"/>
+              </svg>
+              <small>الهدف</small>
+            </div>
+            <div id="branch-diagram" class="branch-diagram" hidden>
+              <div id="upper-branch" class="branch-path"><b>🌤️</b><span>🌉 جسر</span></div>
+              <div id="lower-branch" class="branch-path"><b>🌊</b><span>⛴️ معدّية</span></div>
+            </div>
+          </div>
+
+          <p class="build-instruction">اسحب قطعة إلى خانة الجسر فوق النهر، أو اضغط عليها لإضافتها.</p>
+          <div id="mascot-message" class="mascot-message" role="status" aria-live="polite">
+            <span aria-hidden="true">🧑‍🔧</span><p>اختر قطعًا لبناء معبر آمن.</p>
+          </div>
+          <div class="city-lights" aria-label="إنارة المدينة"><span>🏠</span><span>🏠</span><span>🏠</span><span>🏠</span></div>
+        </div>
+
+        <div id="program-list" class="program-box" aria-label="البرنامج" aria-live="polite"></div>
+
+        <section class="command-toolbar" aria-label="الأوامر">
+          <div class="command-control">
+            <button class="piece-button straight-piece" type="button" data-piece="deck" aria-label="قطعة سطح جسر">
+              <svg viewBox="0 0 80 48" aria-hidden="true"><path d="M5 21h70v18H5z" fill="#b9783d" stroke="#68462c" stroke-width="4" stroke-linejoin="round"/><path d="M12 24v12M27 24v12M42 24v12M57 24v12M70 24v12" stroke="#f1c27d" stroke-width="3"/><path d="M8 18h64" stroke="#e0a967" stroke-width="4" stroke-linecap="round"/></svg>
+            </button>
+            <button class="help-q" type="button" aria-label="كود قطعة سطح الجسر" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">placeBridgeDeck();</span>
+          </div>
+          <div class="command-control">
+            <button class="piece-button elbow-piece" type="button" data-piece="ramp" aria-label="منحدر صعود للجسر">
+              <svg viewBox="0 0 80 56" aria-hidden="true"><path d="M5 43h28L53 14h22v20H61L41 54H5z" fill="#b9783d" stroke="#68462c" stroke-width="4" stroke-linejoin="round"/><path d="m14 40 19 0M52 21h15M37 45l13-18" stroke="#f1c27d" stroke-width="3" stroke-linecap="round"/></svg>
+            </button>
+            <button class="help-q" type="button" aria-label="كود منحدر الجسر" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">buildRamp();</span>
+          </div>
+          <div class="command-control">
+            <button class="piece-button support-piece" type="button" data-piece="support" aria-label="دعامة للجسر">
+              <svg viewBox="0 0 80 56" aria-hidden="true"><path d="M15 45h50M21 45 29 13h22l8 32M12 13h56" fill="none" stroke="#68462c" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 45h50M21 45 29 13h22l8 32M12 13h56" fill="none" stroke="#d99b58" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="help-q" type="button" aria-label="كود دعامة الجسر" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">addSupport();</span>
+          </div>
+          <div class="command-control">
+            <button class="piece-button ferry-piece" type="button" data-piece="ferry" aria-label="معدّية لعبور النهر">
+              <svg viewBox="0 0 80 56" aria-hidden="true"><path d="M8 36h64L61 49H20z" fill="#d57745" stroke="#714a36" stroke-width="3" stroke-linejoin="round"/><path d="M25 17h31v19H25z" fill="#f6d77c" stroke="#714a36" stroke-width="3"/><path d="M31 22h8v8h-8zM43 22h8v8h-8z" fill="#8ecbd2"/><path d="M5 52q10-6 20 0t20 0 20 0 15 0" fill="none" stroke="#4599b5" stroke-width="3" stroke-linecap="round"/></svg>
+            </button>
+            <button class="help-q" type="button" aria-label="كود تشغيل المعدّية" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">launchFerry();</span>
+          </div>
+          <div class="command-control">
+            <button id="if-else-button" class="piece-button valve-piece" type="button" aria-label="اختيار الجسر أو المعدّية حسب حالة النهر">
+              <svg viewBox="0 0 80 56" aria-hidden="true"><path d="M40 48V29M40 29 18 9M40 29 62 9" fill="none" stroke="#58696f" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 48V29M40 29 18 9" fill="none" stroke="#e2534d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 29 62 9" fill="none" stroke="#369bd2" stroke-width="5" stroke-linecap="round"/><circle cx="40" cy="29" r="11" fill="#e5b84e" stroke="#835f26" stroke-width="3"/><path d="M40 18V6m-8 0h16" stroke="#66777c" stroke-width="4" stroke-linecap="round"/></svg>
+            </button>
+            <button class="help-q" type="button" aria-label="كود شرط حالة النهر" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">if (river === 'calm') buildBridge(); else launchFerry();</span>
+          </div>
+          <div class="command-control">
+            <button class="repeat-button" type="button" data-repeat="2" aria-label="تكرار مرتين">×2</button>
+            <button class="help-q" type="button" aria-label="كود التكرار مرتين" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">repeat(2) placeBridgeDeck();</span>
+          </div>
+          <div class="command-control">
+            <button class="repeat-button" type="button" data-repeat="3" aria-label="تكرار ثلاث مرات">×3</button>
+            <button class="help-q" type="button" aria-label="كود التكرار ثلاث مرات" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">repeat(3) placeBridgeDeck();</span>
+          </div>
+          <div class="command-control">
+            <button class="repeat-button" type="button" data-repeat="4" aria-label="تكرار أربع مرات">×4</button>
+            <button class="help-q" type="button" aria-label="كود التكرار أربع مرات" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">repeat(4) placeBridgeDeck();</span>
+          </div>
+          <div class="command-control">
+            <button class="repeat-button" type="button" data-repeat="5" aria-label="تكرار خمس مرات">×5</button>
+            <button class="help-q" type="button" aria-label="كود التكرار خمس مرات" aria-expanded="false">?</button>
+            <span class="code-popup" aria-hidden="true">repeat(5) placeBridgeDeck();</span>
+          </div>
+          <select id="repeat-count" class="visually-hidden" aria-label="عدد مرات التكرار">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+          </select>
+        </section>
+
+        <div class="run-row gas-run-row">
+          <button id="run-button" class="run-btn success" type="button" aria-label="تشغيل">▶️</button>
+          <button id="reset-button" class="run-btn reset" type="button" aria-label="إعادة المستوى">🔄</button>
+          <button id="clear-button" class="run-btn clear" type="button" aria-label="مسح الأوامر">🧹</button>
+          <button id="next-button" class="run-btn next" type="button" aria-label="المستوى التالي" hidden>➡️</button>
+        </div>
+      </main>
+    </div>
+
+    <script src="../common.js"></script>
+    <script src="gas.js"></script>
+  </body>
+</html>

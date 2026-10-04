@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#176b63" />
+    <title>مختبر الجرعات</title>
+    <link rel="stylesheet" href="../common.css" />
+    <link rel="stylesheet" href="potion.css" />
+  </head>
+  <body>
+    <div class="app-shell potion-app">
+      <header class="potion-header game-topbar page-card">
+        <button class="nav-control back-control" type="button" data-go-back="../games/index.html" aria-label="رجوع للألعاب">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M19 6 9 16l10 10M10 16h14" /></svg>
+        </button>
+        <a class="nav-control home-control" href="../index/index.html" aria-label="الرئيسية">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="m4 15 12-10 12 10M7 14v13h18V14M13 27v-8h6v8" /></svg>
+        </a>
+        <button class="help-q lesson-help" id="lessonHelp" type="button" aria-label="عرض شرح اللعبة" aria-expanded="false">?</button>
+        <div class="stat game-star-stat" aria-label="نجوم مختبر الجرعات"><strong id="stars" data-game-stars>0</strong><span aria-hidden="true">⭐</span></div>
+        <div class="stat game-level-stat" aria-label="المستوى"><span aria-hidden="true">🏆</span><strong id="levelNum" data-game-level>1</strong></div>
+        <span class="game-identity" aria-hidden="true">🧑‍🔬</span>
+        <span class="game-mark" aria-label="لعبة مختبر الجرعات">🧪</span>
+        <button class="nav-control next-control" data-game-next type="button" aria-label="المستوى التالي" disabled hidden>➡️</button>
+      </header>
+
+      <main class="potion-main">
+        <h1 class="visually-hidden">مختبر الجرعات</h1>
+        <section class="lab-scene" id="labScene" aria-label="مختبر كيمياء، صِل الأنابيب بين الدورق والمرجل">
+          <svg class="lab-art" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs>
+              <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+                <stop stop-color="#d9e6d5" /><stop offset=".62" stop-color="#b9cdbd" /><stop offset="1" stop-color="#9ab5a6" />
+              </linearGradient>
+              <linearGradient id="bench" x1="0" y1="0" x2="0" y2="1">
+                <stop stop-color="#9b7553" /><stop offset=".12" stop-color="#755640" /><stop offset="1" stop-color="#594532" />
+              </linearGradient>
+              <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+                <stop stop-color="#f5fff7" stop-opacity=".85" /><stop offset=".5" stop-color="#c9ebe0" stop-opacity=".45" /><stop offset="1" stop-color="#7eb6a0" stop-opacity=".68" />
+              </linearGradient>
+            </defs>
+            <rect width="800" height="500" fill="url(#wall)" />
+            <path d="M0 102h800M0 110h800M0 0v300M798 0v300" stroke="#829c8e" stroke-opacity=".28" stroke-width="3" />
+            <path d="M0 300h800v200H0z" fill="url(#bench)" />
+            <path d="M0 319h800M0 354h800M0 477h800" stroke="#d0ad7c" stroke-opacity=".28" stroke-width="4" />
+            <path d="M85 300V80h180v220M96 99h158M96 205h158" fill="none" stroke="#6f765e" stroke-width="8" />
+            <path d="M115 163h35v39h-35zM169 140h55v62h-55z" fill="#809e87" fill-opacity=".7" stroke="#658372" stroke-width="3" />
+            <path d="M125 148h15v15h-15zM185 151h22v19h-22z" fill="#d7eee1" />
+            <path d="M582 299V78h137v221M592 109h117M592 200h117" fill="none" stroke="#6f765e" stroke-width="8" />
+            <path d="M612 141h38v47h-38zM663 119h32v69h-32z" fill="#778e7c" fill-opacity=".65" stroke="#658372" stroke-width="3" />
+            <path d="M620 153h21v22h-21zM671 135h15v35h-15z" fill="#d7eee1" />
+            <g fill="#a6c8a9" opacity=".7"><circle cx="355" cy="91" r="4"/><circle cx="460" cy="172" r="3"/><circle cx="520" cy="70" r="5"/><circle cx="315" cy="220" r="3"/><circle cx="550" cy="235" r="4"/></g>
+            <g fill="none" stroke="#eef9eb" stroke-opacity=".52" stroke-width="3">
+              <path d="M285 70h30M297 55v30M526 129h26M539 116v26" />
+            </g>
+          </svg>
+          <svg class="flow-path" id="flowPath" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <svg class="pipe-layer" id="pipeLayer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div class="vessel vessel-start" id="startVessel" aria-label="بداية الأنبوب">
+            <svg viewBox="0 0 48 56" aria-hidden="true"><path d="M14 3h20v7l-3 4v5l12 24a7 7 0 0 1-6 10H11a7 7 0 0 1-6-10l12-24v-5l-3-4z" /><path class="vessel-liquid" d="M11 39h26l6 8a4 4 0 0 1-4 5H9a4 4 0 0 1-4-5z" /></svg>
+          </div>
+          <div class="vessel vessel-end" id="endVessel" aria-label="المرجل"></div>
+          <div class="pipe-slots" id="pipeSlots" aria-label="أماكن الأنابيب"></div>
+          <div class="success-mark" id="successMark" aria-hidden="true"></div>
+        </section>
+
+        <section class="learning-guide" id="learningGuide" aria-labelledby="guideTitle" hidden>
+          <div class="guide-header">
+            <h2 id="guideTitle">دليل التعلّم</h2>
+            <button class="guide-close" id="closeGuide" type="button" aria-label="إغلاق الشرح">×</button>
+          </div>
+          <p>في هذا المختبر، تركّب الأنابيب مباشرة على المسار بين الدورق والمرجل. اسحب قطعة الأنبوب إلى الفجوة المناسبة، أو اختر الفجوة ثم اختر القطعة.</p>
+          <h3>طريقة اللعب</h3>
+          <ol>
+            <li>لاحظ الفجوات بين أطراف المواسير الظاهرة على الصورة.</li>
+            <li>اسحب الوصلة المناسبة وضعها مباشرة في الفجوة، أو اضغط الفجوة ثم الوصلة.</li>
+            <li>تأكد أن طرفي كل وصلة يلتقيان مع الأنبوب السابق واللاحق.</li>
+            <li>اضغط زر التشغيل لاختبار تدفق السائل حتى المرجل.</li>
+            <li>إذا توقف التدفق، غيّر اتجاه الوصلة أو مكانها ثم أعد الاختبار.</li>
+          </ol>
+          <h3>أشكال الوصلات</h3>
+          <ul>
+            <li><code>pipeHorizontal()</code>: يوصل الأنبوب من اليسار إلى اليمين.</li>
+            <li><code>pipeVertical()</code>: يوصل الأنبوب من الأعلى إلى الأسفل.</li>
+            <li><code>pipeLeftDown()</code>: ينعطف من اليسار إلى الأسفل.</li>
+            <li><code>pipeLeftUp()</code>: ينعطف من اليسار إلى الأعلى.</li>
+            <li><code>pipeRightUp()</code>: ينعطف من اليمين إلى الأعلى.</li>
+          </ul>
+          <h3>ماذا تتعلّم؟</h3>
+          <ul>
+            <li><strong>التخطيط المكاني:</strong> تخيّل اتجاه السائل قبل وضع القطعة.</li>
+            <li><strong>التسلسل:</strong> كل قطعة تعتمد على اتصالها بالقطعة السابقة واللاحقة.</li>
+            <li><strong>التعرّف على الأنماط:</strong> اكتشف المستقيمات والمنعطفات في المسار.</li>
+            <li><strong>التصحيح:</strong> تتبع مكان الانقطاع، وعدّل قطعة واحدة، ثم أعد الاختبار.</li>
+          </ul>
+        </section>
+
+        <section class="writing-area" aria-label="مساحة تركيب الأنابيب">
+          <h2 class="visually-hidden">أماكن الأنابيب الخمسة</h2>
+          <div class="program-box" id="programBox" aria-live="polite"></div>
+        </section>
+
+        <section class="controls" aria-label="قطع الأنابيب وأدوات المختبر">
+          <h2 class="visually-hidden">قطع الأنابيب</h2>
+          <div class="pipe-toolbar">
+            <div class="command-help-control">
+              <button class="command-btn" type="button" data-pipe="h" aria-label="أنبوب مستقيم أفقي">
+                <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 24h38" /></svg>
+              </button>
+              <button class="help-q" type="button" aria-label="عرض كود الأنبوب الأفقي" aria-expanded="false">?</button>
+              <span class="code-popup" aria-hidden="true">pipeHorizontal();</span>
+            </div>
+            <div class="command-help-control">
+              <button class="command-btn" type="button" data-pipe="v" aria-label="أنبوب مستقيم رأسي">
+                <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5v38" /></svg>
+              </button>
+              <button class="help-q" type="button" aria-label="عرض كود الأنبوب الرأسي" aria-expanded="false">?</button>
+              <span class="code-popup" aria-hidden="true">pipeVertical();</span>
+            </div>
+            <div class="command-help-control">
+              <button class="command-btn" type="button" data-pipe="ld" aria-label="أنبوب منعطف إلى الأسفل">
+                <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 16h18v27" /></svg>
+              </button>
+              <button class="help-q" type="button" aria-label="عرض كود منعطف اليسار والأسفل" aria-expanded="false">?</button>
+              <span class="code-popup" aria-hidden="true">pipeLeftDown();</span>
+            </div>
+            <div class="command-help-control">
+              <button class="command-btn" type="button" data-pipe="ul" aria-label="أنبوب منعطف إلى الأعلى">
+                <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M5 32h18V5" /></svg>
+              </button>
+              <button class="help-q" type="button" aria-label="عرض كود منعطف اليسار والأعلى" aria-expanded="false">?</button>
+              <span class="code-popup" aria-hidden="true">pipeLeftUp();</span>
+            </div>
+            <div class="command-help-control">
+              <button class="command-btn" type="button" data-pipe="rd" aria-label="أنبوب منعطف من الأعلى إلى اليمين">
+                <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 5v18h19" /></svg>
+              </button>
+              <button class="help-q" type="button" aria-label="عرض كود منعطف الأعلى واليمين" aria-expanded="false">?</button>
+              <span class="code-popup" aria-hidden="true">pipeRightUp();</span>
+            </div>
+            <div class="command-help-control">
+              <button class="command-btn" type="button" data-pipe="ru" aria-label="أنبوب منعطف من الأسفل إلى اليمين">
+                <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 43V25h19" /></svg>
+              </button>
+              <button class="help-q" type="button" aria-label="عرض كود منعطف الأسفل واليمين" aria-expanded="false">?</button>
+              <span class="code-popup" aria-hidden="true">pipeRightDown();</span>
+            </div>
+          </div>
+          <div class="run-row">
+            <button class="run-btn success" id="runButton" type="button" aria-label="تشغيل اختبار الجرعة" disabled>
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="m16 10 23 14-23 14z" /></svg>
+            </button>
+            <button class="run-btn reset" id="resetButton" type="button" aria-label="إعادة المختبر">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M11 19a14 14 0 1 1-1 10M11 10v10h10" /></svg>
+            </button>
+            <button class="run-btn clear" id="clearButton" type="button" aria-label="مسح الأنابيب">
+              <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 15h20l-2 24H16zM11 15h26M19 15v-4h10v4M20 21v12M28 21v12" /></svg>
+            </button>
+          </div>
+          <div class="feedback-visual" id="feedbackVisual" aria-hidden="true"></div>
+          <div class="visually-hidden" id="feedback" role="status" aria-live="polite"></div>
+          <div class="visually-hidden" id="levelStatus" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+    <script src="../common.js"></script>
+    <script src="potion.js"></script>
+  </body>
+</html>
