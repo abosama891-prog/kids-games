@@ -3,31 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>🏙️ مدينة شوارع متفرعة - نهائي</title>
-<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js"}}</script>
+<title>🏙️ مدينة شوارع متفرعة</title>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
 <style>
-/* ===== Reset ===== */
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
-body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none}
+body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 #cv{position:fixed;inset:0;width:100%;height:100%;display:block}
 
-/* ===== HUD ===== */
 #ui{position:fixed;inset:0;pointer-events:none}
 .hud{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;gap:8px;background:rgba(0,0,0,.85);padding:8px 12px;border-radius:12px;border:1px solid #FFD93D;font-size:11px;backdrop-filter:blur(6px)}
 .hud b{color:#FFD93D}
 #minimap{position:absolute;top:50px;left:8px;width:115px;height:115px;background:rgba(0,0,0,.9);border:2px solid #FFD93D;border-radius:12px;overflow:hidden}
 #minimap canvas{display:block}
 #cross{position:absolute;left:50%;top:50%;width:18px;height:18px;transform:translate(-50%,-50%)}
-#cross::before,#cross::after{content:'';position:absolute;background:#fff;opacity:.8}
+#cross::before,#cross::after{content:'';position:absolute;background:#fff;opacity:.85}
 #cross::before{width:2px;height:18px;left:8px;top:0}
 #cross::after{height:2px;width:18px;top:8px;left:0}
 
-/* ===== Prompt ===== */
 #centerPrompt{position:absolute;left:50%;top:62%;transform:translateX(-50%);background:linear-gradient(90deg,#FFD93D,#FF6B6B);color:#000;padding:11px 18px;border-radius:30px;font-weight:900;font-size:13px;display:none;pointer-events:auto;cursor:pointer;box-shadow:0 4px 15px rgba(0,0,0,.6);white-space:nowrap}
 #centerPrompt:active{transform:translateX(-50%) scale(.95)}
 
-/* ===== Controls ===== */
 #controls{position:absolute;bottom:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none}
 .movePad,.rightCtrl{pointer-events:auto}
 .movePad{background:rgba(0,0,0,.65);border:2px solid rgba(255,255,255,.15);border-radius:18px;padding:8px}
@@ -48,10 +50,8 @@ body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI
 #interact span{font-size:20px;line-height:1}
 @keyframes glow{0%,100%{box-shadow:0 0 15px #FFD93D88}50%{box-shadow:0 0 30px #FFD93D}}
 
-/* ===== Toast ===== */
 #toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);border:1px solid #FFD93D;padding:9px 16px;border-radius:30px;font-size:12px;display:none;z-index:300;max-width:90vw;text-align:center}
 
-/* ===== Character Screen ===== */
 #charScreen{position:fixed;inset:0;background:radial-gradient(circle at top,#2a2a5a,#0a0a1a);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto;gap:8px}
 #charScreen h1{font-size:22px;text-align:center}
 #charScreen p{font-size:12px;opacity:.75;text-align:center}
@@ -65,7 +65,6 @@ body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI
 .mapPrev h3{font-size:12px;color:#FFD93D;margin-bottom:6px}
 .mapLine{font-family:ui-monospace,monospace;font-size:10px;line-height:1.3;white-space:pre;direction:ltr;text-align:left;background:#0a0a14;padding:8px;border-radius:8px}
 
-/* ===== Gate Modal ===== */
 #gateUI{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200;display:none;align-items:center;justify-content:center;padding:12px}
 .gBox{background:#1c1c33;border:2px solid #FFD93D;border-radius:18px;padding:16px;width:100%;max-width:380px;max-height:90vh;overflow:auto}
 .gHead{display:flex;gap:10px;align-items:center}
@@ -82,6 +81,8 @@ body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI
 .gActions button{flex:1;padding:10px;border-radius:10px;border:0;font-weight:700;cursor:pointer;font-size:13px}
 #closeGate{background:#333;color:#fff}
 #hintBtn{background:#FFD93D;color:#000}
+
+#errBox{position:fixed;inset:0;background:#0a0a1a;color:#fff;display:none;align-items:center;justify-content:center;padding:24px;text-align:center;z-index:99999;font-size:14px;line-height:1.7}
 </style>
 </head>
 <body>
@@ -146,68 +147,113 @@ body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI
 </div>
 
 <div id="gateUI"><div class="gBox" id="gBox"></div></div>
+<div id="errBox"></div>
 
 <script type="module">
-import * as THREE from 'three';
+/* ============ Error Display ============ */
+function showError(html){
+  const box = document.getElementById('errBox');
+  box.innerHTML = '<div><div style="font-size:48px;margin-bottom:16px">⚠️</div><div>' + html + '</div></div>';
+  box.style.display = 'flex';
+}
+
+/* ============ WebGL Check ============ */
+try {
+  const tc = document.createElement('canvas');
+  const gl = tc.getContext('webgl2') || tc.getContext('webgl') || tc.getContext('experimental-webgl');
+  if(!gl){ showError('متصفحك لا يدعم WebGL.<br>جرّب فتح الصفحة في Chrome أو Safari حديث.'); throw new Error('No WebGL'); }
+} catch(e){ throw e; }
+
+/* ============ Load THREE with Fallbacks ============ */
+let THREE = null;
+const cdns = [
+  'three',
+  'https://esm.sh/three@0.160.0',
+  'https://unpkg.com/three@0.160.0/build/three.module.js',
+  'https://cdn.skypack.dev/three@0.160.0'
+];
+for(const url of cdns){
+  try {
+    THREE = await import(url);
+    console.log('✅ Loaded THREE from:', url);
+    break;
+  } catch(e){
+    console.warn('❌ Failed:', url, e.message);
+  }
+}
+if(!THREE){
+  showError('تعذر تحميل مكتبة الرسومات.<br>تأكد من اتصالك بالإنترنت ثم أعد تحميل الصفحة.');
+  throw new Error('THREE load failed');
+}
 
 /* ============ Setup ============ */
 const canvas = document.getElementById('cv');
 const scene  = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a1e);
-scene.fog        = new THREE.Fog(0x0a0a1e, 25, 90);
+scene.background = new THREE.Color(0x1a1a3a);
+scene.fog        = new THREE.Fog(0x1a1a3a, 30, 110);
 
 const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 500);
-camera.position.set(0, 1.7, 28);
+camera.position.set(0, 1.7, 25);
 camera.rotation.order = 'YXZ';
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-scene.add(new THREE.AmbientLight(0xffffff, .65));
-const sun = new THREE.DirectionalLight(0xFFD93D, 1);
-sun.position.set(20, 25, 10);
+/* ============ Lights (Brighter) ============ */
+scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+
+const hemi = new THREE.HemisphereLight(0xaaccff, 0x442200, 0.7);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xfff5cc, 1.2);
+sun.position.set(20, 30, 15);
 sun.castShadow = true;
 sun.shadow.camera.left   = -60;
 sun.shadow.camera.right  =  60;
 sun.shadow.camera.top    =  60;
 sun.shadow.camera.bottom = -60;
-sun.shadow.camera.far    = 120;
+sun.shadow.camera.far    = 150;
+sun.shadow.mapSize.width  = 1024;
+sun.shadow.mapSize.height = 1024;
 scene.add(sun);
+
+const fill = new THREE.DirectionalLight(0x88aaff, 0.4);
+fill.position.set(-20, 15, -10);
+scene.add(fill);
 
 /* ============ Textures ============ */
 function makeTex(draw){
   const c = document.createElement('canvas');
   c.width = c.height = 256;
-  const ctx = c.getContext('2d');
-  draw(ctx, 256);
+  draw(c.getContext('2d'), 256);
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   return t;
 }
 const brick = makeTex((ctx,s)=>{
-  ctx.fillStyle='#7a3a1a'; ctx.fillRect(0,0,s,s);
-  ctx.fillStyle='#8d4a2a';
+  ctx.fillStyle='#8a4a2a'; ctx.fillRect(0,0,s,s);
+  ctx.fillStyle='#a85a3a';
   for(let y=0; y<s; y+=32) for(let x=0; x<s; x+=64)
     ctx.fillRect(x + (y%64 ? 32 : 0), y, 60, 28);
 });
 const sideTex = makeTex((ctx,s)=>{
-  ctx.fillStyle='#444'; ctx.fillRect(0,0,s,s);
-  ctx.strokeStyle='#555'; ctx.lineWidth=2;
+  ctx.fillStyle='#666666'; ctx.fillRect(0,0,s,s);
+  ctx.strokeStyle='#777777'; ctx.lineWidth=3;
   for(let i=0; i<s; i+=64) ctx.strokeRect(0, i, s, 64);
 });
 
-/* ============ Roads ============ */
-const streets = [];
-function addRoad(x1,z1,x2,z2,w=6){
+/* ============ Roads (Brighter) ============ */
+function addRoad(x1,z1,x2,z2,w=7){
   const len  = Math.hypot(x2-x1, z2-z1);
   const midX = (x1+x2)/2, midZ = (z1+z2)/2;
   const ang  = Math.atan2(z2-z1, x2-x1);
 
   const road = new THREE.Mesh(
     new THREE.PlaneGeometry(len, w),
-    new THREE.MeshStandardMaterial({ color:0x232323 })
+    new THREE.MeshStandardMaterial({ color:0x555555, roughness:0.9 })
   );
   road.rotation.x = -Math.PI/2;
   road.rotation.z = -ang;
@@ -215,11 +261,12 @@ function addRoad(x1,z1,x2,z2,w=6){
   road.receiveShadow = true;
   scene.add(road);
 
-  for(let i=0; i<len; i+=4){
+  /* خطوط صفراء */
+  for(let i=0; i<len; i+=3){
     const t = i/len;
     const x = x1 + (x2-x1)*t, z = z1 + (z2-z1)*t;
     const l = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.3, 1.5),
+      new THREE.PlaneGeometry(0.35, 1.5),
       new THREE.MeshBasicMaterial({ color:0xFFD93D })
     );
     l.rotation.x = -Math.PI/2;
@@ -227,37 +274,35 @@ function addRoad(x1,z1,x2,z2,w=6){
     l.position.set(x, 0.02, z);
     scene.add(l);
   }
-  streets.push({x1,z1,x2,z2,w});
 }
 addRoad(  0, 30,   0,-10, 8);
-addRoad(  0,-10, -18,-10, 6);
-addRoad(  0,-10,  18,-10, 6);
-addRoad(-18,-10, -18,-28, 6);
-addRoad( 18,-10,  18,-28, 6);
-addRoad(-18,-28,  18,-28, 6);
-addRoad(  0,-28,   0,-50, 7);
+addRoad(  0,-10, -18,-10, 7);
+addRoad(  0,-10,  18,-10, 7);
+addRoad(-18,-10, -18,-28, 7);
+addRoad( 18,-10,  18,-28, 7);
+addRoad(-18,-28,  18,-28, 7);
+addRoad(  0,-28,   0,-50, 8);
 
+/* أرضية */
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(200,200),
-  new THREE.MeshStandardMaterial({ color:0x111111 })
+  new THREE.PlaneGeometry(300,300),
+  new THREE.MeshStandardMaterial({ color:0x223322 })
 );
 ground.rotation.x = -Math.PI/2;
 ground.position.y = -0.02;
 ground.receiveShadow = true;
 scene.add(ground);
 
-/* ============ Buildings & Gates ============ */
+/* ============ Buildings ============ */
 const colliders = [];
 const gates     = [];
 
-/* dir = +1 → يفتح ناحية الشمال (+Z)
-   dir = -1 → يفتح ناحية الجنوب (-Z) */
 const shopsData = [
-  { x:-18, z: -2, w:7, h:6.5, d:6, color:0xFF4B4B, title:'🎮 محل ألعاب الفيديو - فرع غربي', icon:'🎮', p:0, dir:-1 },
-  { x: 18, z: -2, w:7, h:6.5, d:6, color:0xFFD93D, title:'🧸 محل الدباديب - فرع شرقي',       icon:'🧸', p:1, dir:-1 },
-  { x:-18, z:-20, w:7, h:6.5, d:6, color:0x4ADE80, title:'🎯 محل ألعاب الحظ - حارة غربية',    icon:'🎯', p:2, dir:-1 },
-  { x: 18, z:-20, w:7, h:6.5, d:6, color:0x60A5FA, title:'🎁 محل هدايا الألعاب - حارة شرقية', icon:'🎁', p:3, dir:-1 },
-  { x:  0, z:-46, w:8, h:7,   d:6, color:0xF472B6, title:'🎟️ بوابة النهاية - الميدان الكبير', icon:'🎟️', p:4, dir: 1 },
+  { x:-18, z: -2, w:8, h:7, d:7, color:0xFF4B4B, title:'🎮 محل ألعاب الفيديو', icon:'🎮', p:0, dir:-1 },
+  { x: 18, z: -2, w:8, h:7, d:7, color:0xFFD93D, title:'🧸 محل الدباديب',       icon:'🧸', p:1, dir:-1 },
+  { x:-18, z:-20, w:8, h:7, d:7, color:0x4ADE80, title:'🎯 محل ألعاب الحظ',    icon:'🎯', p:2, dir:-1 },
+  { x: 18, z:-20, w:8, h:7, d:7, color:0x60A5FA, title:'🎁 محل هدايا',          icon:'🎁', p:3, dir:-1 },
+  { x:  0, z:-46, w:9, h:8, d:7, color:0xF472B6, title:'🎟️ بوابة النهاية',      icon:'🎟️', p:4, dir: 1 },
 ];
 
 function addBuilding(x, z, w, h, d, color, title, icon, pIdx, dir = 1){
@@ -266,7 +311,7 @@ function addBuilding(x, z, w, h, d, color, title, icon, pIdx, dir = 1){
 
   const box = new THREE.Mesh(
     new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshStandardMaterial({ color, map:brick })
+    new THREE.MeshStandardMaterial({ color, map:brick, roughness:0.85 })
   );
   box.position.y = h/2;
   box.castShadow = true;
@@ -279,32 +324,32 @@ function addBuilding(x, z, w, h, d, color, title, icon, pIdx, dir = 1){
     const ctx = c.getContext('2d');
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,512,96);
     ctx.fillStyle = '#' + color.toString(16).padStart(6,'0');
-    ctx.fillRect(0, 0, 512, 6);
+    ctx.fillRect(0, 0, 512, 8);
     ctx.fillStyle = '#fff';
-    ctx.font = 'bold 22px system-ui';
+    ctx.font = 'bold 24px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText(title, 256, 58);
+    ctx.fillText(title, 256, 60);
     const tex = new THREE.CanvasTexture(c);
     const sign = new THREE.Mesh(
-      new THREE.PlaneGeometry(w*0.9, 0.9),
+      new THREE.PlaneGeometry(w*0.9, 1.0),
       new THREE.MeshBasicMaterial({ map: tex })
     );
-    sign.position.set(0, h - 0.6, dir * (d/2 + 0.22));
+    sign.position.set(0, h - 0.7, dir * (d/2 + 0.25));
     if(dir < 0) sign.rotation.y = Math.PI;
     g.add(sign);
 
     const glass = new THREE.Mesh(
-      new THREE.BoxGeometry(w*0.75, 2.5, 0.15),
-      new THREE.MeshStandardMaterial({ color:0xaaccff, transparent:true, opacity:.5 })
+      new THREE.BoxGeometry(w*0.75, 3, 0.15),
+      new THREE.MeshStandardMaterial({ color:0xaaddff, transparent:true, opacity:.6, emissive:0x334466, emissiveIntensity:0.4 })
     );
-    glass.position.set(0, 1.5, dir * (d/2 + 0.1));
+    glass.position.set(0, 1.8, dir * (d/2 + 0.1));
     g.add(glass);
 
     const trig = new THREE.Mesh(
-      new THREE.BoxGeometry(4, 3, 4),
+      new THREE.BoxGeometry(5, 4, 5),
       new THREE.MeshBasicMaterial({ visible:false })
     );
-    trig.position.set(0, 1.5, dir * (d/2 + 2.8));
+    trig.position.set(0, 1.5, dir * (d/2 + 3.5));
     trig.userData = { type:'gate', idx:pIdx };
     g.add(trig);
 
@@ -313,29 +358,20 @@ function addBuilding(x, z, w, h, d, color, title, icon, pIdx, dir = 1){
 
   scene.add(g);
   colliders.push({ x, z, w:w+0.8, d:d+0.8 });
-
-  const side = new THREE.Mesh(
-    new THREE.PlaneGeometry(w+1, d+1),
-    new THREE.MeshStandardMaterial({ map:sideTex, color:0x555555 })
-  );
-  side.rotation.x = -Math.PI/2;
-  side.position.set(x, 0.015, z);
-  side.receiveShadow = true;
-  scene.add(side);
 }
 
 shopsData.forEach(s => addBuilding(s.x, s.z, s.w, s.h, s.d, s.color, s.title, s.icon, s.p, s.dir));
 
+/* مباني المتاهة — بدون الحاجز اللي كان قافل الطريق */
 [
-  [-8,  20, 5, 7, 10, 0x333333],
-  [ 8,  20, 5, 7, 10, 0x333333],
-  [-8,   5, 5, 6,  8, 0x333333],
-  [ 8,   5, 5, 6,  8, 0x333333],
-  [-12,-10, 4, 6,  4, 0x333333],
-  [ 12,-10, 4, 6,  4, 0x333333],
-  [-10,-28, 6, 6,  4, 0x333333],
-  [ 10,-28, 6, 6,  4, 0x333333],
-  [  0, 10,12, 5,  2, 0x333333],
+  [-9,  18, 6, 8, 8, 0x555555],
+  [ 9,  18, 6, 8, 8, 0x555555],
+  [-9,   0, 6, 7, 8, 0x555555],
+  [ 9,   0, 6, 7, 8, 0x555555],
+  [-13,-10, 4, 6, 4, 0x555555],
+  [ 13,-10, 4, 6, 4, 0x555555],
+  [-11,-28, 5, 6, 4, 0x555555],
+  [ 11,-28, 5, 6, 4, 0x555555],
 ].forEach(b => addBuilding(b[0], b[1], b[2], b[3], b[4], b[5], null, null, null, 1));
 
 /* ============ Street Signs ============ */
@@ -344,23 +380,31 @@ function addStreetSign(x, z, text){
   c.width = 256; c.height = 64;
   const ctx = c.getContext('2d');
   ctx.fillStyle = '#FFD93D'; ctx.fillRect(0,0,256,64);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 4; ctx.strokeRect(2,2,252,60);
   ctx.fillStyle = '#000';
-  ctx.font = 'bold 16px system-ui';
+  ctx.font = 'bold 18px system-ui';
   ctx.textAlign = 'center';
-  ctx.fillText(text, 128, 38);
+  ctx.fillText(text, 128, 40);
   const tex = new THREE.CanvasTexture(c);
   const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(3, 0.7),
+    new THREE.PlaneGeometry(3.5, 0.9),
     new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })
   );
-  sign.position.set(x, 2.5, z);
+  sign.position.set(x, 2.8, z);
   scene.add(sign);
+  /* عمود */
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.08, 2.8, 8),
+    new THREE.MeshStandardMaterial({ color:0x666666 })
+  );
+  pole.position.set(x, 1.4, z);
+  scene.add(pole);
 }
-addStreetSign(  0, 15, '⬆ رئيسي');
-addStreetSign( -9,-10, '⬅ غربي: ألعاب');
-addStreetSign(  9,-10, 'شرقي: دباديب ➡');
+addStreetSign(  0, 20, '⬆ رئيسي');
 addStreetSign(  0,-10, '⬇ ميدان');
-addStreetSign(  0,-28, 'خلفي يربط');
+addStreetSign(-11,-10, '⬅ ألعاب');
+addStreetSign( 11,-10, 'دباديب ➡');
+addStreetSign(  0,-28, '⬇ خلفي');
 addStreetSign(  0,-38, '🎟️ النهاية');
 
 /* ============ State ============ */
@@ -386,18 +430,17 @@ function updateHUD(){
   document.getElementById('money').textContent  = money;
   const z = camera.position.z, x = camera.position.x;
   let name = 'بداية';
-  if(z > 5)                    name = 'بداية الشارع الرئيسي';
-  else if(z > -12)             name = 'شارع رئيسي';
-  else if(z > -18 && x < -6)   name = 'فرع غربي → ألعاب';
-  else if(z > -18 && x >  6)   name = 'فرع شرقي → دباديب';
-  else if(z > -32 && x < -6)   name = 'حارة غربية → حظ';
-  else if(z > -32 && x >  6)   name = 'حارة شرقية → هدايا';
-  else if(z > -40)             name = 'شارع خلفي';
-  else                         name = 'الميدان الكبير - النهاية';
+  if(z > 5)                    name = 'شارع رئيسي';
+  else if(z > -14 && x < -6)   name = 'فرع غربي → ألعاب';
+  else if(z > -14 && x >  6)   name = 'فرع شرقي → دباديب';
+  else if(z > -22 && x < -6)   name = 'حارة غربية → حظ';
+  else if(z > -22 && x >  6)   name = 'حارة شرقية → هدايا';
+  else if(z > -34)             name = 'شارع خلفي';
+  else                         name = 'الميدان الكبير';
   document.getElementById('streetName').textContent = name;
 }
 
-/* ============ Pointer Lock + Mouse Look ============ */
+/* ============ Pointer Lock ============ */
 let dragging = false, dragX = 0;
 
 canvas.addEventListener('click', () => {
@@ -430,19 +473,15 @@ document.addEventListener('touchstart', e => {
   const t = e.target;
   if(t.closest && (t.closest('#controls') || t.closest('#centerPrompt') ||
      t.closest('#gateUI')   || t.closest('#charScreen'))){
-    lookTouchX = null;
-    return;
+    lookTouchX = null; return;
   }
   if(e.touches.length === 1) lookTouchX = e.touches[0].clientX;
 }, { passive:true });
-
 document.addEventListener('touchmove', e => {
   if(lookTouchX == null) return;
-  const dx = e.touches[0].clientX - lookTouchX;
-  yaw -= dx * 0.008;
+  yaw -= (e.touches[0].clientX - lookTouchX) * 0.008;
   lookTouchX = e.touches[0].clientX;
 }, { passive:true });
-
 document.addEventListener('touchend',    () => lookTouchX = null);
 document.addEventListener('touchcancel', () => lookTouchX = null);
 
@@ -451,7 +490,6 @@ function bindBtn(id, key){
   const el = document.getElementById(id);
   const on  = () => { move[key] = true;  el.classList.add('pressed'); };
   const off = () => { move[key] = false; el.classList.remove('pressed'); };
-
   el.addEventListener('touchstart', e => { e.preventDefault(); on();  }, { passive:false });
   el.addEventListener('touchend',   e => { e.preventDefault(); off(); }, { passive:false });
   el.addEventListener('touchcancel', off);
@@ -518,7 +556,7 @@ function checkNear(){
     const wp = new THREE.Vector3();
     g.mesh.getWorldPosition(wp);
     const d = camera.position.distanceTo(wp);
-    if(d < 5.5 && d < md){ md = d; best = g; }
+    if(d < 6.5 && d < md){ md = d; best = g; }
   }
   nearest = best;
 
@@ -557,17 +595,13 @@ const puzzles = [
 const LETTERS = ['أ','ب','ج','د'];
 
 function tryInteract(){
-  if(!nearest){
-    toast('🚶 قرب من محل - اتبع اللافتات الصفراء');
-    return;
-  }
+  if(!nearest){ toast('🚶 قرب من محل - اتبع اللافتات الصفراء'); return; }
   openGate(nearest.idx);
 }
 
 document.getElementById('centerPrompt').addEventListener('click', tryInteract);
 document.getElementById('interact').addEventListener('click', tryInteract);
 
-/* ============ Gate Modal ============ */
 function openGate(idx){
   const p = puzzles[idx];
   const box = document.getElementById('gBox');
@@ -588,10 +622,8 @@ function openGate(idx){
       <button id="hintBtn">💡 تلميح</button>
     </div>
   `;
-
   document.getElementById('gateUI').style.display = 'flex';
   gateOpen = true;
-
   if(document.pointerLockElement) document.exitPointerLock();
 
   const optsEl = box.querySelector('#opts');
@@ -604,14 +636,12 @@ function openGate(idx){
         d.style.borderColor = '#00ff88';
         d.style.background  = 'rgba(0,255,136,.12)';
         const fb = document.getElementById('fb');
-        fb.style.display    = 'block';
+        fb.style.display = 'block';
         fb.style.background = 'rgba(0,255,136,.12)';
         fb.style.border     = '1px solid #00ff88';
         fb.innerHTML = `✅ صح! ${p.ex}<br>🎉 +20💰`;
         setTimeout(() => {
-          solved[idx] = true;
-          money += 20;
-          updateHUD();
+          solved[idx] = true; money += 20; updateHUD();
           const g = gates.find(x => x.idx === idx);
           if(g) g.solved = true;
           closeGate();
@@ -622,7 +652,7 @@ function openGate(idx){
         d.style.borderColor = '#ff4444';
         d.style.background  = 'rgba(255,68,68,.12)';
         const fb = document.getElementById('fb');
-        fb.style.display    = 'block';
+        fb.style.display = 'block';
         fb.style.background = 'rgba(255,68,68,.12)';
         fb.style.border     = '1px solid #ff4444';
         fb.textContent      = '❌ غلط - جرب تاني';
@@ -634,7 +664,7 @@ function openGate(idx){
   document.getElementById('closeGate').onclick = closeGate;
   document.getElementById('hintBtn').onclick   = () => {
     const fb = document.getElementById('fb');
-    fb.style.display    = 'block';
+    fb.style.display = 'block';
     fb.style.background = 'rgba(255,217,61,.15)';
     fb.style.border     = '1px solid #FFD93D';
     fb.textContent      = '💡 ' + p.ex;
@@ -677,66 +707,61 @@ function drawMini(){
   mctx.beginPath(); mctx.moveTo(22, 20);  mctx.lineTo(92, 20); mctx.stroke();
   mctx.beginPath(); mctx.moveTo(57, 20);  mctx.lineTo(57,  5); mctx.stroke();
 
-  const pos = [
-    {x:22,y:40},{x:92,y:40},{x:22,y:20},{x:92,y:20},{x:57,y:5}
-  ];
+  const pos = [{x:22,y:40},{x:92,y:40},{x:22,y:20},{x:92,y:20},{x:57,y:5}];
   pos.forEach((sp, i) => {
     mctx.fillStyle = solved[i] ? '#00ff88' : '#FF4B4B';
-    mctx.beginPath();
-    mctx.arc(sp.x, sp.y, 5, 0, Math.PI*2);
-    mctx.fill();
+    mctx.beginPath(); mctx.arc(sp.x, sp.y, 5, 0, Math.PI*2); mctx.fill();
   });
 
   const px = 57 + (camera.position.x / 18) * 35;
   const pz = 100 - ((camera.position.z - 28) / -78) * 95;
   mctx.fillStyle = '#fff';
   mctx.beginPath();
-  mctx.arc(
-    Math.max(5, Math.min(110, px)),
-    Math.max(5, Math.min(110, pz)),
-    3, 0, Math.PI*2
-  );
+  mctx.arc(Math.max(5, Math.min(110, px)), Math.max(5, Math.min(110, pz)), 3, 0, Math.PI*2);
   mctx.fill();
 }
 
 /* ============ Main Loop ============ */
 let last = performance.now();
+let loopError = false;
 
 function loop(now){
   requestAnimationFrame(loop);
-  const dt = Math.min((now - last) / 1000, 0.05);
-  last = now;
+  try {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
 
-  if(gateOpen){
-    move.w = move.a = move.s = move.d = false;
+    if(gateOpen){ move.w = move.a = move.s = move.d = false; }
+
+    const speed = 5.0 * dt;
+    const f = new THREE.Vector3();
+    camera.getWorldDirection(f);
+    f.y = 0; f.normalize();
+    const r = new THREE.Vector3().crossVectors(f, new THREE.Vector3(0, 1, 0));
+
+    let nx = camera.position.x, nz = camera.position.z;
+    if(move.w){ nx += f.x * speed; nz += f.z * speed; }
+    if(move.s){ nx -= f.x * speed; nz -= f.z * speed; }
+    if(move.a){ nx -= r.x * speed; nz -= r.z * speed; }
+    if(move.d){ nx += r.x * speed; nz += r.z * speed; }
+
+    if(!checkCollision(nx, camera.position.z)) camera.position.x = nx;
+    if(!checkCollision(camera.position.x, nz)) camera.position.z = nz;
+
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
+
+    checkNear();
+    updateHUD();
+    drawMini();
+    renderer.render(scene, camera);
+  } catch(err){
+    if(!loopError){
+      loopError = true;
+      console.error('Loop error:', err);
+      showError('حدث خطأ في التشغيل:<br>' + err.message);
+    }
   }
-
-  const speed = 4.5 * dt;
-
-  const f = new THREE.Vector3();
-  camera.getWorldDirection(f);
-  f.y = 0;
-  f.normalize();
-
-  const r = new THREE.Vector3().crossVectors(f, new THREE.Vector3(0, 1, 0));
-
-  let nx = camera.position.x;
-  let nz = camera.position.z;
-  if(move.w){ nx += f.x * speed; nz += f.z * speed; }
-  if(move.s){ nx -= f.x * speed; nz -= f.z * speed; }
-  if(move.a){ nx -= r.x * speed; nz -= r.z * speed; }
-  if(move.d){ nx += r.x * speed; nz += r.z * speed; }
-
-  if(!checkCollision(nx, camera.position.z)) camera.position.x = nx;
-  if(!checkCollision(camera.position.x, nz)) camera.position.z = nz;
-
-  camera.rotation.y = yaw;
-  camera.rotation.x = pitch;
-
-  checkNear();
-  updateHUD();
-  drawMini();
-  renderer.render(scene, camera);
 }
 loop(performance.now());
 
