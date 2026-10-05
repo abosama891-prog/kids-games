@@ -1206,6 +1206,9 @@
   const currentGame = gameCatalog.find(game =>
     new URL(game.href).pathname.replace(/\/+$/, '').toLowerCase() ===
     window.location.pathname.replace(/\/+$/, '').toLowerCase()
+    if (window.location.pathname.includes('/admin/')) {
+    return;
+}                                   
   );
   const currentUser = window.KidsGamesAuth.getCurrentUser();
   if (currentGame && currentUser?.role !== 'admin') {
