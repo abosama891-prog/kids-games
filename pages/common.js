@@ -1,4 +1,11 @@
 (function () {
+  (function () {
+  // ✅ أوقف تنفيذ هذا الكود بالكامل في صفحات الإدارة
+  if (window.location.pathname.includes('/admin/')) {
+    return;
+  }
+
+  const APP_BASE_URL = new URL('../', document.currentScript.src);
   const APP_BASE_URL = new URL('../', document.currentScript.src);
   const STORAGE_KEY = 'kids_games_progress_v1';
   const LESSON_SETTINGS_KEY = 'kids_games_lesson_unlocks_v1';
@@ -1206,7 +1213,6 @@
   const currentGame = gameCatalog.find(game =>
     new URL(game.href).pathname.replace(/\/+$/, '').toLowerCase() ===
     window.location.pathname.replace(/\/+$/, '').toLowerCase()
-    if (window.location.pathname.includes('/admin/')) {
     return;
 }                                   
   );
