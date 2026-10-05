@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kids-games-v51';
+const CACHE_NAME = 'kids-games-v52';
 const CACHE_PREFIX = 'kids-games-';
 const APP_BASE_URL = new URL('./', self.location);
 const APP_SHELL = [
@@ -8,6 +8,9 @@ const APP_SHELL = [
   'pages/auth/auth.js',
   'pages/auth/auth.css',
   'pages/index/index.html',
+  'pages/profile/index.html',
+  'pages/profile/profile.css',
+  'pages/profile/profile.js',
   'pages/games/index.html',
   'pages/games/games.js',
   'pages/games/games.css',

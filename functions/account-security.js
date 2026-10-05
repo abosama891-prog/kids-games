@@ -9,6 +9,13 @@ function normalizeUsername(value) {
   return String(value || '').trim().toLocaleLowerCase('en-US');
 }
 
+function normalizePin(value) {
+  return String(value || '').replace(/[٠-٩۰-۹]/g, digit => {
+    const code = digit.charCodeAt(0);
+    return String(code >= 0x06f0 ? code - 0x06f0 : code - 0x0660);
+  });
+}
+
 function validateCredentials(username, password) {
   const normalizedUsername = normalizeUsername(username);
   const normalizedPassword = String(password || '');
@@ -19,6 +26,18 @@ function validateCredentials(username, password) {
     throw new TypeError('كلمة المرور يجب أن تتكون من 6 إلى 128 حرفًا.');
   }
   return { username: normalizedUsername, password: normalizedPassword };
+}
+
+function validatePinCredentials(username, pin) {
+  const normalizedUsername = normalizeUsername(username);
+  const normalizedPin = normalizePin(pin);
+  if (!/^[a-z0-9._-]{3,32}$/.test(normalizedUsername)) {
+    throw new TypeError('اسم المستخدم يجب أن يتكون من 3 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
+  }
+  if (!/^\d{4}$/.test(normalizedPin)) {
+    throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');
+  }
+  return { username: normalizedUsername, password: normalizedPin };
 }
 
 async function hashPassword(password, salt = crypto.randomBytes(16)) {
@@ -44,7 +63,9 @@ function hashRateLimitKey(value) {
 
 module.exports = {
   normalizeUsername,
+  normalizePin,
   validateCredentials,
+  validatePinCredentials,
   hashPassword,
   verifyPassword,
   hashRateLimitKey

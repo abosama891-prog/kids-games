@@ -1,6 +1,6 @@
 {
-  "name": "🌈 B u d d y 🌈",
-  "short_name": "🌈 B u d d y 🌈",
+  "name": "B U D D Y code",
+  "short_name": "B U D D Y code",
   "description": "منصة تعليمية تفاعلية للأطفال تضم ألعابًا ودروسًا وإنجازات.",
   "start_url": "./pages/auth/index.html",
   "scope": "./",

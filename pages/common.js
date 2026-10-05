@@ -469,6 +469,9 @@
       email: user.email || '',
       fullName: user.fullName || user.username || 'مستخدم',
       role: ROLE_PERMISSIONS[user.role] ? user.role : 'child',
+      avatar: ['child', 'girl', 'engineer'].includes(user.avatar) ? user.avatar : 'child',
+      pinSalt: user.pinSalt || '',
+      pinHash: user.pinHash || '',
       provider: user.provider || 'local',
       status: user.status === 'inactive' ? 'inactive' : 'active'
     };
@@ -511,8 +514,9 @@
 
   function setCurrentUser(user) {
     const normalized = normalizeUser(user);
-    safeSetItem(AUTH_STORAGE_KEY, JSON.stringify(normalized));
-    return normalized;
+    const { password, pinSalt, pinHash, ...sessionUser } = normalized;
+    safeSetItem(AUTH_STORAGE_KEY, JSON.stringify(sessionUser));
+    return normalizeUser(sessionUser);
   }
 
   function logoutUser() {
@@ -552,6 +556,81 @@
     if (user.provider && user.provider !== 'local') return null;
 
     return setCurrentUser(user);
+  }
+
+  function encodeBytes(bytes) {
+    return btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(''));
+  }
+
+  function normalizePin(value) {
+    return String(value || '').replace(/[٠-٩۰-۹]/g, character => {
+      const code = character.charCodeAt(0);
+      return String(code >= 0x06f0 ? code - 0x06f0 : code - 0x0660);
+    });
+  }
+
+  function decodeBytes(value) {
+    return Uint8Array.from(atob(value), character => character.charCodeAt(0));
+  }
+
+  async function hashLocalPin(pin, salt) {
+    if (!window.crypto?.subtle) throw new Error('تشفير الجهاز غير متاح. افتح الموقع عبر HTTPS ثم حاول مرة أخرى.');
+    const key = await window.crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(pin),
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    );
+    const digest = await window.crypto.subtle.deriveBits({
+      name: 'PBKDF2',
+      salt,
+      iterations: 250000,
+      hash: 'SHA-256'
+    }, key, 256);
+    return new Uint8Array(digest);
+  }
+
+  async function addPinUser(userPayload) {
+    const username = String(userPayload.username || '').trim().toLocaleLowerCase('en-US');
+    const fullName = String(userPayload.fullName || '').trim();
+    const pin = normalizePin(userPayload.pin);
+    if (!/^[a-z0-9._-]{3,32}$/.test(username) || !fullName || fullName.length > 60 || !/^\d{4}$/.test(pin)) {
+      return null;
+    }
+
+    const users = getUsers();
+    if (users.some(user => user.username.toLocaleLowerCase() === username)) return null;
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const pinHash = await hashLocalPin(pin, salt);
+    const next = normalizeUser({
+      ...userPayload,
+      id: uuid(),
+      username,
+      fullName,
+      password: '',
+      pinSalt: encodeBytes(salt),
+      pinHash: encodeBytes(pinHash),
+      provider: 'local',
+      status: 'active'
+    });
+    users.push(next);
+    saveUsers(users);
+    return next;
+  }
+
+  async function loginWithPin(username, pin) {
+    const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
+    const normalizedPin = normalizePin(pin);
+    if (!/^\d{4}$/.test(normalizedPin)) return null;
+    const user = findUserByIdentifier(normalizedUsername);
+    if (!user || user.status === 'inactive' || user.provider !== 'local' || !user.pinSalt || !user.pinHash) return null;
+    const actual = await hashLocalPin(normalizedPin, decodeBytes(user.pinSalt));
+    const expected = decodeBytes(user.pinHash);
+    if (actual.length !== expected.length) return null;
+    let mismatch = 0;
+    for (let index = 0; index < actual.length; index += 1) mismatch |= actual[index] ^ expected[index];
+    return mismatch === 0 ? setCurrentUser(user) : null;
   }
 
   function canAccess(permission, user = getCurrentUser()) {
@@ -621,6 +700,63 @@
     return nextUser;
   }
 
+  async function updateOwnProfile({ fullName, avatar, currentCredential, newCredential }) {
+    const current = getCurrentUser();
+    if (!current) throw new Error('سجّل الدخول أولًا.');
+    const normalizedFullName = String(fullName || '').trim();
+    if (!normalizedFullName || normalizedFullName.length > 60) {
+      throw new TypeError('أدخل اسمًا صحيحًا لا يتجاوز 60 حرفًا.');
+    }
+    if (!['child', 'girl', 'engineer'].includes(avatar)) {
+      throw new TypeError('اختر شخصية صحيحة.');
+    }
+
+    const users = getUsers();
+    const index = users.findIndex(user => user.id === current.id);
+    if (index === -1) throw new Error('تعذر العثور على بيانات الحساب المحلي.');
+    const user = users[index];
+    const changesCredential = newCredential !== undefined && String(newCredential) !== '';
+    const updates = { fullName: normalizedFullName, avatar };
+
+    if (changesCredential) {
+      const oldCredential = String(currentCredential || '');
+      const nextCredential = String(newCredential);
+      let oldCredentialMatches = false;
+      if (user.pinSalt && user.pinHash) {
+        const normalizedOldPin = normalizePin(oldCredential);
+        const normalizedNewPin = normalizePin(nextCredential);
+        if (!/^\d{4}$/.test(normalizedOldPin) || !/^\d{4}$/.test(normalizedNewPin)) {
+          throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');
+        }
+        const actual = await hashLocalPin(normalizedOldPin, decodeBytes(user.pinSalt));
+        const expected = decodeBytes(user.pinHash);
+        if (actual.length === expected.length) {
+          let mismatch = 0;
+          for (let byteIndex = 0; byteIndex < actual.length; byteIndex += 1) {
+            mismatch |= actual[byteIndex] ^ expected[byteIndex];
+          }
+          oldCredentialMatches = mismatch === 0;
+        }
+        if (!oldCredentialMatches) throw new Error('رمز الدخول الحالي غير صحيح.');
+        const salt = window.crypto.getRandomValues(new Uint8Array(16));
+        updates.pinSalt = encodeBytes(salt);
+        updates.pinHash = encodeBytes(await hashLocalPin(normalizedNewPin, salt));
+      } else {
+        if (nextCredential.length < 6 || nextCredential.length > 128) {
+          throw new TypeError('كلمة المرور الجديدة يجب أن تتكون من 6 إلى 128 حرفًا.');
+        }
+        oldCredentialMatches = user.provider === 'local'
+          && String(user.password || '') === oldCredential;
+        if (!oldCredentialMatches) throw new Error('كلمة المرور الحالية غير صحيحة.');
+        updates.password = nextCredential;
+      }
+    }
+
+    const updated = updateUser(current.id, updates);
+    if (!updated) throw new Error('تعذر حفظ بيانات الحساب.');
+    return setCurrentUser(updated);
+  }
+
   function deleteUser(id) {
     const users = getUsers();
     const current = getCurrentUser();
@@ -650,9 +786,12 @@
     setCurrentUser,
     logoutUser,
     loginWithUsername,
+    loginWithPin,
+    addPinUser,
     canAccess,
     addUser,
     updateUser,
+    updateOwnProfile,
     deleteUser,
     findUserByIdentifier
   };
@@ -716,14 +855,17 @@
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-app-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-auth-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-firestore-compat.js`);
+      await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-functions-compat.js`);
 
       const firebase = window.firebase;
       const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
       const auth = app.auth();
       const database = app.firestore();
+      const functions = app.functions('us-central1');
       await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      let accountCreationInProgress = false;
 
-      async function syncAccount(firebaseUser, reloadIfChanged = false, previousLocalProgress = null) {
+      async function syncAccount(firebaseUser, reloadIfChanged = false, previousLocalProgress = null, initialProfile = null) {
         const userRef = database.collection('users').doc(firebaseUser.uid);
         const snapshot = await userRef.get();
         const cloudData = snapshot.exists ? snapshot.data() : {};
@@ -739,8 +881,11 @@
           id: firebaseUser.uid,
           username: cloudData.username || token.claims.username || (firebaseUser.email || '').split('@')[0],
           email: firebaseUser.email || '',
-          fullName: cloudData.fullName || firebaseUser.displayName || cloudData.username || firebaseUser.email || 'مستخدم Google',
-          role: ROLE_PERMISSIONS[token.claims.role] ? token.claims.role : (ROLE_PERMISSIONS[cloudData.role] ? cloudData.role : 'child'),
+          fullName: cloudData.fullName || initialProfile?.fullName || firebaseUser.displayName || cloudData.username || firebaseUser.email || 'مستخدم Google',
+          role: ROLE_PERMISSIONS[token.claims.role]
+            ? token.claims.role
+            : (ROLE_PERMISSIONS[cloudData.role] ? cloudData.role : (ROLE_PERMISSIONS[initialProfile?.role] ? initialProfile.role : 'child')),
+          avatar: cloudData.avatar || initialProfile?.avatar || 'child',
           provider,
           status: cloudData.status === 'inactive' ? 'inactive' : 'active'
         });
@@ -753,9 +898,11 @@
         const changed = JSON.stringify(localProgress) !== JSON.stringify(progress);
         safeSetItem(progressStorageKey(), JSON.stringify(progress));
         await userRef.set({
+          username: user.username,
           email: user.email,
           fullName: user.fullName,
           role: user.role,
+          avatar: user.avatar,
           provider: user.provider,
           status: user.status,
           progress,
@@ -777,7 +924,9 @@
       }
 
       auth.onAuthStateChanged(firebaseUser => {
-        if (firebaseUser) syncAccount(firebaseUser, true).catch(error => console.error(error));
+        if (firebaseUser && !accountCreationInProgress) {
+          syncAccount(firebaseUser, true).catch(error => console.error(error));
+        }
       });
 
       return {
@@ -786,13 +935,15 @@
         getCurrentUserId() {
           return auth.currentUser?.uid || null;
         },
-        async signInWithGoogle() {
-          const provider = new firebase.auth.GoogleAuthProvider();
-          provider.setCustomParameters({ prompt: 'select_account' });
-          const result = await auth.signInWithPopup(provider);
-          return syncAccount(result.user);
-        },
         async signInWithUsername(username, password) {
+          if (/^\d{4}$/.test(String(password || ''))) {
+            const result = await functions.httpsCallable('authenticateUsername')({
+              username,
+              password
+            });
+            const credential = await auth.signInWithCustomToken(result.data.token);
+            return syncAccount(credential.user);
+          }
           const localUser = findUserByIdentifier(username);
           let previousLocalProgress = null;
           if (localUser?.provider === 'local') {
@@ -805,6 +956,36 @@
           }
           const credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
           return syncAccount(credential.user, false, previousLocalProgress);
+        },
+        async createAccount(username, pin, fullName, role, avatar) {
+          const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
+          const normalizedFullName = String(fullName || '').trim();
+          const allowedRoles = ['child', 'teacher', 'parent'];
+          const allowedAvatars = ['child', 'girl', 'engineer'];
+          if (!normalizedFullName || normalizedFullName.length > 60) {
+            throw new TypeError('أدخل اسمًا صحيحًا لا يتجاوز 60 حرفًا.');
+          }
+          if (!allowedRoles.includes(role)) throw new TypeError('اختر نوع حساب صحيحًا.');
+          if (!allowedAvatars.includes(avatar)) throw new TypeError('اختر شخصية من القائمة.');
+          if (!/^\d{4}$/.test(String(pin || ''))) throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');
+          accountCreationInProgress = true;
+          try {
+            const result = await functions.httpsCallable('registerAccount')({
+              username: normalizedUsername,
+              pin,
+              fullName: normalizedFullName,
+              role,
+              avatar
+            });
+            const credential = await auth.signInWithCustomToken(result.data.token);
+            return await syncAccount(credential.user, false, null, {
+              fullName: normalizedFullName,
+              role,
+              avatar
+            });
+          } finally {
+            accountCreationInProgress = false;
+          }
         },
         async listAccounts() {
           const snapshot = await database.collection('users').orderBy('username').get();
@@ -820,6 +1001,66 @@
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
           return { ...account, id: account.uid };
+        },
+        async updateOwnProfile({ fullName, avatar, currentCredential = '', newCredential = '' }) {
+          const current = getCurrentUser();
+          if (!current || current.id !== auth.currentUser?.uid) {
+            throw new Error('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
+          }
+          if (currentCredential || newCredential) {
+            try {
+              const result = await functions.httpsCallable('updateOwnProfile')({
+                fullName,
+                avatar,
+                currentCredential,
+                newCredential
+              });
+              return setCurrentUser({ ...current, ...result.data });
+            } catch (error) {
+              const legacyAccount = error.code === 'functions/failed-precondition'
+                && error.message.includes('الحساب القديم');
+              const functionNotDeployed = error.code === 'functions/not-found';
+              if (legacyAccount) {
+                const firebaseUser = auth.currentUser;
+                if (!firebaseUser?.email) {
+                  throw new Error('تعذر التحقق من الحساب القديم. تواصل مع مدير النظام.');
+                }
+                const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
+                await firebaseUser.reauthenticateWithCredential(credential);
+                await firebaseUser.getIdToken(true);
+                const result = await functions.httpsCallable('updateOwnProfile')({
+                  fullName,
+                  avatar,
+                  currentCredential,
+                  newCredential
+                });
+                return setCurrentUser({ ...current, ...result.data });
+              }
+              if (newCredential.length < 6 || !functionNotDeployed) throw error;
+
+              const firebaseUser = auth.currentUser;
+              if (!firebaseUser?.email) {
+                throw new Error('تعذر التحقق من الحساب القديم. تواصل مع مدير النظام.');
+              }
+              const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
+              await firebaseUser.reauthenticateWithCredential(credential);
+              await firebaseUser.updatePassword(newCredential);
+              await firebaseUser.updateProfile({ displayName: fullName });
+              await database.collection('users').doc(current.id).update({
+                fullName,
+                avatar,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              return setCurrentUser({ ...current, fullName, avatar });
+            }
+          }
+          await auth.currentUser.updateProfile({ displayName: fullName });
+          await database.collection('users').doc(current.id).update({
+            fullName,
+            avatar,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          return setCurrentUser({ ...current, fullName, avatar });
         },
         async getLessonSettings() {
           const snapshot = await database.collection('settings').doc('lessons').get();

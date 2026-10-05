@@ -3,30 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🌈 B u d d y 🌈</title>
+    <title>B U D D Y code</title>
     <meta name="theme-color" content="#176b63" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-title" content="🌈 B u d d y 🌈" />
+    <meta name="apple-mobile-web-app-title" content="B U D D Y code" />
     <link rel="manifest" href="../../manifest.webmanifest" />
     <link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png" />
     <link rel="stylesheet" href="../common.css" />
     <link rel="stylesheet" href="index.css" />
   </head>
   <body>
-    <nav class="site-nav" aria-label="القائمة الرئيسية">
+    <nav id="site-nav" class="site-nav" aria-label="القائمة الرئيسية">
       <div class="site-nav-inner">
-        <a class="contact-button" href="tel:+201019288965">
-          <span aria-hidden="true">📞</span>
-          اتصل بنا
-        </a>
         <div class="nav-user-area">
           <details class="account-menu">
-            <summary class="nav-action account-trigger">👤 حسابي</summary>
+            <summary class="nav-action account-trigger" aria-label="ملخص الحساب"><span id="current-user-avatar" class="profile-avatar" aria-hidden="true">👤</span><span class="account-summary"><strong id="current-user-name" class="user-name"></strong><span id="current-user-role" class="user-role"></span></span></summary>
             <div class="account-dropdown">
-              <div class="account-details">
-                <strong id="current-user-name" class="user-name"></strong>
-                <span id="current-user-role" class="user-role"></span>
-              </div>
+              <a class="account-menu-item" href="../profile/index.html">👤 ملفي الشخصي</a>
               <a id="admin-link" class="account-menu-item hidden" href="../admin/index.html">⚙ الإعدادات</a>
               <button id="logout-button" class="account-menu-item" type="button">↪ تسجيل الخروج</button>
             </div>
@@ -34,9 +27,13 @@
         </div>
       </div>
     </nav>
+    <button id="site-nav-toggle" class="site-nav-toggle" type="button" aria-controls="site-nav" aria-expanded="true" aria-label="إخفاء شريط التنقل" title="إخفاء شريط التنقل">⌃</button>
     <div class="app-shell">
       <header class="hero">
-        <h1 class="title">🌈 B u d d y 🌈</h1>
+        <h1 class="title" aria-label="B U D D Y code">
+          <span class="brand-word">B U D D Y</span>
+          <span class="brand-subtitle">code</span>
+        </h1>
         <div class="app-install-prompt">
           <button class="install-app-button" type="button" data-install-app>📲 تثبيت التطبيق</button>
           <p class="install-help" data-install-help role="status" aria-live="polite" hidden></p>

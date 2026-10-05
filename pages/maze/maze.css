@@ -3,6 +3,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px 12px;
+  background: linear-gradient(145deg, #164f78 0%, #317da7 55%, #d8effa 145%);
 }
 
 .game-layout {
@@ -558,7 +559,7 @@ body {
   display: block;
   min-height: 100vh;
   padding: 20px 14px 36px;
-  background: linear-gradient(155deg, #176b63 0%, #2d8b7e 55%, #e5a14a 145%);
+  background: linear-gradient(145deg, #164f78 0%, #317da7 55%, #d8effa 145%);
 }
 
 .maze-app {
@@ -962,6 +963,7 @@ body {
 @media (max-width: 420px) {
   .command-control:nth-child(4n + 1) .code-popup { right: 0; left: auto; transform: translateY(-3px); }
   .command-control:nth-child(4n) .code-popup { right: auto; left: 0; transform: translateY(-3px); }
+  .command-toolbar .code-popup { max-width: min(160px, calc(100vw - 24px)); }
   .command-control:nth-child(4n + 1) .code-popup.show,
   .command-control:nth-child(4n) .code-popup.show { transform: translateY(0); }
 }

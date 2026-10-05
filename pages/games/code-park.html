@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>🏙️ مدينة شوارع متفرعة</title>
+<title>مدينة شوارع متفرعة | B U D D Y code</title>
 <script type="importmap">
 {
   "imports": {
@@ -53,6 +53,10 @@ body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI
 #toast{position:fixed;bottom:130px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);border:1px solid #FFD93D;padding:9px 16px;border-radius:30px;font-size:12px;display:none;z-index:300;max-width:90vw;text-align:center}
 
 #charScreen{position:fixed;inset:0;background:radial-gradient(circle at top,#2a2a5a,#0a0a1a);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto;gap:8px}
+#charScreen .brand-lockup{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:2px;line-height:1;text-align:center}
+#charScreen .brand-word{color:#fff5d7;font-size:clamp(18px,5vw,24px);font-weight:900;letter-spacing:.2em;text-shadow:0 0 5px rgba(255,255,255,.85),0 0 12px rgba(255,217,61,.85),0 0 25px rgba(255,138,0,.5);animation:park-brand-glow 2.8s ease-in-out infinite alternate}
+#charScreen .brand-subtitle{color:#ffe2a3;font-size:10px;font-weight:800;letter-spacing:.55em;text-shadow:0 0 8px rgba(255,193,77,.75)}
+@keyframes park-brand-glow{from{filter:drop-shadow(0 0 2px rgba(255,193,77,.3))}to{filter:drop-shadow(0 0 7px rgba(255,193,77,.75))}}
 #charScreen h1{font-size:22px;text-align:center}
 #charScreen p{font-size:12px;opacity:.75;text-align:center}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%;max-width:360px}
@@ -83,6 +87,19 @@ body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI
 #hintBtn{background:#FFD93D;color:#000}
 
 #errBox{position:fixed;inset:0;background:#0a0a1a;color:#fff;display:none;align-items:center;justify-content:center;padding:24px;text-align:center;z-index:99999;font-size:14px;line-height:1.7}
+@media (max-height:700px){
+  #charScreen{justify-content:flex-start;padding:10px 14px;gap:6px}
+  #charScreen .brand-lockup{margin-bottom:0}
+  #charScreen .brand-word{font-size:18px}
+  #charScreen h1{font-size:19px}
+  #charScreen p{font-size:11px}
+  .card{padding:7px}
+  .card .ico{height:44px;font-size:24px}
+  #enterBtn{margin-top:6px;padding:10px 26px}
+  .mapPrev{padding:8px}
+  .mapLine{font-size:9px;line-height:1.2;padding:6px}
+}
+@media (prefers-reduced-motion:reduce){#charScreen .brand-word{animation:none}}
 </style>
 </head>
 <body>
@@ -120,6 +137,10 @@ body{background:#0a0a1a;color:#fff;font-family:system-ui,-apple-system,"Segoe UI
 </div>
 
 <div id="charScreen">
+  <div class="brand-lockup" aria-label="B U D D Y code">
+    <span class="brand-word">B U D D Y</span>
+    <span class="brand-subtitle">code</span>
+  </div>
   <h1>🗺️ مدينة شوارع متفرعة</h1>
   <p>5 محلات في حواري مختلفة - لازم تدخل شوارع جانبية!</p>
   <div class="grid">

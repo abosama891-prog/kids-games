@@ -2,7 +2,7 @@ body {
   display: block;
   min-height: 100vh;
   padding: 20px 14px 36px;
-  background: linear-gradient(155deg, #176b63 0%, #2d8b7e 55%, #e5a14a 145%);
+  background: linear-gradient(155deg, #263b83 0%, #426cb3 55%, #d7eaff 145%);
 }
 
 .games-page {
@@ -22,9 +22,57 @@ body {
   margin-bottom: 14px;
 }
 
-.games-header h1 {
+.games-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.games-header .brand-lockup {
+  display: flex;
+  width: fit-content;
+  margin: 0;
+  text-align: center;
   color: #fff;
-  font-size: 1.8rem;
+}
+
+.games-header .brand-word {
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  letter-spacing: 0.18em;
+  color: #fff4d6;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.8), 0 0 12px rgba(255, 195, 89, 0.9), 0 0 24px rgba(255, 145, 74, 0.52);
+  animation-name: games-brand-glow;
+}
+
+.games-header .brand-subtitle {
+  font-size: 0.72rem;
+  letter-spacing: 0.5em;
+  color: #ffe1a8;
+  text-shadow: 0 0 8px rgba(255, 183, 84, 0.75);
+}
+
+@keyframes games-brand-glow {
+  from { filter: drop-shadow(0 0 3px rgba(255, 181, 71, 0.35)); }
+  to { filter: drop-shadow(0 0 8px rgba(255, 181, 71, 0.75)); }
+}
+
+.games-header .page-kicker {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border: 1px solid rgba(255, 244, 214, 0.7);
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(238, 169, 68, 0.22));
+  box-shadow: 0 3px 10px rgba(8, 49, 43, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  text-align: center;
+  color: #fff8e8;
+  font-size: 1.2rem;
+  line-height: 1;
+  text-shadow: 0 1px 4px rgba(74, 55, 17, 0.28);
 }
 
 .games-grid {
@@ -125,7 +173,13 @@ body {
 
 @media (max-width: 420px) {
   body { padding: 14px 10px 24px; }
-  .games-header h1 { font-size: 1.5rem; }
+  .games-header { margin-bottom: 14px; }
+  .page-nav { margin-bottom: 10px; }
+  .games-brand-row { gap: 8px; margin-bottom: 6px; }
+  .games-header .brand-lockup { gap: 2px; }
+  .games-header .brand-word { font-size: 1.25rem; letter-spacing: 0.12em; }
+  .games-header .brand-subtitle { font-size: 0.62rem; letter-spacing: 0.4em; }
+  .games-header .page-kicker { width: 30px; height: 30px; flex-basis: 30px; font-size: 1.05rem; border-radius: 10px; }
   .games-grid { grid-template-columns: 1fr; gap: 9px; }
   .game-card { min-height: 86px; }
 }

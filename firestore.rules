@@ -11,15 +11,20 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
+    function validAvatar(avatar) {
+      return avatar in ['child', 'girl', 'engineer'];
+    }
+
     function validNewProfile(userId) {
       return request.auth.uid == userId
         && request.resource.data.keys().hasAll([
-          'username', 'email', 'fullName', 'role', 'provider', 'status', 'progress', 'updatedAt'
+          'username', 'email', 'fullName', 'role', 'avatar', 'provider', 'status', 'progress', 'updatedAt'
         ])
         && request.resource.data.keys().hasOnly([
-          'username', 'email', 'fullName', 'role', 'provider', 'status', 'progress', 'updatedAt'
+          'username', 'email', 'fullName', 'role', 'avatar', 'provider', 'status', 'progress', 'updatedAt'
         ])
-        && request.resource.data.role == 'child'
+        && request.resource.data.role in ['child', 'parent', 'teacher']
+        && validAvatar(request.resource.data.avatar)
         && request.resource.data.status == 'active'
         && request.resource.data.provider in ['local', 'google']
         && (
@@ -40,7 +45,8 @@ service cloud.firestore {
         (request.auth.uid == userId
           && resource.data.status == 'active'
           && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['email', 'fullName', 'progress', 'updatedAt'])
+            .hasOnly(['email', 'fullName', 'avatar', 'progress', 'updatedAt'])
+          && validAvatar(request.resource.data.avatar)
           && request.resource.data.role == resource.data.role
           && request.resource.data.provider == resource.data.provider
           && request.resource.data.status == resource.data.status
@@ -72,26 +78,29 @@ service cloud.firestore {
       allow create, update: if activeAdmin()
         && request.resource.data.keys().hasOnly(['unlockAt', 'updatedAt'])
         && request.resource.data.unlockAt.keys().hasAll([
-          'commands', 'sequence', 'loops', 'conditions', 'debugging'
+          'commands', 'sequence', 'loops', 'conditions', 'debugging', 'code-park'
         ])
         && request.resource.data.unlockAt.keys().hasOnly([
-          'commands', 'sequence', 'loops', 'conditions', 'debugging'
+          'commands', 'sequence', 'loops', 'conditions', 'debugging', 'code-park'
         ])
         && request.resource.data.unlockAt.commands is int
         && request.resource.data.unlockAt.commands >= 0
-        && request.resource.data.unlockAt.commands <= 39
+        && request.resource.data.unlockAt.commands <= 44
         && request.resource.data.unlockAt.sequence is int
         && request.resource.data.unlockAt.sequence >= 0
-        && request.resource.data.unlockAt.sequence <= 39
+        && request.resource.data.unlockAt.sequence <= 44
         && request.resource.data.unlockAt.loops is int
         && request.resource.data.unlockAt.loops >= 0
-        && request.resource.data.unlockAt.loops <= 39
+        && request.resource.data.unlockAt.loops <= 44
         && request.resource.data.unlockAt.conditions is int
         && request.resource.data.unlockAt.conditions >= 0
-        && request.resource.data.unlockAt.conditions <= 39
+        && request.resource.data.unlockAt.conditions <= 44
         && request.resource.data.unlockAt.debugging is int
         && request.resource.data.unlockAt.debugging >= 0
-        && request.resource.data.unlockAt.debugging <= 39;
+        && request.resource.data.unlockAt.debugging <= 44
+        && request.resource.data.unlockAt['code-park'] is int
+        && request.resource.data.unlockAt['code-park'] >= 0
+        && request.resource.data.unlockAt['code-park'] <= 44;
       allow delete: if activeAdmin();
     }
   }

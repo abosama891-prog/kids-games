@@ -314,7 +314,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 14px 12px 24px;
-  background: linear-gradient(155deg, #176b63 0%, #2d8b7e 55%, #e5a14a 145%);
+  background: linear-gradient(150deg, #e2f1e7 0%, #cfe7dc 48%, #f4ddb1 125%);
 }
 
 .gas-app { width: min(920px, calc(100% - 4px)); padding: 12px 0 24px; }

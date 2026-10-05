@@ -89,6 +89,53 @@ button, input {
   padding: 28px 0 40px;
 }
 
+.brand-lockup {
+  display: flex;
+  width: fit-content;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 auto;
+  line-height: 1;
+  font-weight: 900;
+  color: #fff;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.brand-word {
+  display: block;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  letter-spacing: 0.26em;
+  color: #f3ffff;
+  text-shadow:
+    0 0 5px rgba(255, 255, 255, 0.95),
+    0 0 12px rgba(77, 250, 255, 0.95),
+    0 0 24px rgba(77, 250, 255, 0.72),
+    0 0 38px rgba(125, 255, 176, 0.5);
+  animation: brand-glow 2.8s ease-in-out infinite alternate;
+}
+
+.brand-subtitle {
+  display: block;
+  font-size: clamp(0.95rem, 2vw, 1.4rem);
+  letter-spacing: 0.8em;
+  font-weight: 800;
+  color: #bafff1;
+  opacity: 0.96;
+  text-transform: lowercase;
+  text-shadow: 0 0 8px rgba(92, 255, 196, 0.85), 0 0 18px rgba(77, 250, 255, 0.5);
+}
+
+@keyframes brand-glow {
+  from {
+    filter: drop-shadow(0 0 3px rgba(77, 250, 255, 0.35));
+  }
+  to {
+    filter: drop-shadow(0 0 9px rgba(77, 250, 255, 0.8));
+  }
+}
+
 .page-card {
   background: var(--card-bg);
   border-radius: 26px;
@@ -163,6 +210,10 @@ button, input {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .brand-word {
+    animation: none;
+  }
+
   .level-victory,
   .level-victory-card,
   .level-victory-stars .earned {
@@ -210,6 +261,39 @@ button, input {
   text-align: center;
 }
 
+.game-brandbar {
+  display: flex;
+  width: fit-content;
+  min-height: 28px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin: 0 auto 8px;
+  padding: 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 3px 10px rgba(31, 45, 61, 0.1);
+  line-height: 1;
+}
+
+.game-brand-word {
+  color: #176b63;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-shadow: 0 0 8px rgba(23, 107, 99, 0.18);
+}
+
+.game-brand-code {
+  color: #438e7e;
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.42em;
+  text-transform: lowercase;
+}
+
 .game-topbar {
   display: flex;
   align-items: center;
@@ -248,8 +332,7 @@ button, input {
   text-align: center;
 }
 
-.game-topbar .game-identity,
-.game-topbar .game-mark {
+.game-topbar .game-identity {
   display: grid;
   flex: 0 1 38px;
   place-items: center;
@@ -257,6 +340,23 @@ button, input {
   margin: 0;
   color: #315f57;
   font-size: clamp(1.1rem, 4vw, 1.45rem);
+  line-height: 1;
+  text-align: center;
+}
+
+.game-topbar .game-mark {
+  display: grid;
+  flex: 0 0 36px;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  border: 1px solid #d3e7de;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #ffffff, #e8f5ed);
+  box-shadow: 0 3px 8px rgba(23, 75, 66, 0.1), inset 0 1px 0 #fff;
+  color: #315f57;
+  font-size: 1.2rem;
   line-height: 1;
   text-align: center;
 }
@@ -304,11 +404,18 @@ button, input {
     padding-inline: 3px;
   }
 
-  .game-topbar .game-identity,
-  .game-topbar .game-mark {
+  .game-topbar .game-identity {
     flex-basis: 25px;
     min-width: 22px;
     font-size: 1.05rem;
+  }
+
+  .game-topbar .game-mark {
+    flex-basis: 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    font-size: 1rem;
   }
 
   .game-topbar .game-identity svg {

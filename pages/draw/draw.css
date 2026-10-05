@@ -3,6 +3,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px 12px;
+  background: linear-gradient(145deg, #704778 0%, #b96683 55%, #ffe0b2 145%);
 }
 
 .game-layout {
@@ -452,7 +453,7 @@ body {
   display: block;
   min-height: 100vh;
   padding: 20px 14px 36px;
-  background: linear-gradient(155deg, #176b63 0%, #2d8b7e 55%, #e5a14a 145%);
+  background: linear-gradient(145deg, #704778 0%, #b96683 55%, #ffe0b2 145%);
 }
 
 .draw-app {

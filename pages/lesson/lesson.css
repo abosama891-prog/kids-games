@@ -3,6 +3,7 @@ body {
   align-items: center;
   justify-content: center;
   padding: 24px 12px;
+  background: linear-gradient(145deg, #edf3ff 0%, #e4f4fb 52%, #f0eaff 100%);
 }
 
 .lesson-page {
@@ -10,10 +11,10 @@ body {
 }
 
 .lesson-header {
-  background: linear-gradient(135deg, #176b63, #2d8b7e);
+  background: linear-gradient(135deg, #31518f, #5279bd);
   color: #fff;
   text-align: center;
-  padding: 28px 20px;
+  padding: 24px 20px;
   margin-bottom: 22px;
   border: none;
 }
@@ -27,12 +28,42 @@ body {
 }
 
 .tag {
-  display: inline-block;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 10px;
   background: rgba(255, 255, 255, 0.15);
   border-radius: 999px;
-  padding: 7px 12px;
-  margin-bottom: 12px;
+  padding: 6px 11px;
   font-weight: 900;
+  font-size: 0.9rem;
+}
+
+.lesson-header .brand-lockup {
+  display: flex;
+  width: fit-content;
+  margin: 0 auto 10px;
+  color: #fff;
+}
+
+.lesson-header .brand-word {
+  font-size: clamp(1.55rem, 4vw, 2.2rem);
+  letter-spacing: 0.2em;
+  color: #e6f4ff;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.85), 0 0 12px rgba(155, 218, 255, 0.85), 0 0 24px rgba(91, 156, 220, 0.5);
+  animation-name: lesson-brand-glow;
+}
+
+.lesson-header .brand-subtitle {
+  font-size: 0.8rem;
+  letter-spacing: 0.55em;
+  color: #d4eaff;
+  text-shadow: 0 0 8px rgba(145, 200, 255, 0.8);
+}
+
+@keyframes lesson-brand-glow {
+  from { filter: drop-shadow(0 0 3px rgba(145, 200, 255, 0.3)); }
+  to { filter: drop-shadow(0 0 8px rgba(145, 200, 255, 0.7)); }
 }
 
 .lesson-header h1 {
@@ -43,6 +74,7 @@ body {
 .lesson-header p {
   opacity: 0.96;
   font-weight: 700;
+  line-height: 1.5;
 }
 
 .lesson-header-image {
@@ -283,15 +315,58 @@ code {
 }
 
 @media (max-width: 560px) {
+  body {
+    align-items: flex-start;
+    padding: 12px 10px;
+  }
+
+  .lesson-page {
+    width: 100%;
+  }
+
+  .lesson-header {
+    padding: 16px 12px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+  }
+
   .lesson-tile {
     gap: 9px;
     padding: 12px;
   }
-}
 
-@media (max-width: 560px) {
   .page-navigation {
-    margin-bottom: 18px;
+    margin-bottom: 12px;
+  }
+
+  .tag {
+    margin-bottom: 8px;
+    padding: 5px 9px;
+    font-size: 0.76rem;
+  }
+
+  .lesson-header .brand-lockup {
+    gap: 2px;
+    margin-bottom: 8px;
+  }
+
+  .lesson-header .brand-word {
+    font-size: 1.35rem;
+    letter-spacing: 0.14em;
+  }
+
+  .lesson-header .brand-subtitle {
+    font-size: 0.65rem;
+    letter-spacing: 0.45em;
+  }
+
+  .lesson-header h1 {
+    margin-bottom: 4px;
+    font-size: clamp(1.55rem, 7vw, 2rem);
+  }
+
+  .lesson-header p {
+    font-size: 0.82rem;
   }
 
   .compare-grid {

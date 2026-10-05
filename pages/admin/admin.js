@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const defaultLessonSettings = window.KidsGames.getLessonSettings();
   Object.entries(defaultLessonSettings).forEach(([key, value]) => {
-    lessonSettingsForm.elements.namedItem(key).value = String(value);
+    const input = lessonSettingsForm.elements.namedItem(key);
+    if (input) input.value = String(value);
   });
 
   lessonSettingsForm.addEventListener('submit', async event => {
@@ -69,6 +70,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   function createCell(row, text, label) {
     const cell = document.createElement('td');
     cell.dataset.label = label;
+    cell.className = {
+      'اسم المستخدم': 'username-cell',
+      'معرّف الدخول': 'email-cell',
+      'مصدر الحساب': 'provider-cell'
+    }[label] || '';
     cell.textContent = text;
     row.appendChild(cell);
     return cell;
@@ -76,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function createSelectCell(row, field, value, options, userId) {
     const cell = document.createElement('td');
+    cell.className = `${field}-cell`;
     cell.dataset.label = field === 'role' ? 'الدور' : 'الحالة';
     const select = document.createElement('select');
     select.dataset.field = field;

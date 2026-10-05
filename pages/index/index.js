@@ -1,4 +1,34 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const siteNav = document.getElementById('site-nav');
+  const siteNavToggle = document.getElementById('site-nav-toggle');
+  const navHiddenKey = 'kids_games_site_nav_hidden';
+  let isNavHidden = false;
+  try {
+    isNavHidden = localStorage.getItem(navHiddenKey) === 'true';
+  } catch (error) {
+    console.error('Unable to read navigation visibility preference:', error);
+  }
+
+  function updateSiteNavVisibility() {
+    siteNav.classList.toggle('is-hidden', isNavHidden);
+    siteNavToggle.classList.toggle('is-hidden', isNavHidden);
+    siteNavToggle.setAttribute('aria-expanded', String(!isNavHidden));
+    siteNavToggle.setAttribute('aria-label', isNavHidden ? 'إظهار شريط التنقل' : 'إخفاء شريط التنقل');
+    siteNavToggle.title = isNavHidden ? 'إظهار شريط التنقل' : 'إخفاء شريط التنقل';
+    siteNavToggle.textContent = isNavHidden ? '☰' : '⌃';
+  }
+
+  updateSiteNavVisibility();
+  siteNavToggle.addEventListener('click', () => {
+    isNavHidden = !isNavHidden;
+    updateSiteNavVisibility();
+    try {
+      localStorage.setItem(navHiddenKey, String(isNavHidden));
+    } catch (error) {
+      console.error('Unable to save navigation visibility preference:', error);
+    }
+  });
+
   const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
   if (!currentUser) {
     window.location.href = '../auth/index.html';
@@ -7,7 +37,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const userName = document.getElementById('current-user-name');
   const userRole = document.getElementById('current-user-role');
-  if (userName) userName.textContent = currentUser.fullName;
+  const accountMenu = document.querySelector('.account-menu');
+  const accountTrigger = document.querySelector('.account-trigger');
+  const displayName = currentUser.fullName || currentUser.username || 'المستخدم';
+  const isChild = currentUser.role === 'child';
+  const avatarSymbols = {
+    child: '🧒',
+    girl: '👧🏻',
+    engineer: '🧑🏻‍💻'
+  };
+  const userAvatar = document.getElementById('current-user-avatar');
+  if (userName) userName.textContent = isChild ? `أهلًا يا ${displayName}!` : displayName;
+  if (userAvatar) userAvatar.textContent = avatarSymbols[currentUser.avatar] || avatarSymbols.child;
+  if (accountMenu) accountMenu.classList.toggle('child-account', isChild);
+  if (accountTrigger) accountTrigger.setAttribute(
+    'aria-label',
+    isChild ? `حساب ${displayName}، بطل البرمجة` : `حساب ${displayName}`
+  );
   if (userRole) {
     userRole.textContent = currentUser.role === 'admin'
       ? 'مدير'
@@ -15,7 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'ولي أمر'
         : currentUser.role === 'teacher'
           ? 'معلم'
-          : 'طفل';
+          : currentUser.role === 'child'
+            ? 'بطل البرمجة'
+            : 'طفل';
   }
 
   const logoutButton = document.getElementById('logout-button');

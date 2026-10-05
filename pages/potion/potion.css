@@ -3,8 +3,8 @@ body {
   justify-content: center;
   padding: 18px 12px 34px;
   background:
-    radial-gradient(ellipse at 15% 10%, rgba(194, 230, 174, 0.48), transparent 32%),
-    linear-gradient(150deg, #176b63 0%, #2d8b7e 58%, #d4a052 145%);
+    radial-gradient(ellipse at 15% 10%, rgba(224, 197, 255, 0.5), transparent 32%),
+    linear-gradient(150deg, #443467 0%, #7557a0 58%, #d7dff7 145%);
 }
 
 .potion-app {
