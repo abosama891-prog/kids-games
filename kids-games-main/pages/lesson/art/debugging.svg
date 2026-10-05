@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">اكتشاف الأخطاء وتصحيحها</title>
+  <desc id="desc">عدسة تكبير تكشف خطأ في مسار برمجي وتوضح إصلاحه</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe0d2"/><stop offset="1" stop-color="#ffeebd"/></linearGradient></defs>
+  <rect width="640" height="360" rx="30" fill="url(#bg)"/>
+  <circle cx="562" cy="63" r="24" fill="#fff8db"/>
+  <rect x="81" y="66" width="385" height="230" rx="22" fill="#fff" stroke="#db9b68" stroke-width="8"/>
+  <rect x="108" y="96" width="329" height="48" rx="12" fill="#eaf7f0"/>
+  <circle cx="134" cy="120" r="12" fill="#54b88b"/>
+  <path d="M158 120h118m27 0h100" stroke="#477668" stroke-width="9" stroke-linecap="round"/>
+  <rect x="108" y="162" width="329" height="48" rx="12" fill="#fff0eb"/>
+  <circle cx="134" cy="186" r="12" fill="#e87363"/>
+  <path d="M158 186h83" stroke="#b05448" stroke-width="9" stroke-linecap="round"/>
+  <path d="m270 174 24 24m0-24-24 24" stroke="#e87363" stroke-width="8" stroke-linecap="round"/>
+  <rect x="108" y="228" width="329" height="43" rx="12" fill="#eef4ff"/>
+  <circle cx="134" cy="249" r="11" fill="#638ed6"/>
+  <path d="M158 249h173m24 0h48" stroke="#6480ac" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="451" cy="191" r="75" fill="#91dcef" fill-opacity=".38" stroke="#286e8b" stroke-width="13"/>
+  <circle cx="451" cy="191" r="57" fill="#fff" fill-opacity=".16"/>
+  <path d="m504 246 63 63" stroke="#286e8b" stroke-width="23" stroke-linecap="round"/>
+  <path d="m421 193 19 19 39-45" fill="none" stroke="#23865f" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M101 314h111m24 0h46" stroke="#57aa7d" stroke-width="8" stroke-linecap="round"/>
+  <path d="m268 302 14 12-14 12" fill="none" stroke="#57aa7d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
