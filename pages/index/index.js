@@ -76,16 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ التعديل: إظهار زر الإعدادات للمدير فقط
   const adminLink = document.getElementById('admin-link');
   if (adminLink) {
-    if (currentUser && currentUser.role === 'admin') {
-      adminLink.classList.remove('hidden');
-      console.log('✅ Admin link shown for user:', currentUser.username);
-    } else {
-      adminLink.classList.add('hidden');
-      console.log('❌ Admin link hidden. User role:', currentUser ? currentUser.role : 'No user');
-    }
+    adminLink.classList.toggle('hidden', !window.KidsGamesAuth.canAccess('manageUsers', currentUser));
   }
 
   const progress = window.KidsGames.readProgress();

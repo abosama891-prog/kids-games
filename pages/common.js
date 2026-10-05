@@ -1,14 +1,10 @@
 (function () {
-  // ✅ أوقف تنفيذ هذا الكود بالكامل في صفحات الإدارة
-  if (window.location.pathname.includes('/admin/')) {
-    return;
-  }
-
   const APP_BASE_URL = new URL('../', document.currentScript.src);
   const STORAGE_KEY = 'kids_games_progress_v1';
   const LESSON_SETTINGS_KEY = 'kids_games_lesson_unlocks_v1';
   const GAME_SETTINGS_KEY = 'kids_games_availability_v1';
 
+  // ✅ FIX #5: uuid helper مع fallback للمتصفحات القديمة
   function uuid() {
     return (window.crypto && typeof crypto.randomUUID === 'function')
       ? crypto.randomUUID()
@@ -47,6 +43,7 @@
     return user?.id ? `${STORAGE_KEY}_${user.id}` : STORAGE_KEY;
   }
 
+  // ✅ FIX #6: معالجة QuotaExceededError
   function safeSetItem(key, value) {
     try {
       localStorage.setItem(key, value);
@@ -140,6 +137,7 @@
     return state;
   }
 
+  // ✅ FIX #1 + #2: تبسيط حساب stars + تحديث currentLevel تلقائيًا
   function completeGameLevel(gameKey, levelNumber, starsAwarded, updates = {}) {
     const game = gameCatalog.find(item => item.key === gameKey);
     if (!game) {
@@ -161,6 +159,7 @@
     const completed = [...current.completed, levelNumber].sort((a, b) => a - b);
     const gameStars = (Number(current.stars) || 0) + (isFirstCompletion ? Math.floor(starsAwarded) : 0);
 
+    // تحديث currentLevel تلقائيًا بدون الاعتماد على updates
     const autoCurrentLevel = Math.max(
       Number(current.currentLevel) || 1,
       Math.min(levelNumber + 1, game.levels)
@@ -174,6 +173,7 @@
       stars: gameStars
     };
 
+    // حساب إجمالي النجوم بشكل صريح
     let totalGameStars = 0;
     gameCatalog.forEach(item => {
       if (item.key === gameKey) {
@@ -246,8 +246,7 @@
     container.classList.add('game-level-selector');
     container.replaceChildren(heading, items);
   }
-
-  function getCompletedLevelCount(progress = readProgress()) {
+    function getCompletedLevelCount(progress = readProgress()) {
     return gameCatalog.reduce((total, game) => {
       const completed = new Set(
         (Array.isArray(progress[game.key]?.completed) ? progress[game.key].completed : [])
@@ -392,6 +391,7 @@
     victoryTimeout = window.setTimeout(hideLevelVictory, 1500);
   }
 
+  // ✅ FIX #3: إضافة تحقق referrer &&
   function goBack(fallbackUrl) {
     const referrer = document.referrer;
     if (referrer && referrer !== window.location.href && referrer.startsWith(`${window.location.origin}/`)) {
@@ -428,8 +428,7 @@
     hideLevelVictory,
     goBack
   };
-
-  const manifestLink = document.querySelector('link[rel="manifest"]');
+    const manifestLink = document.querySelector('link[rel="manifest"]');
   if (!manifestLink) {
     const link = document.createElement('link');
     link.rel = 'manifest';
@@ -558,7 +557,7 @@
 
   function normalizeUser(user) {
     return {
-      id: user.id || user.username || uuid(),
+      id: user.id || user.username || uuid(),   // ✅ FIX #5: استخدام uuid() بدل crypto.randomUUID()
       username: user.username || (user.email ? user.email.split('@')[0] : 'user'),
       password: user.password || '',
       email: user.email || '',
@@ -637,6 +636,7 @@
     return `${normalized}@accounts.kids-games.invalid`;
   }
 
+  // ✅ FIX #4: منع دخول حسابات Google بكلمة سر فاضية
   function loginWithUsername(username, password) {
     const user = getUsers().find(item => {
       const matchesUser = (item.username || '').trim().toLowerCase() === (username || '').trim().toLowerCase();
@@ -645,6 +645,7 @@
     });
 
     if (!user || user.status === 'inactive') return null;
+    // رفض الدخول لو الحساب مش local (Google) أو كلمة السر فاضية
     if (!user.password || String(user.password).length === 0) return null;
     if (user.provider && user.provider !== 'local') return null;
 
@@ -748,7 +749,7 @@
 
     const next = normalizeUser({
       ...userPayload,
-      id: userPayload.id || uuid(),
+      id: userPayload.id || uuid(),   // ✅ FIX #5
       fullName,
       username,
       email,
