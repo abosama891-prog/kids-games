@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">ترتيب الأوامر</title>
+  <desc id="desc">ثلاث خطوات مرقمة تقود الشخصية إلى الهدف بالترتيب</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe5ae"/><stop offset="1" stop-color="#ffd3c2"/></linearGradient></defs>
+  <rect width="640" height="360" rx="30" fill="url(#bg)"/>
+  <circle cx="531" cy="65" r="27" fill="#fff7d9"/>
+  <path d="M0 291q130-40 246 0t227-2q92-22 167 1v70H0z" fill="#f4bd86"/>
+  <path d="M117 245V106h144v139M261 245V155h144v90M405 245V91h126v154" fill="#fff9ec" stroke="#d77f54" stroke-width="8" stroke-linejoin="round"/>
+  <rect x="153" y="138" width="68" height="55" rx="15" fill="#a8e6d0"/>
+  <text x="187" y="174" fill="#24564d" font-family="Arial,sans-serif" font-size="29" font-weight="700" text-anchor="middle">1</text>
+  <rect x="300" y="175" width="68" height="55" rx="15" fill="#a8d8f4"/>
+  <text x="334" y="211" fill="#24516a" font-family="Arial,sans-serif" font-size="29" font-weight="700" text-anchor="middle">2</text>
+  <rect x="435" y="121" width="68" height="55" rx="15" fill="#c7b3f1"/>
+  <text x="469" y="157" fill="#453a77" font-family="Arial,sans-serif" font-size="29" font-weight="700" text-anchor="middle">3</text>
+  <circle cx="76" cy="255" r="28" fill="#fff" stroke="#d77f54" stroke-width="7"/>
+  <path d="M76 237v20l14 9" fill="none" stroke="#d77f54" stroke-width="6" stroke-linecap="round"/>
+  <path d="M540 263h48v-40h-48z" fill="#83d4a8" stroke="#278b69" stroke-width="6" stroke-linejoin="round"/>
+  <path d="m534 223 30-25 31 25" fill="#fff1c6" stroke="#278b69" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M104 255h17m140-2h39m144-2h28" stroke="#428a75" stroke-width="7" stroke-linecap="round" stroke-dasharray="8 12"/>
+  <path d="m245 241 15 12-15 12m145-24 15 12-15 12" fill="none" stroke="#428a75" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

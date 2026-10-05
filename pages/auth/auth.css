@@ -1,0 +1,614 @@
+:root {
+  --bg-top: #5ecbff;
+  --bg-mid: #9fe4ff;
+  --bg-bottom: #8be0a7;
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-border: rgba(255, 255, 255, 0.9);
+  --text: #1a3759;
+  --button-gold: #ffd76f;
+  --shadow: 0 20px 34px rgba(20, 53, 88, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 14px;
+  background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 48%, var(--bg-bottom) 100%);
+  font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.auth-shell {
+  width: min(920px, 100%);
+}
+
+.auth-card {
+  position: relative;
+  background: var(--card-bg);
+  border: 4px solid var(--card-border);
+  border-radius: 30px;
+  box-shadow: var(--shadow);
+  padding: 26px 18px 18px;
+  overflow: hidden;
+}
+
+.auth-card::before {
+  content: "☀️";
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  font-size: 2rem;
+}
+
+.auth-card::after {
+  content: "🌳🌼";
+  position: absolute;
+  left: 18px;
+  bottom: 12px;
+  font-size: 1.7rem;
+  opacity: 0.8;
+}
+
+.auth-header {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.auth-brand-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.brand-bubble {
+  display: inline-grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: linear-gradient(180deg, #d1f8e7, #a6e6d0);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  color: #176b63;
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.brand-bubble img {
+  display: block;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.pill {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 220px;
+  background: linear-gradient(180deg, rgba(255, 246, 190, 0.95), rgba(255, 233, 160, 0.9));
+  color: #7a5813;
+  border: 3px solid #f3cb56;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  margin-bottom: 0;
+  box-shadow: 0 8px 18px rgba(122, 88, 19, 0.18);
+}
+
+.pill .brand-word {
+  display: block;
+  font-size: 1.08rem;
+  letter-spacing: 0;
+  color: #7a5813;
+  text-shadow: none;
+}
+
+.pill .brand-subtitle {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  color: #8b6d1d;
+  text-transform: none;
+}
+
+.auth-panel {
+  position: relative;
+  z-index: 1;
+}
+
+.auth-panel[hidden] {
+  display: none;
+}
+
+.login-form {
+  width: min(440px, 100%);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.login-form label {
+  color: var(--text);
+  font-weight: 800;
+  text-align: right;
+}
+
+.login-form input,
+.login-form select {
+  width: 100%;
+  min-height: 50px;
+  border: 3px solid rgba(79, 126, 176, 0.22);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.avatar-field {
+  min-width: 0;
+  border: 0;
+}
+
+.avatar-field legend {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-weight: 800;
+  text-align: center;
+}
+
+.avatar-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  width: min(280px, 100%);
+  margin-inline: auto;
+}
+
+.avatar-choice {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 54px;
+  place-items: center;
+  border: 2px solid rgba(79, 126, 176, 0.22);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+}
+
+.avatar-choice:has(input:checked) {
+  border-color: #42aa70;
+  background: #e7f8ed;
+  box-shadow: 0 0 0 2px rgba(66, 170, 112, 0.14);
+}
+
+.avatar-choice input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.avatar-choice > span:first-of-type {
+  font-size: 1.7rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.avatar-choice:focus-within {
+  outline: 3px solid #e2a73e;
+  outline-offset: 2px;
+}
+
+.submit-btn {
+  min-height: 56px;
+  margin-top: 4px;
+  border: 3px solid rgba(255, 255, 255, 0.8);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #67c98b, #42aa70);
+  color: white;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.submit-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.auth-switch {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 12px auto 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.58);
+  color: #176b63;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 900;
+  text-align: center;
+  cursor: pointer;
+}
+
+.auth-switch:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.auth-switch:focus-visible {
+  outline: 3px solid #e2a73e;
+  outline-offset: 2px;
+}
+
+.auth-message {
+  position: relative;
+  z-index: 1;
+  min-height: 28px;
+  margin-top: 16px;
+  text-align: center;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.auth-message.error {
+  color: #b64646;
+}
+
+.auth-message.success {
+  color: #1d7d5d;
+}
+
+@media (max-width: 560px) {
+  .auth-card {
+    padding: 20px 12px 14px;
+    border-radius: 24px;
+  }
+
+}
+
+body {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 30%, #14356e, transparent 55%),
+    radial-gradient(circle at 80% 70%, #00355c, transparent 55%),
+    #0a1533;
+}
+
+.auth-shell {
+  width: min(400px, 100%);
+}
+
+.login-device {
+  width: 100%;
+  height: min(780px, calc(100dvh - 32px));
+  min-height: min(620px, calc(100dvh - 24px));
+  padding: 14px;
+  border: 4px solid #3d4a6b;
+  border-radius: 46px;
+  background: #0b0b14;
+  box-shadow:
+    0 0 0 3px #111,
+    0 0 60px rgba(0, 255, 255, 0.15),
+    0 0 120px rgba(128, 0, 255, 0.12),
+    inset 0 0 20px rgba(0, 0, 0, 0.8);
+  animation: login-device-float 5s ease-in-out infinite;
+}
+
+.login-device::before {
+  top: 15px;
+  right: auto;
+  left: 50%;
+  z-index: 5;
+  width: 90px;
+  height: 19px;
+  border-radius: 14px;
+  background: #050508;
+  content: "";
+  transform: translateX(-50%);
+}
+
+.login-device::after {
+  top: 120px;
+  right: -8px;
+  bottom: auto;
+  left: auto;
+  width: 4px;
+  height: 64px;
+  border-radius: 4px;
+  background: #2a2a3a;
+  content: "";
+  opacity: 1;
+}
+
+.splash-screen {
+  position: absolute;
+  inset: 14px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 34px;
+  background: radial-gradient(circle at 50% 30%, #173a80, #0b1c4a 70%);
+  color: #fff;
+  text-align: center;
+}
+
+.splash-screen[hidden],
+.account-screen[hidden] {
+  display: none;
+}
+
+.splash-screen::before,
+.splash-screen::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+}
+
+.splash-screen::before {
+  background-image:
+    linear-gradient(rgba(120, 220, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120, 220, 255, 0.12) 1px, transparent 1px);
+  background-size: 34px 34px;
+}
+
+.splash-screen::after {
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 0, 0, 0.1) 3px 4px);
+}
+
+.splash-branding,
+.splash-tagline,
+.start-button,
+.splash-status {
+  position: relative;
+  z-index: 1;
+}
+
+.splash-branding {
+  padding: 0 12px;
+}
+
+.splash-logo {
+  min-height: 104px;
+  margin-bottom: 10px;
+  font-size: clamp(3.7rem, 18vw, 5.25rem);
+  filter: drop-shadow(0 0 18px rgba(100, 255, 215, 0.8)) drop-shadow(0 0 34px rgba(0, 229, 255, 0.45));
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.splash-logo.switching {
+  opacity: 0;
+  transform: scale(0.7) rotate(-12deg);
+}
+
+.splash-title {
+  color: transparent;
+  background: linear-gradient(90deg, #4dfaff, #7dffb0, #b2ffe0, #4dfaff);
+  background-clip: text;
+  background-size: 300% 100%;
+  filter: drop-shadow(0 0 8px rgba(77, 250, 255, 0.8));
+  font-size: clamp(2rem, 9vw, 2.5rem);
+  font-weight: 900;
+  letter-spacing: 0;
+  white-space: nowrap;
+  animation: splash-gradient 6s linear infinite;
+}
+
+.splash-code {
+  width: fit-content;
+  margin: 12px auto 0;
+  padding: 6px 20px 6px 26px;
+  border: 1px solid rgba(178, 255, 224, 0.5);
+  border-radius: 10px;
+  background: rgba(92, 255, 196, 0.1);
+  color: #b2ffe0;
+  font: 400 0.9rem Consolas, "Courier New", monospace;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 10px #5cffc4, 0 0 24px rgba(92, 255, 196, 0.65);
+}
+
+.splash-code::after {
+  content: none;
+}
+
+.splash-tagline {
+  max-width: 260px;
+  margin: 28px 12px 0;
+  color: rgba(222, 248, 255, 0.8);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.start-button {
+  min-height: 50px;
+  margin-top: 30px;
+  padding: 0 36px;
+  border: 0;
+  border-radius: 30px;
+  background: linear-gradient(90deg, #7dffb0, #4dfaff);
+  box-shadow: 0 0 26px rgba(125, 255, 176, 0.58), 0 0 54px rgba(77, 250, 255, 0.28);
+  color: #071426;
+  cursor: pointer;
+  font: 800 1rem Consolas, monospace;
+  letter-spacing: 0.24em;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.start-button:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 36px rgba(125, 255, 176, 0.8), 0 0 70px rgba(77, 250, 255, 0.4);
+}
+
+.start-button:focus-visible,
+.back-to-splash:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.splash-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 28px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.splash-status span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7dffb0;
+  box-shadow: 0 0 10px #7dffb0;
+}
+
+.account-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 34px 10px 12px;
+  border-radius: 32px;
+  background: linear-gradient(180deg, #dff7ff, #e3fff0);
+  scrollbar-color: #7cc9bd transparent;
+  scrollbar-width: thin;
+}
+
+.account-screen .auth-header {
+  margin-bottom: 8px;
+}
+
+.account-screen .auth-brand-row {
+  gap: 4px;
+}
+
+.account-screen .brand-bubble {
+  width: 38px;
+  height: 34px;
+  margin: 0;
+  border-radius: 10px;
+  font-size: 1.45rem;
+}
+
+.account-screen .brand-bubble img {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+
+.account-screen .pill {
+  min-width: 0;
+  margin-bottom: 0;
+  padding: 6px 15px;
+}
+
+.account-screen .app-install-prompt {
+  margin-top: 2px;
+}
+
+.account-screen .install-app-button {
+  min-height: 36px;
+  padding: 6px 12px;
+}
+
+.account-screen .login-form {
+  gap: 6px;
+}
+
+.account-screen .login-form input,
+.account-screen .login-form select {
+  min-height: 42px;
+  padding: 7px 10px;
+  border-width: 2px;
+  font-size: 0.92rem;
+}
+
+.account-screen .submit-btn {
+  min-height: 46px;
+  border-radius: 13px;
+  font-size: 1rem;
+}
+
+.back-to-splash {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  z-index: 2;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid rgba(79, 126, 176, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #176b63;
+  cursor: pointer;
+  font-size: 1.15rem;
+}
+
+@keyframes login-device-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes splash-gradient {
+  from { background-position: 0% 50%; }
+  to { background-position: 300% 50%; }
+}
+
+@keyframes splash-blink {
+  50% { opacity: 0; }
+}
+
+@media (max-height: 740px) {
+  .splash-tagline { margin-top: 18px; }
+  .start-button { margin-top: 20px; }
+  .splash-status { margin-top: 18px; }
+}
+
+@media (max-width: 420px) {
+  body { padding: 10px; }
+  .login-device {
+    height: calc(100dvh - 20px);
+    min-height: 0;
+    padding: 10px;
+    border-radius: 36px;
+  }
+  .login-device::before { top: 11px; height: 16px; }
+  .splash-screen { inset: 10px; border-radius: 27px; }
+  .account-screen { border-radius: 25px; }
+  .splash-logo { min-height: 86px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-device,
+  .splash-title,
+  .splash-code::after {
+    animation: none;
+  }
+}

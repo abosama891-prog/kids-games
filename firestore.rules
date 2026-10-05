@@ -85,22 +85,35 @@ service cloud.firestore {
         ])
         && request.resource.data.unlockAt.commands is int
         && request.resource.data.unlockAt.commands >= 0
-        && request.resource.data.unlockAt.commands <= 44
+        && request.resource.data.unlockAt.commands <= 63
         && request.resource.data.unlockAt.sequence is int
         && request.resource.data.unlockAt.sequence >= 0
-        && request.resource.data.unlockAt.sequence <= 44
+        && request.resource.data.unlockAt.sequence <= 63
         && request.resource.data.unlockAt.loops is int
         && request.resource.data.unlockAt.loops >= 0
-        && request.resource.data.unlockAt.loops <= 44
+        && request.resource.data.unlockAt.loops <= 63
         && request.resource.data.unlockAt.conditions is int
         && request.resource.data.unlockAt.conditions >= 0
-        && request.resource.data.unlockAt.conditions <= 44
+        && request.resource.data.unlockAt.conditions <= 63
         && request.resource.data.unlockAt.debugging is int
         && request.resource.data.unlockAt.debugging >= 0
-        && request.resource.data.unlockAt.debugging <= 44
+        && request.resource.data.unlockAt.debugging <= 63
         && request.resource.data.unlockAt['code-park'] is int
         && request.resource.data.unlockAt['code-park'] >= 0
-        && request.resource.data.unlockAt['code-park'] <= 44;
+        && request.resource.data.unlockAt['code-park'] <= 63;
+      allow delete: if activeAdmin();
+    }
+
+    match /settings/games {
+      allow read: if signedIn();
+      allow create, update: if activeAdmin()
+        && request.resource.data.keys().hasOnly(['availability', 'updatedAt'])
+        && request.resource.data.availability.keys().hasAll(['lockedGames'])
+        && request.resource.data.availability.keys().hasOnly(['lockedGames'])
+        && request.resource.data.availability.lockedGames is list
+        && request.resource.data.availability.lockedGames.hasOnly([
+          'draw', 'maze', 'gas', 'frog', 'potion', 'robot', 'code-park'
+        ]);
       allow delete: if activeAdmin();
     }
   }

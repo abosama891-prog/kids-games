@@ -1,0 +1,206 @@
+body {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 22px 14px;
+  background:
+    radial-gradient(circle at 12% 16%, rgba(255, 255, 255, .5) 0 3px, transparent 4px),
+    radial-gradient(circle at 88% 75%, rgba(255, 255, 255, .42) 0 4px, transparent 5px),
+    linear-gradient(145deg, #327aa5 0%, #65b9b1 58%, #f5d88a 125%);
+}
+
+.maintenance-page {
+  width: min(560px, 100%);
+}
+
+.maintenance-card {
+  overflow: hidden;
+  padding: 26px clamp(18px, 5vw, 36px) 30px;
+  border: 3px solid rgba(255, 255, 255, .82);
+  border-radius: 32px;
+  background: linear-gradient(165deg, #fff 0%, #f5fbff 100%);
+  box-shadow: 0 22px 60px rgba(19, 62, 86, .24);
+  text-align: center;
+  color: #21486b;
+}
+
+.maintenance-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #176b63;
+  font-size: 1.15rem;
+  font-weight: 1000;
+}
+
+.maintenance-brand img {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+}
+
+.maintenance-brand small {
+  display: block;
+  color: #438e7e;
+  font-size: .65rem;
+  letter-spacing: .16em;
+}
+
+.workshop-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(290px, 100%);
+  height: 235px;
+  margin: 8px auto 0;
+  border-radius: 45% 55% 48% 52%;
+  background: radial-gradient(circle, #e5f7ff 0%, #d6f3ee 68%, transparent 69%);
+}
+
+.update-robot {
+  position: relative;
+  z-index: 1;
+  width: min(240px, 90%);
+  filter: drop-shadow(0 7px 4px rgba(39, 85, 118, .12));
+  animation: robot-bob 2.4s ease-in-out infinite;
+}
+
+.sparkle,
+.gear {
+  position: absolute;
+  z-index: 2;
+}
+
+.sparkle {
+  color: #efaf31;
+  font-size: 2rem;
+  animation: sparkle-pop 1.8s ease-in-out infinite alternate;
+}
+
+.sparkle-one { top: 32px; left: 36px; }
+.sparkle-two { top: 67px; right: 35px; animation-delay: .6s; }
+
+.gear {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(44, 91, 116, .13);
+}
+
+.gear-back {
+  top: 35px;
+  right: 48px;
+  width: 45px;
+  height: 45px;
+  font-size: 1.7rem;
+  animation: slow-spin 8s linear infinite;
+}
+
+.gear-front {
+  bottom: 28px;
+  left: 43px;
+  width: 38px;
+  height: 38px;
+  font-size: 1.4rem;
+  animation: slow-spin 7s linear infinite reverse;
+}
+
+.maintenance-kicker {
+  margin: 3px 0 7px;
+  color: #d28a23;
+  font-size: .88rem;
+  font-weight: 900;
+}
+
+.maintenance-card h1 {
+  margin: 0;
+  color: #21486b;
+  font-size: clamp(1.5rem, 6vw, 2.1rem);
+  line-height: 1.35;
+}
+
+.maintenance-message {
+  max-width: 420px;
+  margin: 12px auto 0;
+  color: #58748b;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.8;
+}
+
+.progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px 0 22px;
+}
+
+.progress-dots span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #58b8aa;
+  animation: dot-bounce .9s ease-in-out infinite alternate;
+}
+
+.progress-dots span:nth-child(2) { animation-delay: .18s; }
+.progress-dots span:nth-child(3) { animation-delay: .36s; }
+
+.maintenance-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.maintenance-actions a {
+  display: grid;
+  place-items: center;
+  min-height: 50px;
+  border-radius: 16px;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform .15s, box-shadow .15s;
+}
+
+.maintenance-actions a:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(35, 91, 115, .13);
+}
+
+.back-to-games {
+  background: linear-gradient(135deg, #318e91, #24799a);
+  color: #fff;
+}
+
+.back-home {
+  background: #eef7fa;
+  color: #37627b;
+}
+
+@keyframes robot-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+
+@keyframes sparkle-pop {
+  from { opacity: .55; transform: scale(.82) rotate(-12deg); }
+  to { opacity: 1; transform: scale(1.1) rotate(12deg); }
+}
+
+@keyframes slow-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes dot-bounce {
+  to { transform: translateY(-6px); opacity: .55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
