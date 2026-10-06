@@ -7,6 +7,7 @@ service cloud.firestore {
 
     function activeAdmin() {
       return signedIn()
+        && request.auth.token.admin == true
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
     }

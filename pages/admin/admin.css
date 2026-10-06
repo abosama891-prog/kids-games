@@ -1,13 +1,13 @@
 :root {
-  --admin-bg-1: #14385a;
-  --admin-bg-2: #1d5680;
-  --admin-bg-3: #e0a85b;
+  --admin-bg-1: #174c68;
+  --admin-bg-2: #247b87;
+  --admin-bg-3: #e5a84b;
   --panel-bg: #fff;
-  --header-text: #14385a;
-  --muted: #64748b;
-  --border: #cbd5e1;
-  --primary: #1c4c78;
-  --primary-dark: #14385a;
+  --header-text: #173b56;
+  --muted: #61758a;
+  --border: #c8d8e5;
+  --primary: #197b78;
+  --primary-dark: #155f68;
   --danger: #dc2626;
   --shadow: 0 4px 14px rgba(19, 56, 90, 0.09);
 }
@@ -15,7 +15,7 @@
 body {
   min-width: 0;
   padding: 18px 14px 32px;
-  background: linear-gradient(145deg, #e7f0f8 0%, #f5f8fc 52%, #e6eef8 100%);
+  background: linear-gradient(145deg, #e8f4f5 0%, #f5f8fc 52%, #eaf0f8 100%);
 }
 
 .admin-shell {
@@ -535,9 +535,7 @@ tbody tr:nth-child(even):hover { background: #edf4fb; }
   white-space: nowrap;
 }
 .edit-action { background: #2864dc; }
-.edit-action::before { content: "✎ "; }
 .table-action { background: #e52e32; }
-.table-action::before { content: "▣ "; }
 .table-action:disabled { color: #fff; }
 .table-actions { justify-content: center; }
 .empty-users { margin: 16px 0 0; padding: 22px; color: var(--muted); text-align: center; }
@@ -547,6 +545,7 @@ tbody tr:nth-child(even):hover { background: #edf4fb; }
   width: min(540px, calc(100% - 24px));
   max-width: none;
   max-height: min(90vh, 760px);
+  overflow: hidden;
   padding: 0;
   border: 0;
   border-radius: 14px;
@@ -557,10 +556,16 @@ tbody tr:nth-child(even):hover { background: #edf4fb; }
 .user-dialog .user-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: 14px;
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0 24px 22px;
 }
 .dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -585,6 +590,7 @@ tbody tr:nth-child(even):hover { background: #edf4fb; }
 }
 .dialog-fields { display: grid; gap: 16px; padding-top: 2px; }
 .dialog-fields label { display: grid; gap: 7px; font-weight: 800; font-size: .9rem; }
+.dialog-fields label[hidden] { display: none; }
 .dialog-fields input,
 .dialog-fields select {
   width: 100%;
@@ -599,7 +605,14 @@ tbody tr:nth-child(even):hover { background: #edf4fb; }
 }
 .field-hint { color: var(--muted); font-size: .78rem; font-weight: 500; }
 .form-note { margin: -6px 0 0; }
-.dialog-actions { display: flex; gap: 10px; }
+.dialog-actions {
+  position: sticky;
+  bottom: -1px;
+  display: flex;
+  gap: 10px;
+  padding-top: 10px;
+  background: #fff;
+}
 .dialog-actions button { flex: 1; min-height: 42px; }
 .cancel-action { border: 1px solid #d5deea; border-radius: 8px; background: #f1f5f9; color: var(--header-text); font: inherit; font-weight: 800; cursor: pointer; }
 .user-dialog label[hidden] { display: none; }
@@ -612,7 +625,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   body { padding: 12px 10px 24px; }
   .admin-shell { gap: 12px; }
   .header-top { flex-direction: row; align-items: center; }
-  .admin-header { padding: 20px 16px; border-radius: 18px; }
+  .admin-header { padding: 18px 16px; border-radius: 18px; }
+  .admin-header .brand-lockup { margin-top: 5px; }
+  .admin-header .brand-word { font-size: 1.35rem; }
+  .admin-header h1 { margin-top: 6px; font-size: clamp(1.25rem, 5vw, 1.7rem); line-height: 1.35; }
   .header-actions { justify-content: flex-end; }
   .admin-content { gap: 12px; }
   .panel { padding: 18px 14px; border-radius: 18px; }
@@ -715,9 +731,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
   table:not(.email-hidden) td.table-actions { grid-row: 4; }
   .table-actions button { min-height: 34px; padding-inline: 11px; font-size: .76rem; }
-  .user-dialog .user-form { gap: 14px; padding: 0 18px 18px; }
-  .dialog-header { margin: 0 -18px; }
-  .dialog-fields { gap: 12px; }
+  .user-dialog {
+    width: min(480px, calc(100% - 20px));
+    max-height: calc(100dvh - 20px);
+    border-radius: 18px;
+  }
+  .user-dialog .user-form {
+    gap: 11px;
+    max-height: calc(100dvh - 20px);
+    padding: 0 16px 14px;
+  }
+  .dialog-header { margin: 0 -16px; padding: 12px 16px; }
+  .dialog-fields { gap: 10px; padding-top: 0; }
+  .dialog-fields label { gap: 5px; font-size: .86rem; }
+  .dialog-fields input,
+  .dialog-fields select { min-height: 42px; padding: 8px 10px; }
+  .field-hint { line-height: 1.5; }
+  .dialog-actions { gap: 8px; padding-top: 8px; }
 }
 
 @media (max-width: 360px) {

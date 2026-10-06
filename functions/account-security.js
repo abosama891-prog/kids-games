@@ -19,8 +19,8 @@ function normalizePin(value) {
 function validateCredentials(username, password) {
   const normalizedUsername = normalizeUsername(username);
   const normalizedPassword = String(password || '');
-  if (!/^[a-z0-9._-]{3,32}$/.test(normalizedUsername)) {
-    throw new TypeError('اسم المستخدم يجب أن يتكون من 3 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
+  if (!/^[a-z0-9._-]{1,32}$/.test(normalizedUsername)) {
+    throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
   }
   if (normalizedPassword.length < 6 || normalizedPassword.length > 128) {
     throw new TypeError('كلمة المرور يجب أن تتكون من 6 إلى 128 حرفًا.');
@@ -31,8 +31,8 @@ function validateCredentials(username, password) {
 function validatePinCredentials(username, pin) {
   const normalizedUsername = normalizeUsername(username);
   const normalizedPin = normalizePin(pin);
-  if (!/^[a-z0-9._-]{3,32}$/.test(normalizedUsername)) {
-    throw new TypeError('اسم المستخدم يجب أن يتكون من 3 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
+  if (!/^[a-z0-9._-]{1,32}$/.test(normalizedUsername)) {
+    throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
   }
   if (!/^\d{4}$/.test(normalizedPin)) {
     throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');

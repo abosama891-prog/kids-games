@@ -133,22 +133,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const level = levels[currentLevel];
     levelElement.textContent = String(currentLevel + 1);
     levelHint.textContent = level.hint;
-    document.querySelectorAll('.lily-pad').forEach(pad => {
-      const index = Number(pad.dataset.pad);
-      const hasBug = level.bugs.includes(index);
-      pad.classList.toggle('has-bug', hasBug);
-      pad.setAttribute('aria-label', hasBug ? 'ورقة عليها حشرة' : index === 0 ? 'ورقة البداية' : 'ورقة فارغة');
-    });
-    bugElements.forEach((bug, pad) => {
-      const location = pads[pad];
-      bug.hidden = !level.bugs.includes(pad);
-      bug.style.setProperty('--x', `${location.left}%`);
-      bug.style.setProperty('--y', `${location.top}%`);
-    });
-    window.KidsGames.renderGameHeader('frog', currentLevel + 1);
-    window.KidsGames.renderLevelSelector('frog', levelSelector, currentLevel + 1, selectLevel, isRunning);
-    updateBugs();
-  }
+      // visual highlight to draw attention to the hint (animation class briefly applied)
+      try {
+        levelHint.classList.remove('hint-highlight');
+        void levelHint.offsetWidth; // trigger reflow
+        levelHint.classList.add('hint-highlight');
+        window.setTimeout(() => levelHint.classList.remove('hint-highlight'), 900);
+      } catch (e) {
+        // ignore if levelHint is not present for some reason
+      }
+      document.querySelectorAll('.lily-pad').forEach(pad => {
+        const index = Number(pad.dataset.pad);
+        const hasBug = level.bugs.includes(index);
+        pad.classList.toggle('has-bug', hasBug);
+        pad.setAttribute('aria-label', hasBug ? 'ورقة عليها حشرة' : index === 0 ? 'ورقة البداية' : 'ورقة فارغة');
+      });
+      bugElements.forEach((bug, pad) => {
+        const location = pads[pad];
+        bug.hidden = !level.bugs.includes(pad);
+        bug.style.setProperty('--x', `${location.left}%`);
+        bug.style.setProperty('--y', `${location.top}%`);
+      });
+      window.KidsGames.renderGameHeader('frog', currentLevel + 1);
+      window.KidsGames.renderLevelSelector('frog', levelSelector, currentLevel + 1, selectLevel, isRunning);
+      updateBugs();
+    }
 
   function createCommandDrawing(command) {
     const drawing = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

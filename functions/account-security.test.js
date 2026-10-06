@@ -17,10 +17,18 @@ test('normalizes and validates account credentials', () => {
     username: 'child-1',
     password: 'secret1'
   });
-  assert.throws(() => validateCredentials('ab', 'secret1'), TypeError);
+  assert.deepEqual(validateCredentials(' A ', 'secret1'), {
+    username: 'a',
+    password: 'secret1'
+  });
+  assert.throws(() => validateCredentials('', 'secret1'), TypeError);
   assert.throws(() => validateCredentials('valid_name', 'short'), TypeError);
   assert.deepEqual(validatePinCredentials(' Child-1 ', '0042'), {
     username: 'child-1',
+    password: '0042'
+  });
+  assert.deepEqual(validatePinCredentials(' X ', '0042'), {
+    username: 'x',
     password: '0042'
   });
   assert.deepEqual(validatePinCredentials(' Child-1 ', '٠٠٤٢'), {

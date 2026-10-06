@@ -17,11 +17,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const usersTable = document.getElementById('users-table');
   const emptyUsers = document.getElementById('empty-users');
   const dialogTitle = document.getElementById('dialog-title');
-  const emailField = document.getElementById('email-field');
-  const emailInput = document.getElementById('email');
   const statusField = document.getElementById('status-field');
   const statusInput = document.getElementById('status');
+  const roleField = document.getElementById('role-field');
   const passwordHint = document.getElementById('password-hint');
+  const passwordConfirmationField = document.getElementById('password-confirmation-field');
+  const passwordConfirmationInput = document.getElementById('password-confirmation');
   const saveUserButton = document.getElementById('save-user-button');
   const usernameInput = document.getElementById('username');
   const passwordInput = document.getElementById('password');
@@ -61,7 +62,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function saveGameAvailability() {
     gameSettingsSaveQueue = gameSettingsSaveQueue
-      .catch(() => {})
       .then(async () => {
         const settings = {
           lockedGames: Array.from(gameSettingsForm.querySelectorAll('input[type="checkbox"]:checked'))
@@ -150,7 +150,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     select.dataset.field = field;
     select.dataset.id = userId;
     select.dataset.value = value;
-    select.disabled = Boolean(cloudAccounts && userId === currentUser.id);
+    const user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
+    select.disabled = user?.role === 'admin' || Boolean(cloudAccounts && userId === currentUser.id);
     select.setAttribute('aria-label', field === 'role' ? 'دور المستخدم' : 'حالة المستخدم');
     options.forEach(([optionValue, label]) => {
       const option = document.createElement('option');
@@ -164,7 +165,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderUsers() {
-    const users = cloudAccounts || window.KidsGamesAuth.getUsers();
+    let users;
+    try {
+      users = cloudAccounts || window.KidsGamesAuth.getUsers();
+    } catch (error) {
+      console.error('Unable to render saved accounts:', error);
+      usersTableBody.replaceChildren();
+      emptyUsers.textContent = 'تعذر قراءة الحسابات المحفوظة. لم يتم تغيير البيانات.';
+      emptyUsers.hidden = false;
+      showMessage(error.message || 'تعذر قراءة الحسابات المحفوظة.', 'error');
+      return;
+    }
+    emptyUsers.textContent = 'لا يوجد مستخدمون يطابقون البحث.';
     usersTableBody.replaceChildren();
     const query = userSearch.value.trim().toLocaleLowerCase();
     const selectedRole = roleFilter.value;
@@ -222,13 +234,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     userForm.dataset.mode = user ? 'edit' : 'add';
     dialogTitle.textContent = user ? 'تعديل بيانات المستخدم' : 'إضافة مستخدم جديد';
     saveUserButton.textContent = user ? 'حفظ المستخدم' : 'إضافة المستخدم';
-    emailField.hidden = !user;
-    statusField.hidden = !user;
+    roleField.hidden = user?.role === 'admin';
+    statusField.hidden = !user || user.role === 'admin';
     passwordInput.required = !user;
     passwordInput.value = '';
+    passwordConfirmationInput.value = '';
     passwordInput.disabled = Boolean(cloudAccounts) || user?.provider === 'google';
+    passwordConfirmationInput.disabled = passwordInput.disabled;
+    passwordConfirmationField.hidden = passwordInput.disabled;
+    passwordConfirmationInput.required = !passwordInput.disabled && !user;
     usernameInput.disabled = Boolean(cloudAccounts);
-    emailInput.disabled = Boolean(cloudAccounts);
+    roleInput.disabled = user?.role === 'admin';
+    statusInput.disabled = user?.role === 'admin';
+    roleInput.title = '';
+    statusInput.title = '';
     passwordInput.placeholder = user ? 'اتركها فارغة دون تغيير' : '6 أحرف على الأقل';
     passwordHint.textContent = cloudAccounts
       ? 'تُدار كلمة المرور من Firebase Console.'
@@ -237,9 +256,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         : 'مطلوبة للحساب الجديد (6 أحرف على الأقل).';
     if (user) {
       usernameInput.value = user.username;
-      emailInput.value = user.email || '';
       roleInput.value = user.role;
       statusInput.value = user.status;
+      if (user.role === 'admin') {
+        roleInput.title = 'لا يمكن تغيير صلاحية حساب المدير.';
+        statusInput.title = 'لا يمكن تغيير حالة حساب المدير.';
+      }
       if (user.provider === 'google') {
         passwordInput.disabled = true;
         passwordHint.textContent = 'تغيير كلمة المرور غير متاح لحساب Google.';
@@ -253,12 +275,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function validateUniqueIdentity(payload, excludedId = null) {
-    const username = payload.username.toLocaleLowerCase();
-    const email = payload.email.toLocaleLowerCase();
+    const identities = new Set(
+      [payload.username, payload.email]
+        .map(value => String(value || '').trim().toLocaleLowerCase('en-US'))
+        .filter(Boolean)
+    );
     const users = cloudAccounts || window.KidsGamesAuth.getUsers();
     return !users.some(user =>
       user.id !== excludedId &&
-      (user.username.toLocaleLowerCase() === username || (email && user.email.toLocaleLowerCase() === email))
+      [user.username, user.email]
+        .some(value => identities.has(String(value || '').trim().toLocaleLowerCase('en-US')))
+    );
+  }
+
+  function validatePasswordConfirmation() {
+    const confirmationVisible = !passwordInput.disabled;
+    passwordConfirmationField.hidden = !confirmationVisible;
+    const confirmationRequired = confirmationVisible
+      && (!userForm.dataset.mode || userForm.dataset.mode === 'add' || passwordInput.value.length > 0);
+    passwordConfirmationInput.required = confirmationRequired;
+    passwordConfirmationInput.setCustomValidity(
+      confirmationRequired && passwordInput.value !== passwordConfirmationInput.value
+        ? 'كلمتا المرور غير متطابقتين.'
+        : ''
     );
   }
 
@@ -280,6 +319,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (event.target === userDialog) userDialog.close();
   });
   userSearch.addEventListener('input', renderUsers);
+  passwordInput.addEventListener('input', validatePasswordConfirmation);
+  passwordConfirmationInput.addEventListener('input', validatePasswordConfirmation);
   roleFilter.addEventListener('change', renderUsers);
   emailToggle.addEventListener('click', () => {
     const isVisible = usersTable.classList.toggle('email-hidden') === false;
@@ -293,21 +334,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { id, field } = target.dataset;
     if (!id || !['role', 'status'].includes(field)) return;
 
-    const user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === id);
-    const updated = cloudAccounts
-      ? await window.KidsGamesCloud.updateAccount({
-        uid: user.uid,
-        oldUsername: user.username,
-        username: user.username,
-        role: field === 'role' ? target.value : user.role,
-        status: field === 'status' ? target.value : user.status,
-        email: user.email
-      }).catch(error => {
+    let user;
+    try {
+      user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === id);
+    } catch (error) {
+      console.error('Unable to find the account to update:', error);
+      showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
+      return;
+    }
+    if (!user) {
+      showMessage('تعذر العثور على الحساب. حدّث الصفحة وحاول مرة أخرى.', 'error');
+      renderUsers();
+      return;
+    }
+    let updated;
+    if (cloudAccounts) {
+      try {
+        updated = await window.KidsGamesCloud.updateAccount({
+          uid: user.uid,
+          oldUsername: user.username,
+          username: user.username,
+          role: field === 'role' ? target.value : user.role,
+          status: field === 'status' ? target.value : user.status,
+          email: user.email
+        });
+      } catch (error) {
         console.error('Unable to update cloud account:', error);
         showMessage('تعذر تحديث الحساب السحابي.', 'error');
-        return null;
-      })
-      : window.KidsGamesAuth.updateUser(id, { [field]: target.value });
+        await refreshCloudAccounts();
+        return;
+      }
+    } else {
+      try {
+        updated = window.KidsGamesAuth.updateUser(id, { [field]: target.value });
+      } catch (error) {
+        console.error('Unable to save local account changes:', error);
+        showMessage(error.message || 'تعذر حفظ التغيير.', 'error');
+        renderUsers();
+        return;
+      }
+    }
     if (!updated) {
       showMessage('تعذر حفظ التغيير. لم يتم العثور على المستخدم.', 'error');
       if (cloudAccounts) await refreshCloudAccounts();
@@ -327,7 +393,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userId = target.dataset.id;
 
     if (action === 'edit' && userId) {
-      const user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
+      let user;
+      try {
+        user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
+      } catch (error) {
+        console.error('Unable to read account before deletion:', error);
+        showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
+        return;
+      }
       if (user) openUserDialog(user);
       return;
     }
@@ -343,8 +416,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         showMessage('لحذف حساب سحابي، احذفه من Firebase Authentication ثم احذف ملفه من Firestore.', 'error');
         return;
       }
-      if (!window.KidsGamesAuth.deleteUser(userId)) {
-        showMessage('تعذر الحذف. يجب أن يبقى مدير واحد على الأقل.', 'error');
+      try {
+        if (!window.KidsGamesAuth.deleteUser(userId)) {
+          showMessage('تعذر الحذف. يجب أن يبقى مدير واحد على الأقل، وتأكد من إمكانية حفظ البيانات.', 'error');
+          return;
+        }
+      } catch (error) {
+        console.error('Unable to delete local account:', error);
+        showMessage(error.message || 'تعذر حذف الحساب.', 'error');
         return;
       }
       renderUsers();
@@ -358,7 +437,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const payload = {
       username: usernameInput.value.trim(),
       fullName: usernameInput.value.trim(),
-      email: isEditing ? emailInput.value.trim().toLowerCase() : '',
       role: roleInput.value,
       status: isEditing ? statusInput.value : 'active'
     };
@@ -367,23 +445,51 @@ document.addEventListener('DOMContentLoaded', async () => {
       payload.provider = 'local';
       payload.password = passwordInput.value;
     }
+    if (!/^[a-z0-9._-]{1,32}$/i.test(payload.username)) {
+      showMessage('اسم المستخدم يجب أن يكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -.', 'error');
+      usernameInput.focus();
+      return;
+    }
+    validatePasswordConfirmation();
     if (!userForm.reportValidity()) return;
     if (cloudAccounts && !isEditing) {
       showMessage('أنشئ الحساب أولًا من Firebase Console، ثم يسجّل المستخدم الدخول مرة واحدة.', 'error');
       return;
     }
     if (!cloudAccounts && !validateUniqueIdentity(payload, isEditing ? editingUserId : null)) {
-      showMessage('اسم المستخدم أو البريد الإلكتروني مستخدم في حساب آخر.', 'error');
+      showMessage('اسم المستخدم مسجّل بالفعل. اختر اسمًا مختلفًا.', 'error');
+      return;
+    }
+
+    let existing = null;
+    try {
+      existing = isEditing
+        ? (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === editingUserId)
+        : null;
+    } catch (error) {
+      console.error('Unable to read account before saving:', error);
+      showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
+      return;
+    }
+    if (isEditing && !existing) {
+      showMessage('تعذر العثور على الحساب. حدّث الصفحة وحاول مرة أخرى.', 'error');
+      userDialog.close();
+      renderUsers();
       return;
     }
 
     if (isEditing) {
-      const existing = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === editingUserId);
+      if (existing?.role === 'admin'
+        && (payload.role !== existing.role || payload.status !== existing.status)) {
+        showMessage('لا يمكن تغيير صلاحية المدير أو حالة حسابه.', 'error');
+        return;
+      }
       if (cloudAccounts) {
         try {
           await window.KidsGamesCloud.updateAccount({
             uid: existing.uid,
             oldUsername: existing.username,
+            email: existing.email || '',
             ...payload
           });
           userDialog.close();
@@ -395,7 +501,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         return;
       }
-      const updated = window.KidsGamesAuth.updateUser(editingUserId, payload);
+      let updated;
+      try {
+        updated = window.KidsGamesAuth.updateUser(editingUserId, payload);
+      } catch (error) {
+        console.error('Unable to save local account changes:', error);
+        showMessage(error.message || 'تعذر حفظ التعديلات.', 'error');
+        return;
+      }
       if (!updated) {
         showMessage('تعذر حفظ التعديلات. راجع البيانات وحاول مرة أخرى.', 'error');
         return;
@@ -405,7 +518,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderUsers();
       showMessage('تم تحديث بيانات الحساب محليًا.');
     } else {
-      const added = window.KidsGamesAuth.addUser(payload);
+      let added;
+      try {
+        added = window.KidsGamesAuth.addUser(payload);
+      } catch (error) {
+        console.error('Unable to create local account:', error);
+        showMessage(error.message || 'تعذر إنشاء الحساب.', 'error');
+        return;
+      }
       if (!added) {
         showMessage('تعذر إضافة الحساب. راجع البيانات وحاول مرة أخرى.', 'error');
         return;

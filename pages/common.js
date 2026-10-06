@@ -1,4 +1,5 @@
 (function () {
+  const DEV_MODE = true;
   const APP_BASE_URL = new URL('../', document.currentScript.src);
   const STORAGE_KEY = 'kids_games_progress_v1';
   const LESSON_SETTINGS_KEY = 'kids_games_lesson_unlocks_v1';
@@ -516,11 +517,21 @@
   const USERS_STORAGE_KEY = 'kids_games_users_v1';
 
   const ROLE_PERMISSIONS = {
-    admin: ['dashboard', 'manageUsers', 'viewProgress', 'playGames', 'manageLessons'],
+    admin: [
+      'dashboard',
+      'manageUsers',
+      'viewProgress',
+      'manageChildren',
+      'playGames',
+      'viewAchievements',
+      'viewLessons',
+      'manageLessons'
+    ],
     parent: ['viewProgress', 'manageChildren', 'playGames', 'viewAchievements'],
     child: ['playGames', 'viewAchievements', 'viewLessons'],
     teacher: ['manageLessons', 'viewProgress', 'playGames']
   };
+  const isValidRole = role => Object.prototype.hasOwnProperty.call(ROLE_PERMISSIONS, role);
 
   const defaultUsers = [
     {
@@ -554,6 +565,18 @@
       status: 'active'
     }
   ];
+  if (DEV_MODE) {
+    defaultUsers.unshift({
+      id: 'admin-demo',
+      username: 'admin',
+      password: 'admin123',
+      email: 'admin@gmail.com',
+      fullName: 'مدير النظام',
+      role: 'admin',
+      provider: 'local',
+      status: 'active'
+    });
+  }
 
   function normalizeUser(user) {
     return {
@@ -562,7 +585,7 @@
       password: user.password || '',
       email: user.email || '',
       fullName: user.fullName || user.username || 'مستخدم',
-      role: ROLE_PERMISSIONS[user.role] ? user.role : 'child',
+      role: isValidRole(user.role) ? user.role : 'child',
       avatar: ['child', 'girl', 'engineer'].includes(user.avatar) ? user.avatar : 'child',
       pinSalt: user.pinSalt || '',
       pinHash: user.pinHash || '',
@@ -572,27 +595,39 @@
   }
 
   function getUsers() {
+    let stored;
     try {
-      const stored = localStorage.getItem(USERS_STORAGE_KEY);
-      if (!stored) {
-        safeSetItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
-        return [...defaultUsers];
-      }
-      const parsed = JSON.parse(stored);
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        safeSetItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
-        return [...defaultUsers];
-      }
-      return parsed.map(normalizeUser);
+      stored = localStorage.getItem(USERS_STORAGE_KEY);
     } catch (error) {
-      safeSetItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers));
+      console.error('Unable to read saved accounts:', error);
+      throw new Error('تعذر الوصول إلى الحسابات المحفوظة على هذا الجهاز.');
+    }
+    if (!stored) {
+      if (!safeSetItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers))) {
+        throw new Error('تعذر تهيئة الحسابات على هذا الجهاز. تحقق من مساحة التخزين ثم أعد المحاولة.');
+      }
       return [...defaultUsers];
     }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(stored);
+    } catch (error) {
+      console.error('Saved account data is invalid; preserving the stored data:', error);
+      throw new Error('تعذر قراءة الحسابات المحفوظة. لم يتم استبدال البيانات.');
+    }
+    if (!Array.isArray(parsed) || parsed.some(user => !user || typeof user !== 'object')) {
+      throw new Error('صيغة بيانات الحسابات المحفوظة غير صالحة. لم يتم استبدال البيانات.');
+    }
+    return parsed.map(normalizeUser).filter(user => DEV_MODE || user.id !== 'admin-demo');
   }
 
   function saveUsers(users) {
-    safeSetItem(USERS_STORAGE_KEY, JSON.stringify(users.map(normalizeUser)));
-    return users.map(normalizeUser);
+    const normalizedUsers = users.map(normalizeUser);
+    if (!safeSetItem(USERS_STORAGE_KEY, JSON.stringify(normalizedUsers))) {
+      return null;
+    }
+    return normalizedUsers;
   }
 
   function getCurrentUser() {
@@ -600,6 +635,10 @@
       const raw = localStorage.getItem(AUTH_STORAGE_KEY);
       if (!raw) return null;
       const user = JSON.parse(raw);
+      if (!DEV_MODE && user.id === 'admin-demo') {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+      }
       return normalizeUser(user);
     } catch (error) {
       return null;
@@ -630,8 +669,8 @@
 
   function usernameEmail(username) {
     const normalized = String(username || '').trim().toLocaleLowerCase('en-US');
-    if (!/^[a-z0-9._-]{3,32}$/.test(normalized)) {
-      throw new TypeError('اسم المستخدم يجب أن يتكون من 3 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
+    if (!/^[a-z0-9._-]{1,32}$/.test(normalized)) {
+      throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
     }
     return `${normalized}@accounts.kids-games.invalid`;
   }
@@ -644,7 +683,7 @@
       return (matchesUser || matchesEmail) && String(item.password || '') === String(password || '');
     });
 
-    if (!user || user.status === 'inactive') return null;
+    if (!user || (!DEV_MODE && user.id === 'admin-demo') || user.status === 'inactive') return null;
     // رفض الدخول لو الحساب مش local (Google) أو كلمة السر فاضية
     if (!user.password || String(user.password).length === 0) return null;
     if (user.provider && user.provider !== 'local') return null;
@@ -689,19 +728,28 @@
     const username = String(userPayload.username || '').trim().toLocaleLowerCase('en-US');
     const fullName = String(userPayload.fullName || '').trim();
     const pin = normalizePin(userPayload.pin);
-    if (!/^[a-z0-9._-]{3,32}$/.test(username) || !fullName || fullName.length > 60 || !/^\d{4}$/.test(pin)) {
+    const role = userPayload.role || 'child';
+    const avatar = userPayload.avatar || 'child';
+    if (!/^[a-z0-9._-]{1,32}$/.test(username)
+      || !fullName || fullName.length > 60
+      || !['child', 'parent', 'teacher'].includes(role)
+      || !['child', 'girl', 'engineer'].includes(avatar)
+      || !/^\d{4}$/.test(pin)) {
       return null;
     }
 
-    const users = getUsers();
-    if (users.some(user => user.username.toLocaleLowerCase() === username)) return null;
+    if (identityExists(getUsers(), username, '')) return null;
     const salt = window.crypto.getRandomValues(new Uint8Array(16));
     const pinHash = await hashLocalPin(pin, salt);
+    const users = getUsers();
+    if (identityExists(users, username, '')) return null;
     const next = normalizeUser({
       ...userPayload,
       id: uuid(),
       username,
       fullName,
+      role,
+      avatar,
       password: '',
       pinSalt: encodeBytes(salt),
       pinHash: encodeBytes(pinHash),
@@ -709,7 +757,7 @@
       status: 'active'
     });
     users.push(next);
-    saveUsers(users);
+    if (!saveUsers(users)) return null;
     return next;
   }
 
@@ -729,23 +777,43 @@
 
   function canAccess(permission, user = getCurrentUser()) {
     const currentUser = normalizeUser(user || {});
-    const permissions = ROLE_PERMISSIONS[currentUser.role] || [];
+    const permissions = isValidRole(currentUser.role) ? ROLE_PERMISSIONS[currentUser.role] : [];
     return permissions.includes(permission);
   }
 
+  function identityExists(users, username, email, excludedId = null) {
+    const identities = new Set(
+      [username, email]
+        .map(value => String(value || '').trim().toLocaleLowerCase('en-US'))
+        .filter(Boolean)
+    );
+    return users.some(user =>
+      user.id !== excludedId &&
+      [user.username, user.email]
+        .some(value => identities.has(String(value || '').trim().toLocaleLowerCase('en-US')))
+    );
+  }
+
   function addUser(userPayload) {
-    const username = String(userPayload.username || '').trim();
+    const username = String(userPayload.username || '').trim().toLocaleLowerCase('en-US');
     const email = String(userPayload.email || '').trim().toLowerCase();
     const fullName = String(userPayload.fullName || '').trim();
     const password = String(userPayload.password || '');
+    const role = userPayload.role || 'child';
+    const status = userPayload.status || 'active';
+    const provider = userPayload.provider || 'local';
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!username || !fullName || (email && !emailPattern.test(email)) || password.length < 6) return null;
+    if (!/^[a-z0-9._-]{1,32}$/.test(username)
+      || !fullName || fullName.length > 60
+      || (email && !emailPattern.test(email))
+      || password.length < 6 || password.length > 128
+      || !isValidRole(role)
+      || !['active', 'inactive'].includes(status)
+      || !['local', 'google'].includes(provider)
+      || !['child', 'girl', 'engineer'].includes(userPayload.avatar || 'child')) return null;
 
     const users = getUsers();
-    if (users.some(user =>
-      user.username.toLocaleLowerCase() === username.toLocaleLowerCase() ||
-      (email && user.email.toLocaleLowerCase() === email)
-    )) return null;
+    if (identityExists(users, username, email)) return null;
 
     const next = normalizeUser({
       ...userPayload,
@@ -754,13 +822,13 @@
       username,
       email,
       password,
-      role: userPayload.role || 'child',
-      provider: userPayload.provider || 'local',
-      status: userPayload.status || 'active'
+      role,
+      provider,
+      status
     });
 
     users.push(next);
-    saveUsers(users);
+    if (!saveUsers(users)) return null;
     return next;
   }
 
@@ -768,29 +836,42 @@
     const users = getUsers();
     const index = users.findIndex(user => user.id === id);
     if (index === -1) return null;
-
-    const nextUsername = updates.username === undefined ? users[index].username : String(updates.username).trim();
+    if ((updates.role !== undefined && !isValidRole(updates.role))
+      || (updates.status !== undefined && !['active', 'inactive'].includes(updates.status))) return null;
+    const nextUsername = updates.username === undefined
+      ? users[index].username
+      : String(updates.username).trim().toLocaleLowerCase('en-US');
     const nextEmail = updates.email === undefined ? users[index].email : String(updates.email).trim().toLowerCase();
     const nextFullName = updates.fullName === undefined ? users[index].fullName : String(updates.fullName).trim();
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!nextUsername || !nextFullName || (nextEmail && !emailPattern.test(nextEmail)) || users.some((user, userIndex) =>
-      userIndex !== index &&
-      (user.username.toLocaleLowerCase() === nextUsername.toLocaleLowerCase() ||
-        (nextEmail && user.email.toLocaleLowerCase() === nextEmail))
+    if (users[index].role === 'admin' && (
+      (updates.role !== undefined && updates.role !== users[index].role)
+      || (updates.status !== undefined && updates.status !== users[index].status)
     )) return null;
+    if (!nextUsername
+      || (updates.username !== undefined && !/^[a-z0-9._-]{1,32}$/.test(nextUsername))
+      || !nextFullName
+      || (nextEmail && !emailPattern.test(nextEmail))
+      || identityExists(users, nextUsername, nextEmail, id)) return null;
 
+    const nextRole = updates.role === undefined
+      ? users[index].role
+      : (isValidRole(updates.role) ? updates.role : users[index].role);
+    const nextStatus = updates.status === undefined
+      ? users[index].status
+      : (updates.status === 'inactive' ? 'inactive' : (updates.status === 'active' ? 'active' : users[index].status));
     const nextUser = normalizeUser({
       ...users[index],
       ...updates,
       username: nextUsername,
       email: nextEmail,
       fullName: nextFullName,
-      role: ROLE_PERMISSIONS[updates.role] ? updates.role : users[index].role,
-      status: updates.status === 'inactive' ? 'inactive' : 'active'
+      role: nextRole,
+      status: nextStatus
     });
 
     users[index] = nextUser;
-    saveUsers(users);
+    if (!saveUsers(users)) return null;
     return nextUser;
   }
 
@@ -860,12 +941,9 @@
     if (target.role === 'admin' && users.filter(user => user.role === 'admin').length <= 1) {
       return false;
     }
-    if (current && current.id === id) {
-      logoutUser();
-    }
-
     const nextUsers = users.filter(user => user.id !== id);
-    saveUsers(nextUsers);
+    if (!saveUsers(nextUsers)) return false;
+    if (current && current.id === id) logoutUser();
     return true;
   }
 
@@ -976,9 +1054,11 @@
           username: cloudData.username || token.claims.username || (firebaseUser.email || '').split('@')[0],
           email: firebaseUser.email || '',
           fullName: cloudData.fullName || initialProfile?.fullName || firebaseUser.displayName || cloudData.username || firebaseUser.email || 'مستخدم Google',
-          role: ROLE_PERMISSIONS[token.claims.role]
-            ? token.claims.role
-            : (ROLE_PERMISSIONS[cloudData.role] ? cloudData.role : (ROLE_PERMISSIONS[initialProfile?.role] ? initialProfile.role : 'child')),
+          role: isValidRole(cloudData.role)
+            ? cloudData.role
+            : (isValidRole(token.claims.role)
+              ? token.claims.role
+              : (isValidRole(initialProfile?.role) ? initialProfile.role : 'child')),
           avatar: cloudData.avatar || initialProfile?.avatar || 'child',
           provider,
           status: cloudData.status === 'inactive' ? 'inactive' : 'active'
@@ -1030,14 +1110,6 @@
           return auth.currentUser?.uid || null;
         },
         async signInWithUsername(username, password) {
-          if (/^\d{4}$/.test(String(password || ''))) {
-            const result = await functions.httpsCallable('authenticateUsername')({
-              username,
-              password
-            });
-            const credential = await auth.signInWithCustomToken(result.data.token);
-            return syncAccount(credential.user);
-          }
           const localUser = findUserByIdentifier(username);
           let previousLocalProgress = null;
           if (localUser?.provider === 'local') {
@@ -1048,8 +1120,27 @@
               console.error('Unable to read legacy local progress:', error);
             }
           }
-          const credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
-          return syncAccount(credential.user, false, previousLocalProgress);
+
+          try {
+            const result = await functions.httpsCallable('authenticateUsername')({
+              username,
+              password
+            });
+            const credential = await auth.signInWithCustomToken(result.data.token);
+            return syncAccount(credential.user);
+          } catch (error) {
+            if (!['functions/unauthenticated', 'functions/not-found', 'functions/invalid-argument'].includes(error.code)) {
+              throw error;
+            }
+
+            try {
+              const credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
+              return syncAccount(credential.user, false, previousLocalProgress);
+            } catch (legacyError) {
+              if (legacyError.code === 'auth/invalid-email') throw error;
+              throw legacyError;
+            }
+          }
         },
         async createAccount(username, pin, fullName, role, avatar) {
           const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');

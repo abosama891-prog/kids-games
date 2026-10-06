@@ -16,7 +16,7 @@ async function main() {
   if ((await usernameRef.get()).exists) throw new Error('اسم المستخدم موجود بالفعل.');
   const user = await auth.createUser({ displayName: credentials.username });
   const passwordData = await hashPassword(credentials.password);
-  await auth.setCustomUserClaims(user.uid, { role: 'admin', username: credentials.username });
+  await auth.setCustomUserClaims(user.uid, { role: 'admin', admin: true, username: credentials.username });
   await database.runTransaction(async transaction => {
     const existing = await transaction.get(usernameRef);
     if (existing.exists) throw new Error('اسم المستخدم موجود بالفعل.');

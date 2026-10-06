@@ -108,18 +108,18 @@
         <div class="dialog-fields">
           <label>
             اسم المستخدم
-            <input id="username" name="username" type="text" autocomplete="username" placeholder="username" required />
-          </label>
-          <label id="email-field" hidden>
-            معرّف الدخول
-            <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" />
+            <input id="username" name="username" type="text" autocomplete="username" minlength="1" maxlength="32" placeholder="username" required />
           </label>
           <label>
             كلمة المرور
-            <input id="password" name="password" type="password" autocomplete="new-password" minlength="6" placeholder="6 أحرف على الأقل" required />
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="6 أحرف على الأقل" required />
             <span id="password-hint" class="field-hint">مطلوبة للحساب الجديد (6 أحرف على الأقل).</span>
           </label>
-          <label>
+          <label id="password-confirmation-field">
+            تأكيد كلمة المرور
+            <input id="password-confirmation" name="passwordConfirmation" type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="أعد إدخال كلمة المرور" required />
+          </label>
+          <label id="role-field">
             الصلاحية (الدور)
             <select id="role" name="role">
               <option value="child">طفل</option>
@@ -136,7 +136,6 @@
             </select>
           </label>
         </div>
-        <p class="form-note">في الوضع السحابي، تُدار الحسابات وكلمات المرور من Firebase Console؛ ويمكن تعديل الدور والحالة هنا.</p>
         <footer class="dialog-actions">
           <button id="cancel-dialog-button" class="cancel-action" type="button">إلغاء</button>
           <button id="save-user-button" type="submit" class="primary-btn">إضافة المستخدم</button>

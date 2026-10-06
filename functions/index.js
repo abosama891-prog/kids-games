@@ -23,9 +23,13 @@ const USERS = 'users';
 const RATE_LIMITS = 'authRateLimits';
 const ALLOWED_ROLES = new Set(['child', 'parent', 'teacher', 'admin']);
 
-function requireAdmin(request) {
-  if (!request.auth || request.auth.token.role !== 'admin') {
+async function requireAdmin(request) {
+  if (!request.auth || request.auth.token.admin !== true || request.auth.token.role !== 'admin') {
     throw new HttpsError('permission-denied', 'يتطلب هذا الإجراء صلاحية المدير.');
+  }
+  const profile = await database.collection(USERS).doc(request.auth.uid).get();
+  if (!profile.exists || profile.data().role !== 'admin' || profile.data().status !== 'active') {
+    throw new HttpsError('permission-denied', 'حساب المدير غير نشط أو لم تعد لديه صلاحية الإدارة.');
   }
 }
 
@@ -110,6 +114,7 @@ exports.authenticateUsername = onCall(async request => {
     : null;
   const profile = profileSnapshot?.exists ? profileSnapshot.data() : null;
   if (!account || !profile || account.status !== 'active' || profile.status !== 'active'
+    || account.role !== profile.role
     || !(await verifyPassword(credentials.password, account))) {
     await recordFailedLogin(limitRef);
     throw new HttpsError('unauthenticated', 'اسم المستخدم أو كلمة المرور غير صحيحة.');
@@ -118,6 +123,7 @@ exports.authenticateUsername = onCall(async request => {
   await limitRef.delete();
   const token = await auth.createCustomToken(account.uid, {
     role: profile.role,
+    admin: profile.role === 'admin',
     username: account.username
   });
   return { token };
@@ -180,7 +186,7 @@ exports.registerAccount = onCall(async request => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
-    await auth.setCustomUserClaims(userRecord.uid, { role, username });
+    await auth.setCustomUserClaims(userRecord.uid, { role, admin: role === 'admin', username });
     await database.runTransaction(async transaction => {
       const latestAccount = await transaction.get(accountRef);
       if (latestAccount.exists) throw new HttpsError('already-exists', 'اسم المستخدم مستخدم بالفعل.');
@@ -209,7 +215,7 @@ exports.registerAccount = onCall(async request => {
 });
 
 exports.createAccount = onCall(async request => {
-  requireAdmin(request);
+  await requireAdmin(request);
   let credentials;
   try {
     credentials = validateCredentials(request.data?.username, request.data?.password);
@@ -239,7 +245,11 @@ exports.createAccount = onCall(async request => {
   };
 
   try {
-    await auth.setCustomUserClaims(userRecord.uid, { role, username: credentials.username });
+    await auth.setCustomUserClaims(userRecord.uid, {
+      role,
+      admin: role === 'admin',
+      username: credentials.username
+    });
     await database.runTransaction(async transaction => {
       const accountSnapshot = await transaction.get(ref);
       if (accountSnapshot.exists) throw new HttpsError('already-exists', 'اسم المستخدم مستخدم بالفعل.');
@@ -265,21 +275,22 @@ exports.createAccount = onCall(async request => {
 });
 
 exports.listAccounts = onCall(async request => {
-  requireAdmin(request);
+  await requireAdmin(request);
   const snapshot = await database.collection(ACCOUNTS).orderBy('username').get();
   return { users: snapshot.docs.map(document => accountView(document.data())) };
 });
 
 exports.updateAccount = onCall(async request => {
-  requireAdmin(request);
+  await requireAdmin(request);
   const uid = String(request.data?.uid || '');
   const oldUsername = normalizeUsername(request.data?.oldUsername);
   const username = normalizeUsername(request.data?.username);
   const role = String(request.data?.role || '');
-  const status = request.data?.status === 'inactive' ? 'inactive' : 'active';
+  const status = String(request.data?.status || '');
   const email = String(request.data?.email || '').trim().toLowerCase();
   const fullName = username;
-  if (!uid || !oldUsername || !/^[a-z0-9._-]{3,32}$/.test(username) || !ALLOWED_ROLES.has(role)) {
+  if (!uid || !oldUsername || !/^[a-z0-9._-]{1,32}$/.test(username)
+    || !ALLOWED_ROLES.has(role) || !['active', 'inactive'].includes(status)) {
     throw new HttpsError('invalid-argument', 'بيانات المستخدم غير صالحة.');
   }
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -300,12 +311,9 @@ exports.updateAccount = onCall(async request => {
     throw new HttpsError('already-exists', 'اسم المستخدم مستخدم بالفعل.');
   }
   const existing = accountSnapshot.data();
-  if (existing.role === 'admin' && role !== 'admin') {
-    if (uid === request.auth.uid) {
-      throw new HttpsError('failed-precondition', 'لا يمكن للمدير تغيير دوره بنفسه.');
-    }
-    const admins = await database.collection(ACCOUNTS).where('role', '==', 'admin').get();
-    if (admins.size <= 1) throw new HttpsError('failed-precondition', 'يجب أن يبقى مدير واحد على الأقل.');
+  const existingStatus = existing.status || 'active';
+  if (existing.role === 'admin' && (role !== existing.role || status !== existingStatus)) {
+    throw new HttpsError('failed-precondition', 'لا يمكن تغيير صلاحية حساب المدير أو حالته.');
   }
   if (uid === request.auth.uid && (status === 'inactive' || role !== 'admin')) {
     throw new HttpsError('failed-precondition', 'لا يمكن تعطيل حساب المدير الحالي أو تغيير دوره.');
@@ -313,7 +321,7 @@ exports.updateAccount = onCall(async request => {
 
   const passwordData = password ? await hashPassword(password) : {};
   await auth.updateUser(uid, { displayName: fullName, ...(password ? { password } : {}) });
-  await auth.setCustomUserClaims(uid, { role, username });
+  await auth.setCustomUserClaims(uid, { role, admin: role === 'admin', username });
   const update = {
     ...existing,
     ...passwordData,
@@ -332,6 +340,11 @@ exports.updateAccount = onCall(async request => {
     const latestNew = username === oldUsername ? latestOld : await transaction.get(newRef);
     if (!latestOld.exists || latestOld.data().uid !== uid) {
       throw new HttpsError('aborted', 'تغير الحساب أثناء التعديل. أعد المحاولة.');
+    }
+    const latestAccount = latestOld.data();
+    const latestStatus = latestAccount.status || 'active';
+    if (latestAccount.role === 'admin' && (role !== latestAccount.role || status !== latestStatus)) {
+      throw new HttpsError('failed-precondition', 'لا يمكن تغيير صلاحية حساب المدير أو حالته.');
     }
     if (username !== oldUsername && latestNew.exists) {
       throw new HttpsError('already-exists', 'اسم المستخدم مستخدم بالفعل.');
@@ -450,7 +463,7 @@ exports.updateOwnProfile = onCall(async request => {
 });
 
 exports.deleteAccount = onCall(async request => {
-  requireAdmin(request);
+  await requireAdmin(request);
   const uid = String(request.data?.uid || '');
   const username = normalizeUsername(request.data?.username);
   if (!uid || !username) throw new HttpsError('invalid-argument', 'بيانات المستخدم غير صالحة.');
@@ -472,18 +485,5 @@ exports.deleteAccount = onCall(async request => {
 
 exports.setOwnRole = onCall(async request => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'سجّل الدخول أولًا.');
-  const role = String(request.data?.role || '');
-  if (!['child', 'parent', 'teacher'].includes(role)) {
-    throw new HttpsError('invalid-argument', 'نوع الحساب غير صالح.');
-  }
-  const user = await auth.getUser(request.auth.uid);
-  const username = String(user.customClaims?.username || user.email?.split('@')[0] || '');
-  if (user.customClaims?.role === 'admin') throw new HttpsError('permission-denied', 'لا يمكن تغيير دور المدير بهذه الطريقة.');
-  await auth.setCustomUserClaims(user.uid, { role, ...(username ? { username } : {}) });
-  await database.collection(USERS).doc(user.uid).set({
-    role,
-    status: 'active',
-    updatedAt: admin.firestore.FieldValue.serverTimestamp()
-  }, { merge: true });
-  return { role };
+  throw new HttpsError('permission-denied', 'تغيير صلاحية الحساب متاح لمدير النظام فقط.');
 });

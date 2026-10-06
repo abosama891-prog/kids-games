@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function redirectByRole(user) {
     if (user.role === 'admin') {
-      window.location.href = '../index/index.html';
+      window.location.href = '../admin/index.html';
       return;
     }
     window.location.href = '../index/index.html';
@@ -128,8 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const avatar = signupForm.querySelector('input[name="avatar"]:checked')?.value || 'child';
     const submitButton = signupForm.querySelector('[type="submit"]');
 
-    if (!/^[a-z0-9._-]{3,32}$/.test(username)) {
-      setMessage('اسم المستخدم يجب أن يكون من 3 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -', 'error');
+    if (!/^[a-z0-9._-]{1,32}$/.test(username)) {
+      setMessage('اسم المستخدم يجب أن يكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -', 'error');
       return;
     }
     if (fullName.length === 0 || fullName.length > 60) {
