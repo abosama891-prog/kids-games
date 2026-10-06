@@ -337,16 +337,20 @@
   }
 
   async function getEffectiveGameSettings() {
-    const cloud = await window.KidsGamesCloudReady;
-    if (!cloud.enabled) return getGameSettings();
-    try {
-      const savedSettings = await cloud.getGameSettings();
-      return savedSettings ? saveGameSettings(savedSettings) : getGameSettings();
-    } catch (error) {
-      console.error('Unable to load cloud game settings; using this device copy:', error);
-      return getGameSettings();
+  // ارجع الإعدادات المحلية فورًا
+  const localSettings = getGameSettings();
+  
+  // حاول تجيب من السحابي في الخلفية (بدون انتظار)
+  window.KidsGamesCloudReady.then(cloud => {
+    if (cloud && cloud.enabled) {
+      cloud.getGameSettings().then(savedSettings => {
+        if (savedSettings) saveGameSettings(savedSettings);
+      }).catch(() => {});
     }
-  }
+  }).catch(() => {});
+  
+  return localSettings;
+}
 
   function renderGameHeader(gameKey, levelNumber) {
     const gameProgress = readProgress()[gameKey];
