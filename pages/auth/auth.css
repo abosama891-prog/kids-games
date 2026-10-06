@@ -252,6 +252,13 @@ body {
   cursor: pointer;
 }
 
+.forgot-password-link {
+  align-self: flex-start;
+  margin: 0;
+  padding: 4px 0;
+  background: transparent;
+}
+
 .auth-switch:hover {
   background: rgba(255, 255, 255, 0.9);
 }

@@ -1,5 +1,59 @@
+async function forgotPassword(email) {
+  const emailAddress = String(email || '').trim();
+  if (!emailAddress || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) {
+    throw Object.assign(new TypeError('أدخل عنوان إيميل صحيحًا.'), { code: 'auth/invalid-email' });
+  }
+  if (emailAddress.toLocaleLowerCase('en-US').endsWith('.invalid')) {
+    throw Object.assign(
+      new Error('هذا عنوان تجريبي غير قابل لاستقبال البريد. استخدم الإيميل الحقيقي المرتبط بحسابك.'),
+      { code: 'app/non-deliverable-email' }
+    );
+  }
+
+  const cloud = await window.KidsGamesCloudReady;
+  if (!cloud?.enabled || !window.firebase?.auth) {
+    throw Object.assign(new Error('تعذر الاتصال بخدمة Firebase.'), { code: 'app/firebase-unavailable' });
+  }
+  await window.firebase.auth().sendPasswordResetEmail(emailAddress);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const cloud = await window.KidsGamesCloudReady;
+  const forgotPasswordForm = document.getElementById('forgot-password-form');
+  if (forgotPasswordForm) {
+    const emailInput = document.getElementById('forgot-password-email');
+    const message = document.getElementById('auth-message');
+    const submitButton = forgotPasswordForm.querySelector('[type="submit"]');
+    forgotPasswordForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!forgotPasswordForm.reportValidity()) return;
+      submitButton.disabled = true;
+      message.textContent = '';
+      message.className = 'auth-message';
+      try {
+        await forgotPassword(emailInput.value);
+        message.textContent = 'تم إرسال الرابط إلى إيميلك';
+        message.classList.add('success');
+      } catch (error) {
+        console.error('Unable to send password reset email:', error);
+        const errorMessage = error.code === 'app/non-deliverable-email'
+          ? error.message
+          : error.code === 'auth/user-not-found'
+            ? 'الإيميل غير موجود.'
+            : error.code === 'auth/invalid-email'
+              ? 'أدخل عنوان إيميل صحيحًا.'
+              : error.code === 'auth/operation-not-allowed'
+                ? 'إعادة تعيين كلمة المرور غير مفعّلة في إعدادات Firebase.'
+                : 'تعذر إرسال رابط إعادة التعيين. تحقق من اتصالك وحاول مرة أخرى.';
+        message.textContent = errorMessage;
+        message.classList.add('error');
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+    return;
+  }
+
   const authMessage = document.getElementById('auth-message');
   const splashScreen = document.getElementById('splash-screen');
   const accountScreen = document.getElementById('account-screen');
