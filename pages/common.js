@@ -1517,7 +1517,14 @@
     }
   }
 
-  window.KidsGamesCloudReady = initializeCloud();
+  window.KidsGamesCloudReady = Promise.resolve({ enabled: false, reason: 'deferred' });
+setTimeout(() => {
+  initializeCloud().then(cloud => {
+    window.KidsGamesCloudReady = Promise.resolve(cloud);
+  }).catch(err => {
+    console.error('Cloud init failed:', err);
+  });
+}, 300);
 
   const currentGame = gameCatalog.find(game =>
     new URL(game.href).pathname.replace(/\/+$/, '').toLowerCase() ===
