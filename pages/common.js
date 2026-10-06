@@ -858,7 +858,7 @@
           if (!normalizedFullName || normalizedFullName.length > 60) throw new TypeError('أدخل اسمًا صحيحًا لا يتجاوز 60 حرفًا.');
           if (!['child', 'teacher', 'parent'].includes(role)) throw new TypeError('اختر نوع حساب صحيحًا.');
           if (!['child', 'girl', 'engineer'].includes(avatar)) throw new TypeError('اختر شخصية من القائمة.');
-          if (!/^\d{4}$/.test(String(pin || ''))) throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');
+          if (!/^\d{6,128}$/.test(String(pin || ''))) throw new TypeError('رمز الدخول يجب أن يتكون من 6 أرقام على الأقل.');
           const result = await functions.httpsCallable('registerAccount')({ username: normalizedUsername, pin, fullName: normalizedFullName, role, avatar });
           const credential = await auth.signInWithCustomToken(result.data.token);
           const user = await syncAccount(credential.user);

@@ -193,8 +193,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       setMessage('اختر شخصية من القائمة.', 'error');
       return;
     }
-    if (!/^\d{4}$/.test(pin)) {
-      setMessage('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.', 'error');
+    if (!/^\d{6,128}$/.test(pin)) {
+      setMessage('رمز الدخول يجب أن يتكون من 6 أرقام على الأقل.', 'error');
       return;
     }
     if (pin !== pinConfirm) {

@@ -47,7 +47,7 @@
             <label for="username">اسم المستخدم</label>
             <input id="username" name="username" autocomplete="username" required placeholder="مثال: child" />
             <label for="password">رمز الدخول أو كلمة المرور</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="أدخل رمزك المكوّن من 4 أرقام" />
+            <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="أدخل رمز الدخول أو كلمة المرور الحالية" />
             <a class="auth-switch forgot-password-link" href="forgot-password.html">نسيت كلمة المرور؟</a>
             <button class="submit-btn" type="submit">دخول</button>
           </form>
@@ -62,10 +62,10 @@
             <input id="signup-full-name" name="fullName" autocomplete="name" required maxlength="60" placeholder="اكتب اسمك" />
             <label for="signup-username">اسم المستخدم</label>
             <input id="signup-username" name="username" autocomplete="username" required minlength="1" maxlength="32" pattern="[A-Za-z0-9._-]{1,32}" placeholder="حرف إنجليزي أو رقم على الأقل" />
-            <label for="signup-pin">رمز الدخول (4 أرقام)</label>
-            <input id="signup-pin" name="pin" type="password" inputmode="numeric" autocomplete="new-password" required minlength="4" maxlength="4" pattern="[0-9٠-٩۰-۹]{4}" placeholder="اختر رمزًا من 4 أرقام" />
+            <label for="signup-pin">رمز الدخول (6 أرقام على الأقل)</label>
+            <input id="signup-pin" name="pin" type="password" inputmode="numeric" autocomplete="new-password" required minlength="6" maxlength="128" pattern="[0-9٠-٩۰-۹]{6,128}" placeholder="اختر رمزًا من 6 أرقام على الأقل" />
             <label for="signup-pin-confirm">تأكيد رمز الدخول</label>
-            <input id="signup-pin-confirm" name="pinConfirm" type="password" inputmode="numeric" autocomplete="new-password" required minlength="4" maxlength="4" pattern="[0-9٠-٩۰-۹]{4}" placeholder="أعد كتابة الرمز" />
+            <input id="signup-pin-confirm" name="pinConfirm" type="password" inputmode="numeric" autocomplete="new-password" required minlength="6" maxlength="128" pattern="[0-9٠-٩۰-۹]{6,128}" placeholder="أعد كتابة الرمز" />
             <label for="signup-role">نوع الحساب</label>
             <select id="signup-role" name="role" required>
               <option value="child">طفل</option>

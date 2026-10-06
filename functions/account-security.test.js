@@ -5,6 +5,7 @@ const {
   normalizePin,
   validateCredentials,
   validatePinCredentials,
+  validateLegacyPinCredentials,
   hashPassword,
   verifyPassword,
   hashRateLimitKey
@@ -23,20 +24,31 @@ test('normalizes and validates account credentials', () => {
   });
   assert.throws(() => validateCredentials('', 'secret1'), TypeError);
   assert.throws(() => validateCredentials('valid_name', 'short'), TypeError);
-  assert.deepEqual(validatePinCredentials(' Child-1 ', '0042'), {
+  assert.deepEqual(validateLegacyPinCredentials(' Child-1 ', '0042'), {
     username: 'child-1',
     password: '0042'
   });
-  assert.deepEqual(validatePinCredentials(' X ', '0042'), {
+  assert.deepEqual(validateLegacyPinCredentials(' X ', '0042'), {
     username: 'x',
     password: '0042'
   });
-  assert.deepEqual(validatePinCredentials(' Child-1 ', '٠٠٤٢'), {
+  assert.deepEqual(validateLegacyPinCredentials(' Child-1 ', '٠٠٤٢'), {
     username: 'child-1',
     password: '0042'
   });
-  assert.throws(() => validatePinCredentials('valid_name', '42'), TypeError);
-  assert.throws(() => validatePinCredentials('valid_name', '12a4'), TypeError);
+  assert.throws(() => validateLegacyPinCredentials('valid_name', '42'), TypeError);
+  assert.throws(() => validateLegacyPinCredentials('valid_name', '12a4'), TypeError);
+  assert.deepEqual(validatePinCredentials(' Child-1 ', '123456'), {
+    username: 'child-1',
+    password: '123456'
+  });
+  assert.deepEqual(validatePinCredentials(' Child-1 ', '٠٠١٢٣٤٥٦'), {
+    username: 'child-1',
+    password: '00123456'
+  });
+  assert.throws(() => validatePinCredentials('valid_name', '12345'), TypeError);
+  assert.throws(() => validatePinCredentials('valid_name', '0042'), TypeError);
+  assert.throws(() => validatePinCredentials('valid_name', '123456'.repeat(22)), TypeError);
 });
 
 test('password hashes are salted and only verify the matching password', async () => {

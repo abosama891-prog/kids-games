@@ -64,9 +64,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       showMessage('تأكيد كلمة المرور الجديدة غير متطابق.', true);
       return;
     }
-    if (changingCredential && !/^\d{4}$/.test(newCredential)
-      && (newCredential.length < 6 || newCredential.length > 128)) {
-      showMessage('استخدم رمزًا من 4 أرقام أو كلمة مرور من 6 إلى 128 حرفًا.', true);
+    if (changingCredential && (newCredential.length < 6 || newCredential.length > 128)) {
+      showMessage('استخدم رمزًا من 6 أرقام على الأقل أو كلمة مرور من 6 إلى 128 حرفًا.', true);
       return;
     }
 

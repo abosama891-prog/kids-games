@@ -8,6 +8,7 @@ const {
   normalizePin,
   validateCredentials,
   validatePinCredentials,
+  validateLegacyPinCredentials,
   hashPassword,
   verifyPassword,
   hashRateLimitKey
@@ -100,7 +101,7 @@ exports.authenticateUsername = onCall(async request => {
   try {
     const normalizedPin = normalizePin(request.data?.password);
     credentials = /^\d{4}$/.test(normalizedPin)
-      ? validatePinCredentials(request.data?.username, normalizedPin)
+      ? validateLegacyPinCredentials(request.data?.username, normalizedPin)
       : validateCredentials(request.data?.username, request.data?.password);
   } catch (error) {
     throw new HttpsError('invalid-argument', error.message);
@@ -396,19 +397,20 @@ exports.updateOwnProfile = onCall(async request => {
     if (accountSnapshot.exists && accountSnapshot.data().uid !== uid) {
       throw new HttpsError('failed-precondition', 'تعذر تغيير كلمة المرور لهذا الحساب القديم. تواصل مع مدير النظام.');
     }
-    const normalizedCurrentCredential = /^\d{4}$/.test(normalizePin(currentCredential))
-      ? normalizePin(currentCredential)
+    const normalizedCurrentPin = normalizePin(currentCredential);
+    const normalizedCurrentCredential = /^\d+$/.test(normalizedCurrentPin)
+      ? normalizedCurrentPin
       : currentCredential;
-    const normalizedNewCredential = /^\d{4}$/.test(normalizePin(newCredential))
-      ? normalizePin(newCredential)
+    const normalizedNewPin = normalizePin(newCredential);
+    const normalizedNewCredential = /^\d+$/.test(normalizedNewPin)
+      ? normalizedNewPin
       : newCredential;
-    if (!/^\d{4}$/.test(normalizedNewCredential)
-      && (normalizedNewCredential.length < 6 || normalizedNewCredential.length > 128)) {
-      throw new HttpsError('invalid-argument', 'استخدم رمزًا من 4 أرقام أو كلمة مرور من 6 إلى 128 حرفًا.');
+    if (normalizedNewCredential.length < 6 || normalizedNewCredential.length > 128) {
+      throw new HttpsError('invalid-argument', 'استخدم رمزًا من 6 أرقام على الأقل أو كلمة مرور من 6 إلى 128 حرفًا.');
     }
 
     const passwordData = await hashPassword(normalizedNewCredential);
-    const authPassword = /^\d{4}$/.test(normalizedNewCredential)
+    const authPassword = /^\d+$/.test(normalizedNewCredential)
       ? crypto.randomBytes(48).toString('base64url')
       : normalizedNewCredential;
     if (accountSnapshot.exists) {
