@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>إدارة المستخدمين والصلاحيات | Bu🤖y&lt;/Code&gt;</title>
+    <link rel="stylesheet" href="../common.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <div class="admin-shell">
+      <header class="admin-header page-card">
+        <div class="header-top">
+          <div>
+            <span class="eyebrow">لوحة الإدارة</span>
+            <div class="brand-lockup" aria-label="Bu🤖y&lt;/Code&gt;">
+              <span class="brand-word">Bu🤖y</span>
+              <span class="brand-subtitle brand-code">&lt;/Code&gt;</span>
+            </div>
+            <h1>إدارة المستخدمين والصلاحيات</h1>
+          </div>
+          <div class="header-actions">
+            <a class="nav-control" href="../index/index.html" aria-label="الرئيسية">🏠</a>
+            <button id="logout-button" class="logout-button" type="button">تسجيل الخروج</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="admin-content">
+        <div id="account-connection" class="connection-status" role="status" aria-live="polite">جارٍ التحقق من ربط الحساب...</div>
+        <div id="admin-message" class="admin-message" role="status" aria-live="polite" hidden></div>
+        <details class="panel page-card lesson-settings-panel">
+          <summary>⚙️ إعدادات فتح الدروس</summary>
+          <p class="lesson-settings-help">حدد عدد المراحل المطلوبة لفتح كل درس.</p>
+          <form id="lesson-settings-form" class="lesson-settings-form">
+            <label>الأوامر<input name="commands" type="number" min="0" max="63" required /></label>
+            <label>ترتيب الأوامر<input name="sequence" type="number" min="0" max="63" required /></label>
+            <label>التكرار<input name="loops" type="number" min="0" max="63" required /></label>
+            <label>الشروط<input name="conditions" type="number" min="0" max="63" required /></label>
+            <label>تصحيح الأخطاء<input name="debugging" type="number" min="0" max="63" required /></label>
+            <label>ملاهي البرمجة<input name="code-park" type="number" min="0" max="63" required /></label>
+            <div class="lesson-settings-actions">
+              <button id="save-lesson-settings" class="primary-btn" type="submit">حفظ</button>
+              <span id="lesson-settings-message" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </details>
+        <details class="panel page-card game-settings-panel">
+          <summary>🎮 إيقاف لعبة مؤقتًا للتحديث</summary>
+          <p class="lesson-settings-help">يتطبق القفل على كل المستخدمين، ويستثني المدير. مع Firebase تتم المزامنة للجميع؛ وبدونه يطبق على هذا الجهاز فقط.</p>
+          <p class="lesson-settings-help">يتم حفظ التغيير تلقائيًا عند تحديد اللعبة أو إلغاء تحديدها.</p>
+          <form id="game-settings-form">
+            <div id="game-settings-list" class="game-settings-list"></div>
+            <button class="primary-btn" type="submit">حفظ حالة الألعاب</button>
+            <p id="game-settings-message" class="game-settings-message" role="status" aria-live="polite"></p>
+          </form>
+        </details>
+        <section class="panel page-card">
+          <div class="panel-title-row">
+            <h2>المستخدمون والصلاحيات</h2>
+            <div class="user-toolbar">
+              <label class="search-field">
+                <span class="visually-hidden">ابحث باسم المستخدم</span>
+                <input id="user-search" type="search" placeholder="ابحث باسم المستخدم..." autocomplete="off" />
+              </label>
+              <label class="role-filter">
+                <span class="visually-hidden">تصفية حسب الدور</span>
+                <select id="role-filter">
+                  <option value="">كل الأدوار</option>
+                  <option value="admin">مدير</option>
+                  <option value="teacher">معلم</option>
+                  <option value="parent">ولي أمر</option>
+                  <option value="child">طفل</option>
+                </select>
+              </label>
+              <button id="email-toggle" class="column-toggle" type="button" aria-expanded="false" aria-controls="users-table">
+                ◉ إظهار البريد
+              </button>
+              <button id="add-user-button" class="primary-btn" type="button">＋ إضافة مستخدم</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="users-table" class="email-hidden">
+              <thead>
+                <tr>
+                  <th>اسم المستخدم</th>
+                  <th class="email-column">معرّف الدخول</th>
+                  <th>الدور</th>
+                  <th>الحالة</th>
+                  <th>المزود</th>
+                  <th>إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body"></tbody>
+            </table>
+          </div>
+          <p id="empty-users" class="empty-users" hidden>لا يوجد مستخدمون يطابقون البحث.</p>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="user-dialog" class="user-dialog" aria-labelledby="dialog-title">
+      <form id="user-form" class="user-form">
+        <header class="dialog-header">
+          <h2 id="dialog-title">إضافة مستخدم جديد</h2>
+          <button id="close-dialog-button" class="dialog-close" type="button" aria-label="إغلاق">×</button>
+        </header>
+        <div class="dialog-fields">
+          <label>
+            اسم المستخدم
+            <input id="username" name="username" type="text" autocomplete="username" minlength="1" maxlength="32" placeholder="username" required />
+          </label>
+          <label>
+            كلمة المرور
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="6 أحرف على الأقل" required />
+            <span id="password-hint" class="field-hint">مطلوبة للحساب الجديد (6 أحرف على الأقل).</span>
+          </label>
+          <label id="password-confirmation-field">
+            تأكيد كلمة المرور
+            <input id="password-confirmation" name="passwordConfirmation" type="password" autocomplete="new-password" minlength="6" maxlength="128" placeholder="أعد إدخال كلمة المرور" required />
+          </label>
+          <label id="role-field">
+            الصلاحية (الدور)
+            <select id="role" name="role">
+              <option value="child">طفل</option>
+              <option value="parent">ولي أمر</option>
+              <option value="teacher">معلم</option>
+              <option value="admin">مدير</option>
+            </select>
+          </label>
+          <label id="status-field" hidden>
+            حالة الحساب
+            <select id="status" name="status">
+              <option value="active">نشط</option>
+              <option value="inactive">غير نشط</option>
+            </select>
+          </label>
+        </div>
+        <footer class="dialog-actions">
+          <button id="cancel-dialog-button" class="cancel-action" type="button">إلغاء</button>
+          <button id="save-user-button" type="submit" class="primary-btn">إضافة المستخدم</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <script src="../common.js"></script>
+    <script src="admin.js"></script>
+  </body>
+</html>
