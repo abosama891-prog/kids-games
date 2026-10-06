@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kids-games-v64';
+const CACHE_NAME = 'kids-games-v65';
 const CACHE_PREFIX = 'kids-games-';
 const APP_BASE_URL = new URL('./', self.location);
 const APP_SHELL = [
@@ -80,16 +80,10 @@ self.addEventListener('fetch', event => {
 
   event.respondWith((async () => {
     const cached = await caches.match(request);
-    const isFreshContent = request.mode === 'navigate'
-      || request.destination === 'script'
-      || request.destination === 'style';
-
-    if (!isFreshContent && cached) return cached;
-
     let response;
     try {
       response = await fetch(request, {
-        cache: isFreshContent ? 'no-store' : 'default'
+        cache: request.cache === 'no-store' ? 'no-store' : 'default'
       });
     } catch (error) {
       if (cached) return cached;
