@@ -1521,14 +1521,31 @@
     }
   }
 
-  window.KidsGamesCloudReady = Promise.resolve({ enabled: false, reason: 'deferred' });
-setTimeout(() => {
-  initializeCloud().then(cloud => {
-    window.KidsGamesCloudReady = Promise.resolve(cloud);
-  }).catch(err => {
-    console.error('Cloud init failed:', err);
+  let resolveCloudReady;
+  window.KidsGamesCloudReady = new Promise(resolve => {
+    resolveCloudReady = resolve;
   });
-}, 300);
+
+  function scheduleCloudInitialization() {
+    const initializeWhenIdle = () => {
+      initializeCloud().then(resolveCloudReady).catch(error => {
+        console.error('Cloud init failed:', error);
+        resolveCloudReady({ enabled: false, reason: 'cloud-error' });
+      });
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(initializeWhenIdle, { timeout: 2000 });
+    } else {
+      window.setTimeout(initializeWhenIdle, 0);
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    scheduleCloudInitialization();
+  } else {
+    window.addEventListener('load', scheduleCloudInitialization, { once: true });
+  }
 
   const currentGame = gameCatalog.find(game =>
     new URL(game.href).pathname.replace(/\/+$/, '').toLowerCase() ===
