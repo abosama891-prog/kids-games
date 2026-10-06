@@ -324,6 +324,45 @@ button, input {
   display: none;
 }
 
+.app-update-notice {
+  position: fixed;
+  z-index: 10001;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  left: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin-inline: auto;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 16px;
+  background: #176b63;
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 8px 28px rgba(20, 54, 49, 0.3);
+}
+
+.app-update-notice button {
+  padding: 7px 11px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+  color: #176b63;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.app-update-notice .app-update-dismiss {
+  background: transparent;
+  color: #fff;
+  text-decoration: underline;
+}
+
 .install-app-button {
   min-height: 42px;
   padding: 8px 16px;

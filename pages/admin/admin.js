@@ -67,9 +67,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           lockedGames: Array.from(gameSettingsForm.querySelectorAll('input[type="checkbox"]:checked'))
             .map(input => input.value)
         };
+        let savedLocally = false;
 
         try {
           window.KidsGames.saveGameSettings(settings);
+          savedLocally = true;
           gameSettingsMessage.className = '';
           gameSettingsMessage.textContent = 'جارٍ حفظ حالة الألعاب...';
 
@@ -84,7 +86,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
           console.error('Unable to save game availability settings:', error);
           gameSettingsMessage.className = 'game-settings-message error';
-          gameSettingsMessage.textContent = 'حُفظت الإعدادات على هذا الجهاز، وتعذرت مزامنتها. تحقق من اتصال Firebase ثم أعد المحاولة.';
+          gameSettingsMessage.textContent = savedLocally
+            ? 'حُفظت الإعدادات على هذا الجهاز، وتعذرت مزامنتها. تحقق من اتصال Firebase ثم أعد المحاولة.'
+            : 'تعذر حفظ الإعدادات على هذا الجهاز. تحقق من مساحة التخزين ثم أعد المحاولة.';
         }
       });
     return gameSettingsSaveQueue;

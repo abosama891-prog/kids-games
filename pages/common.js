@@ -1,9 +1,18 @@
 (function () {
   const DEV_MODE = true;
   const APP_BASE_URL = new URL('../', document.currentScript.src);
-  const STORAGE_KEY = 'kids_games_progress_v1';
-  const LESSON_SETTINGS_KEY = 'kids_games_lesson_unlocks_v1';
-  const GAME_SETTINGS_KEY = 'kids_games_availability_v1';
+  const STORAGE_KEYS = Object.freeze({
+    progress: 'kids_games_progress_v1',
+    progressForUser: userId => `${STORAGE_KEYS.progress}_${userId}`,
+    lessonSettings: 'kids_games_lesson_unlocks_v1',
+    gameSettings: 'kids_games_availability_v1',
+    authSession: 'kids_games_current_user_v1',
+    users: 'kids_games_users_v1',
+    siteNavHidden: 'kids_games_site_nav_hidden',
+    serviceWorkerUpdateCheck: 'kids_games_sw_update_check_v1',
+    cloudSyncReload: userId => `kids_games_cloud_sync_${userId}`,
+    legacyAdminBackups: ['oldAdmin', 'adminBackup']
+  });
 
   // ✅ FIX #5: uuid helper مع fallback للمتصفحات القديمة
   function uuid() {
@@ -41,7 +50,7 @@
 
   function progressStorageKey() {
     const user = window.KidsGamesAuth?.getCurrentUser?.();
-    return user?.id ? `${STORAGE_KEY}_${user.id}` : STORAGE_KEY;
+    return user?.id ? STORAGE_KEYS.progressForUser(user.id) : STORAGE_KEYS.progress;
   }
 
   // ✅ FIX #6: معالجة QuotaExceededError
@@ -59,11 +68,12 @@
     try {
       const key = progressStorageKey();
       let raw = localStorage.getItem(key);
-      if (!raw && key !== STORAGE_KEY) {
-        raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw && key !== STORAGE_KEYS.progress) {
+        raw = localStorage.getItem(STORAGE_KEYS.progress);
         if (raw) {
-          safeSetItem(key, raw);
-          localStorage.removeItem(STORAGE_KEY);
+          if (safeSetItem(key, raw)) {
+            localStorage.removeItem(STORAGE_KEYS.progress);
+          }
         }
       }
       if (!raw) return cloneState(defaultState);
@@ -260,7 +270,7 @@
 
   function getLessonSettings() {
     try {
-      const saved = JSON.parse(localStorage.getItem(LESSON_SETTINGS_KEY) || '{}');
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.lessonSettings) || '{}');
       return Object.fromEntries(lessonCatalog.map(lesson => {
         const unlockAt = Number(saved[lesson.key]);
         return [lesson.key, Number.isInteger(unlockAt) && unlockAt >= 0 ? unlockAt : lesson.unlockAt];
@@ -281,7 +291,9 @@
       }
       normalized[lesson.key] = unlockAt;
     });
-    safeSetItem(LESSON_SETTINGS_KEY, JSON.stringify(normalized));
+    if (!safeSetItem(STORAGE_KEYS.lessonSettings, JSON.stringify(normalized))) {
+      throw new Error('Unable to save lesson settings on this device.');
+    }
     return normalized;
   }
 
@@ -306,7 +318,7 @@
 
   function getGameSettings() {
     try {
-      const saved = localStorage.getItem(GAME_SETTINGS_KEY);
+      const saved = localStorage.getItem(STORAGE_KEYS.gameSettings);
       if (!saved) return { lockedGames: [] };
       const parsed = JSON.parse(saved);
       return normalizeGameSettings(parsed);
@@ -318,7 +330,7 @@
 
   function saveGameSettings(settings) {
     const normalized = normalizeGameSettings(settings);
-    if (!safeSetItem(GAME_SETTINGS_KEY, JSON.stringify(normalized))) {
+    if (!safeSetItem(STORAGE_KEYS.gameSettings, JSON.stringify(normalized))) {
       throw new Error('Unable to save game availability settings on this device.');
     }
     return normalized;
@@ -327,8 +339,13 @@
   async function getEffectiveGameSettings() {
     const cloud = await window.KidsGamesCloudReady;
     if (!cloud.enabled) return getGameSettings();
-    const savedSettings = await cloud.getGameSettings();
-    return savedSettings ? saveGameSettings(savedSettings) : getGameSettings();
+    try {
+      const savedSettings = await cloud.getGameSettings();
+      return savedSettings ? saveGameSettings(savedSettings) : getGameSettings();
+    } catch (error) {
+      console.error('Unable to load cloud game settings; using this device copy:', error);
+      return getGameSettings();
+    }
   }
 
   function renderGameHeader(gameKey, levelNumber) {
@@ -407,7 +424,8 @@
   });
 
   window.KidsGames = {
-    STORAGE_KEY,
+    STORAGE_KEYS,
+    STORAGE_KEY: STORAGE_KEYS.progress,
     gameCatalog,
     lessonCatalog,
     defaultState,
@@ -446,10 +464,164 @@
   }
 
   if ('serviceWorker' in navigator) {
+    const hadControllerOnLoad = Boolean(navigator.serviceWorker.controller);
+    const dirtyForms = new Set();
+    const formSnapshots = new WeakMap();
+    let updateReloadStarted = false;
+    let updateReloadPending = false;
+    let serviceWorkerRegistration = null;
+    const updateCheckInterval = 5 * 60 * 1000;
+    const updateCheckStorageKey = STORAGE_KEYS.serviceWorkerUpdateCheck;
+
+    function snapshotForm(form) {
+      return Array.from(form.elements).map(control => ({
+        control,
+        value: control.value,
+        checked: 'checked' in control ? control.checked : null
+      }));
+    }
+
+    function formHasUnsavedChanges(form) {
+      const snapshot = formSnapshots.get(form);
+      if (!snapshot) return dirtyForms.has(form);
+      return snapshot.some(({ control, value, checked }) =>
+        control.value !== value || (checked !== null && control.checked !== checked)
+      );
+    }
+
+    function rememberFormState(event) {
+      const form = event.target.closest?.('form');
+      if (!form || formSnapshots.has(form)) return;
+      formSnapshots.set(form, snapshotForm(form));
+    }
+
+    function trackFormChanges(event) {
+      const form = event.target.form;
+      if (!form) return;
+      if (!formSnapshots.has(form)) {
+        dirtyForms.add(form);
+      } else if (formHasUnsavedChanges(form)) {
+        dirtyForms.add(form);
+      } else {
+        dirtyForms.delete(form);
+      }
+      if (updateReloadPending) reloadForServiceWorkerUpdate();
+    }
+
+    function hasUnsavedFormChanges() {
+      return [...dirtyForms].some(form => form.isConnected && formHasUnsavedChanges(form))
+        || Array.from(document.forms).some(form =>
+          form.querySelector('button[type="submit"]:disabled, input[type="submit"]:disabled')
+        );
+    }
+
+    function reloadForServiceWorkerUpdate() {
+      if (!hadControllerOnLoad || updateReloadStarted) return;
+      if (hasUnsavedFormChanges()) {
+        updateReloadPending = true;
+        showAppUpdateNotice();
+        return;
+      }
+      updateReloadPending = false;
+      updateReloadStarted = true;
+      window.location.reload();
+    }
+
+    async function checkForServiceWorkerUpdate() {
+      if (!serviceWorkerRegistration) return;
+
+      let lastCheck = 0;
+      try {
+        lastCheck = Number(sessionStorage.getItem(updateCheckStorageKey)) || 0;
+      } catch (error) {
+        console.error('Unable to read the service worker update-check time:', error);
+      }
+      if (Date.now() - lastCheck < updateCheckInterval) return;
+
+      try {
+        sessionStorage.setItem(updateCheckStorageKey, String(Date.now()));
+      } catch (error) {
+        console.error('Unable to save the service worker update-check time:', error);
+      }
+      await serviceWorkerRegistration.update();
+    }
+
+    document.addEventListener('focusin', rememberFormState, true);
+    document.addEventListener('pointerdown', rememberFormState, true);
+    document.addEventListener('input', trackFormChanges, true);
+    document.addEventListener('change', trackFormChanges, true);
+    document.addEventListener('reset', event => {
+      const form = event.target;
+      window.setTimeout(() => {
+        dirtyForms.delete(form);
+        formSnapshots.delete(form);
+        if (updateReloadPending) reloadForServiceWorkerUpdate();
+      });
+    }, true);
+
+    const updateSubmissionObserver = new MutationObserver(() => {
+      if (updateReloadPending) reloadForServiceWorkerUpdate();
+    });
+    updateSubmissionObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['disabled'],
+      subtree: true
+    });
+
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data?.type === 'APP_UPDATE_AVAILABLE' && hadControllerOnLoad) {
+        showAppUpdateNotice(event.data.version);
+      }
+    });
+    navigator.serviceWorker.addEventListener('controllerchange', reloadForServiceWorkerUpdate);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible' || !serviceWorkerRegistration) return;
+      checkForServiceWorkerUpdate().catch(error => {
+        console.error('Unable to check for a service worker update:', error);
+      });
+    });
+
     window.addEventListener('load', () => {
       navigator.serviceWorker.register(new URL('sw.js', APP_BASE_URL).href, { updateViaCache: 'none' })
-        .catch(error => console.error('Unable to register the app service worker:', error));
+        .then(registration => {
+          serviceWorkerRegistration = registration;
+          return checkForServiceWorkerUpdate();
+        })
+        .catch(error => console.error('Unable to register or update the app service worker:', error));
     });
+
+    function showAppUpdateNotice(version) {
+      if (document.querySelector('.app-update-notice')) return;
+
+      const notice = document.createElement('aside');
+      notice.className = 'app-update-notice';
+      notice.setAttribute('role', 'status');
+      notice.setAttribute('aria-live', 'polite');
+
+      const message = document.createElement('span');
+      message.textContent = version ? `تحديث متاح (${version})` : 'تحديث متاح';
+
+      const reloadButton = document.createElement('button');
+      reloadButton.type = 'button';
+      reloadButton.textContent = 'تحديث الآن';
+      reloadButton.addEventListener('click', () => {
+        if (hasUnsavedFormChanges()
+          && !window.confirm('قد تفقد التعديلات غير المحفوظة في النموذج. هل تريد التحديث الآن؟')) {
+          return;
+        }
+        window.location.reload();
+      });
+
+      const dismissButton = document.createElement('button');
+      dismissButton.type = 'button';
+      dismissButton.className = 'app-update-dismiss';
+      dismissButton.textContent = 'لاحقًا';
+      dismissButton.addEventListener('click', () => notice.remove());
+
+      notice.append(message, reloadButton, dismissButton);
+      document.body.appendChild(notice);
+    }
   }
 
   const installPrompts = [...document.querySelectorAll('.app-install-prompt')];
@@ -513,8 +685,8 @@
     });
   }
 
-  const AUTH_STORAGE_KEY = 'kids_games_current_user_v1';
-  const USERS_STORAGE_KEY = 'kids_games_users_v1';
+  const AUTH_STORAGE_KEY = STORAGE_KEYS.authSession;
+  const USERS_STORAGE_KEY = STORAGE_KEYS.users;
 
   const ROLE_PERMISSIONS = {
     admin: [
@@ -533,17 +705,18 @@
   };
   const isValidRole = role => Object.prototype.hasOwnProperty.call(ROLE_PERMISSIONS, role);
 
+  const localAdmin = {
+    id: 'admin-demo',
+    username: 'abosama891',
+    password: 'vK8!mR4@Qz2#Lp9$Xc7',
+    email: 'admin@gmail.com',
+    fullName: 'مدير النظام',
+    role: 'admin',
+    provider: 'local',
+    status: 'active'
+  };
   const defaultUsers = [
-    {
-      id: 'admin-demo',
-      username: 'admin',
-      password: 'admin123',
-      email: 'admin@gmail.com',
-      fullName: 'مدير النظام',
-      role: 'admin',
-      provider: 'local',
-      status: 'active'
-    },
+    localAdmin,
     {
       id: 'parent-demo',
       username: 'parent',
@@ -565,18 +738,6 @@
       status: 'active'
     }
   ];
-  if (DEV_MODE) {
-    defaultUsers.unshift({
-      id: 'admin-demo',
-      username: 'admin',
-      password: 'admin123',
-      email: 'admin@gmail.com',
-      fullName: 'مدير النظام',
-      role: 'admin',
-      provider: 'local',
-      status: 'active'
-    });
-  }
 
   function normalizeUser(user) {
     return {
@@ -594,7 +755,43 @@
     };
   }
 
+  function clearLegacyAdminStorage() {
+    try {
+      STORAGE_KEYS.legacyAdminBackups.forEach(key => localStorage.removeItem(key));
+    } catch (error) {
+      console.error('Unable to remove legacy local admin backups:', error);
+      throw new Error('تعذر تنظيف بيانات المدير المحلي القديمة على هذا الجهاز.');
+    }
+
+    let rawSession;
+    try {
+      rawSession = localStorage.getItem(AUTH_STORAGE_KEY);
+    } catch (error) {
+      console.error('Unable to read the local admin session:', error);
+      throw new Error('تعذر قراءة جلسة المدير المحلي على هذا الجهاز.');
+    }
+    if (!rawSession) return;
+
+    let session;
+    try {
+      session = JSON.parse(rawSession);
+    } catch (error) {
+      console.error('The saved local session is invalid:', error);
+      return;
+    }
+    if (session.id !== localAdmin.id || session.username !== 'admin') return;
+
+    try {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    } catch (error) {
+      console.error('Unable to clear the outdated local admin session:', error);
+      throw new Error('تعذر إنهاء جلسة المدير المحلي القديمة على هذا الجهاز.');
+    }
+  }
+
   function getUsers() {
+    clearLegacyAdminStorage();
+
     let stored;
     try {
       stored = localStorage.getItem(USERS_STORAGE_KEY);
@@ -619,7 +816,31 @@
     if (!Array.isArray(parsed) || parsed.some(user => !user || typeof user !== 'object')) {
       throw new Error('صيغة بيانات الحسابات المحفوظة غير صالحة. لم يتم استبدال البيانات.');
     }
-    return parsed.map(normalizeUser).filter(user => DEV_MODE || user.id !== 'admin-demo');
+
+    let localAdminSeen = false;
+    let usersChanged = false;
+    const users = parsed.map(normalizeUser).filter(user => {
+      if (user.id !== localAdmin.id) return true;
+      if (localAdminSeen) {
+        usersChanged = true;
+        return false;
+      }
+      localAdminSeen = true;
+      const isLegacyAdmin = user.username === 'admin';
+      if (isLegacyAdmin || user.role !== localAdmin.role) {
+        usersChanged = true;
+        Object.assign(user, {
+          username: localAdmin.username,
+          ...(isLegacyAdmin ? { password: localAdmin.password } : {}),
+          role: localAdmin.role
+        });
+      }
+      return true;
+    });
+    if (usersChanged && !safeSetItem(USERS_STORAGE_KEY, JSON.stringify(users))) {
+      throw new Error('تعذر تحديث بيانات المدير المحلي القديمة على هذا الجهاز.');
+    }
+    return users.filter(user => DEV_MODE || user.id !== localAdmin.id);
   }
 
   function saveUsers(users) {
@@ -635,7 +856,11 @@
       const raw = localStorage.getItem(AUTH_STORAGE_KEY);
       if (!raw) return null;
       const user = JSON.parse(raw);
-      if (!DEV_MODE && user.id === 'admin-demo') {
+      if (user.id === localAdmin.id && user.username === 'admin') {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+      }
+      if (!DEV_MODE && user.id === localAdmin.id) {
         localStorage.removeItem(AUTH_STORAGE_KEY);
         return null;
       }
@@ -1084,7 +1309,7 @@
         }, { merge: true });
 
         if (reloadIfChanged && changed) {
-          const reloadKey = `kids_games_cloud_sync_${firebaseUser.uid}`;
+          const reloadKey = STORAGE_KEYS.cloudSyncReload(firebaseUser.uid);
           if (!sessionStorage.getItem(reloadKey)) {
             sessionStorage.setItem(reloadKey, '1');
             window.location.reload();
@@ -1092,7 +1317,7 @@
             sessionStorage.removeItem(reloadKey);
           }
         } else {
-          sessionStorage.removeItem(`kids_games_cloud_sync_${firebaseUser.uid}`);
+          sessionStorage.removeItem(STORAGE_KEYS.cloudSyncReload(firebaseUser.uid));
         }
         return user;
       }
@@ -1114,7 +1339,7 @@
           let previousLocalProgress = null;
           if (localUser?.provider === 'local') {
             try {
-              const storedProgress = localStorage.getItem(`${STORAGE_KEY}_${localUser.id}`);
+              const storedProgress = localStorage.getItem(STORAGE_KEYS.progressForUser(localUser.id));
               previousLocalProgress = storedProgress ? JSON.parse(storedProgress) : null;
             } catch (error) {
               console.error('Unable to read legacy local progress:', error);

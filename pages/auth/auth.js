@@ -23,6 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
     authMessage.className = `auth-message ${type}`;
   }
 
+  function isCloudUnavailable(error) {
+    return [
+      'auth/network-request-failed',
+      'functions/deadline-exceeded',
+      'functions/internal',
+      'functions/unavailable'
+    ].includes(error?.code);
+  }
+
   function redirectByRole(user) {
     if (user.role === 'admin') {
       window.location.href = '../admin/index.html';
@@ -91,11 +100,29 @@ document.addEventListener('DOMContentLoaded', () => {
     submitButton.disabled = true;
     try {
       const cloud = await cloudReady;
-      const user = cloud.enabled
-        ? await cloud.signInWithUsername(username, password)
-        : /^\d{4}$/.test(password)
+      const localAdmin = window.KidsGamesAuth.findUserByIdentifier(username);
+      const isLocalAdmin = localAdmin?.id === 'admin-demo'
+        && localAdmin.role === 'admin'
+        && localAdmin.provider === 'local';
+      let user;
+      if (isLocalAdmin || !cloud.enabled) {
+        user = /^\d{4}$/.test(password)
           ? await window.KidsGamesAuth.loginWithPin(username, password)
           : window.KidsGamesAuth.loginWithUsername(username, password);
+      } else {
+        try {
+          user = await cloud.signInWithUsername(username, password);
+        } catch (error) {
+          const localAccount = window.KidsGamesAuth.findUserByIdentifier(username);
+          if (!isCloudUnavailable(error) || localAccount?.provider !== 'local') throw error;
+          if (cloud.getCurrentUserId?.()) await cloud.signOut();
+          user = /^\d{4}$/.test(password)
+            ? await window.KidsGamesAuth.loginWithPin(username, password)
+            : window.KidsGamesAuth.loginWithUsername(username, password);
+          if (!user) throw error;
+          console.warn('Cloud sign-in is unavailable; signed in with the saved local account.');
+        }
+      }
       if (!user) {
         setMessage('اسم المستخدم أو كلمة المرور غير صحيحة.', 'error');
         return;

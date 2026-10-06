@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const siteNav = document.getElementById('site-nav');
   const siteNavToggle = document.getElementById('site-nav-toggle');
-  const navHiddenKey = 'kids_games_site_nav_hidden';
+  const navHiddenKey = window.KidsGames.STORAGE_KEYS.siteNavHidden;
   let isNavHidden = false;
   try {
     isNavHidden = localStorage.getItem(navHiddenKey) === 'true';
