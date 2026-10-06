@@ -441,6 +441,9 @@ addStreetSign(  0,-28, '⬇ خلفي');
 addStreetSign(  0,-38, '🎟️ النهاية');
 
 /* ============ State ============ */
+window.KidsGamesCloudReady.then(cloud => {
+if (!cloud?.enabled) return;
+
 let yaw = 0, pitch = 0;
 const move = { w:false, a:false, s:false, d:false };
 let isLocked  = false;
@@ -847,6 +850,9 @@ addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+});
+}).catch(error => {
+  console.error('Unable to initialize the code park:', error);
 });
 </script>
 </body>

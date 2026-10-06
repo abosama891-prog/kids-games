@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const cloud = await window.KidsGamesCloudReady;
+  if (!cloud?.enabled) return;
   const query = new URLSearchParams(window.location.search);
   const game = window.KidsGames.gameCatalog.find(item => item.key === query.get('game'));
   const title = document.getElementById('maintenance-title');

@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const cloud = await window.KidsGamesCloudReady;
+  if (!cloud?.enabled) return;
   initializeGames().catch(error => {
     console.error('Unable to load game availability:', error);
     const message = document.getElementById('games-message');
@@ -9,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initializeGames() {
+  await window.KidsGamesCloudReady;
   const settings = await window.KidsGames.getEffectiveGameSettings();
   const query = new URLSearchParams(window.location.search);
   const unavailableGame = window.KidsGames.gameCatalog.find(game => game.key === query.get('unavailable'));

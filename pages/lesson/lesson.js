@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const cloud = await window.KidsGamesCloudReady;
   const lessons = [
     {
       key: 'commands',
@@ -256,8 +257,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
-    const cloud = await window.KidsGamesCloudReady;
-    if (cloud.enabled && cloud.getCurrentUserId?.() === currentUser.id) {
+    if (!cloud?.enabled || cloud.getCurrentUserId?.() !== currentUser.id) {
+      throw new Error('تعذر الاتصال بحساب Firebase الحالي.');
+    }
+    {
       const savedSettings = await cloud.getLessonSettings();
       if (savedSettings) {
         lessonSettings = window.KidsGames.saveLessonSettings(savedSettings);

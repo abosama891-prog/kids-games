@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const cloud = await window.KidsGamesCloudReady;
   const authMessage = document.getElementById('auth-message');
   const splashScreen = document.getElementById('splash-screen');
   const accountScreen = document.getElementById('account-screen');
@@ -21,15 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
   function setMessage(text, type = 'success') {
     authMessage.textContent = text;
     authMessage.className = `auth-message ${type}`;
-  }
-
-  function isCloudUnavailable(error) {
-    return [
-      'auth/network-request-failed',
-      'functions/deadline-exceeded',
-      'functions/internal',
-      'functions/unavailable'
-    ].includes(error?.code);
   }
 
   function redirectByRole(user) {
@@ -80,14 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2200);
   }
 
-  const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
-
-  const cloudReady = window.KidsGamesCloudReady.then(cloud => {
-    if (currentUser) {
-      redirectByRole(window.KidsGamesAuth.getCurrentUser() || currentUser);
-    }
-    return cloud;
-  });
+  const currentUser = window.KidsGamesAuth.getCurrentUser();
+  if (currentUser) redirectByRole(currentUser);
+  const cloudReady = Promise.resolve(cloud);
 
   showSignupButton.addEventListener('click', showSignup);
   showLoginButton.addEventListener('click', showLogin);
@@ -100,29 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     submitButton.disabled = true;
     try {
       const cloud = await cloudReady;
-      const localAdmin = window.KidsGamesAuth.findUserByIdentifier(username);
-      const isLocalAdmin = localAdmin?.id === 'admin-demo'
-        && localAdmin.role === 'admin'
-        && localAdmin.provider === 'local';
-      let user;
-      if (isLocalAdmin || !cloud.enabled) {
-        user = /^\d{4}$/.test(password)
-          ? await window.KidsGamesAuth.loginWithPin(username, password)
-          : window.KidsGamesAuth.loginWithUsername(username, password);
-      } else {
-        try {
-          user = await cloud.signInWithUsername(username, password);
-        } catch (error) {
-          const localAccount = window.KidsGamesAuth.findUserByIdentifier(username);
-          if (!isCloudUnavailable(error) || localAccount?.provider !== 'local') throw error;
-          if (cloud.getCurrentUserId?.()) await cloud.signOut();
-          user = /^\d{4}$/.test(password)
-            ? await window.KidsGamesAuth.loginWithPin(username, password)
-            : window.KidsGamesAuth.loginWithUsername(username, password);
-          if (!user) throw error;
-          console.warn('Cloud sign-in is unavailable; signed in with the saved local account.');
-        }
-      }
+      if (!cloud?.enabled) throw new Error('تعذر الاتصال بخدمة Firebase. لم يتم تسجيل الدخول.');
+      const user = await cloud.signInWithUsername(username, password);
       if (!user) {
         setMessage('اسم المستخدم أو كلمة المرور غير صحيحة.', 'error');
         return;
@@ -130,7 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
       redirectByRole(user);
     } catch (error) {
       console.error('Unable to sign in with username:', error);
-      const message = error.code === 'auth/too-many-requests'
+      const message = !cloud?.enabled
+        ? 'تعذر الاتصال بخدمة Firebase. تحقق من الاتصال ثم حاول مرة أخرى.'
+        : error.code === 'auth/too-many-requests'
         ? 'محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.'
         : error.code === 'functions/resource-exhausted'
           ? 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.'
@@ -183,31 +151,15 @@ document.addEventListener('DOMContentLoaded', () => {
     submitButton.disabled = true;
     try {
       const cloud = await cloudReady;
-      let user;
-      if (cloud.enabled) {
-        user = await cloud.createAccount(username, pin, fullName, role, avatar);
-      } else {
-        const createdUser = await window.KidsGamesAuth.addPinUser({
-          username,
-          fullName,
-          pin,
-          role,
-          avatar,
-          provider: 'local',
-          status: 'active'
-        });
-        if (!createdUser) {
-          setMessage('اسم المستخدم مستخدم بالفعل أو بيانات الحساب غير صالحة.', 'error');
-          return;
-        }
-        user = await window.KidsGamesAuth.loginWithPin(username, pin);
-        if (!user) throw new Error('تعذر تسجيل الدخول إلى الحساب المحلي الجديد.');
-      }
+      if (!cloud?.enabled) throw new Error('تعذر الاتصال بخدمة Firebase. لم يتم إنشاء الحساب.');
+      const user = await cloud.createAccount(username, pin, fullName, role, avatar);
       setMessage('تم إنشاء الحساب بنجاح. جارٍ فتح المنصة...');
       setTimeout(() => redirectByRole(user), 350);
     } catch (error) {
       console.error('Unable to create account:', error);
-      const message = error.code === 'auth/email-already-in-use'
+      const message = !cloud?.enabled
+        ? 'تعذر الاتصال بخدمة Firebase. تحقق من الاتصال ثم حاول مرة أخرى.'
+        : error.code === 'auth/email-already-in-use'
         ? 'اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.'
         : error.code === 'functions/resource-exhausted'
           ? 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.'

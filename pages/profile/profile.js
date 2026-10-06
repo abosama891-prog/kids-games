@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
+  const cloud = await window.KidsGamesCloudReady;
+  const currentUser = window.KidsGamesAuth.getCurrentUser();
   if (!currentUser) {
     window.location.href = '../auth/index.html';
     return;
@@ -72,14 +73,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveButton.disabled = true;
     saveButton.textContent = 'جارٍ الحفظ...';
     try {
-      const cloud = await window.KidsGamesCloudReady;
+      if (!cloud?.enabled) throw new Error('تعذر الاتصال بـ Firebase. لم يتم حفظ التغييرات.');
       const updates = {
         fullName,
         avatar,
         ...(changingCredential ? { currentCredential, newCredential } : {})
       };
-      if (cloud.enabled) await cloud.updateOwnProfile(updates);
-      else await window.KidsGamesAuth.updateOwnProfile(updates);
+      await cloud.updateOwnProfile(updates);
 
       currentCredentialInput.value = '';
       newCredentialInput.value = '';

@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const cloud = await window.KidsGamesCloudReady;
+  if (!cloud?.enabled) return;
   const slotsElement = document.getElementById('pipeSlots');
   const programBox = document.getElementById('programBox');
   const flowPath = document.getElementById('flowPath');

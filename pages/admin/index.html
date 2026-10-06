@@ -29,6 +29,28 @@
       <main class="admin-content">
         <div id="account-connection" class="connection-status" role="status" aria-live="polite">جارٍ التحقق من ربط الحساب...</div>
         <div id="admin-message" class="admin-message" role="status" aria-live="polite" hidden></div>
+        <details class="panel page-card site-maintenance-panel" open>
+          <summary>🛠️ وضع صيانة الموقع</summary>
+          <p class="lesson-settings-help">عند التفعيل، تظهر شاشة الصيانة للمستخدمين على كل الأجهزة فور تحديث حالة Firestore. تبقى صفحة تسجيل الدخول متاحة حتى يستطيع الأدمن الدخول وإيقاف الصيانة.</p>
+          <form id="site-maintenance-form" class="site-maintenance-form">
+            <label class="maintenance-toggle">
+              <input id="site-maintenance-enabled" name="enabled" type="checkbox" />
+              <span>تفعيل وضع الصيانة</span>
+            </label>
+            <label>
+              رسالة الصيانة
+              <textarea id="site-maintenance-message" name="message" maxlength="500" rows="3" placeholder="نعمل على تحسين الموقع. يرجى العودة بعد قليل."></textarea>
+            </label>
+            <label>
+              وقت العودة المتوقع (اختياري)
+              <input id="site-maintenance-expected-time" name="expectedTime" type="datetime-local" />
+            </label>
+            <div class="lesson-settings-actions">
+              <button id="save-site-maintenance" class="primary-btn" type="submit">حفظ وضع الصيانة</button>
+              <span id="site-maintenance-status" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </details>
         <details class="panel page-card lesson-settings-panel">
           <summary>⚙️ إعدادات فتح الدروس</summary>
           <p class="lesson-settings-help">حدد عدد المراحل المطلوبة لفتح كل درس.</p>
@@ -47,7 +69,7 @@
         </details>
         <details class="panel page-card game-settings-panel">
           <summary>🎮 إيقاف لعبة مؤقتًا للتحديث</summary>
-          <p class="lesson-settings-help">يتطبق القفل على كل المستخدمين، ويستثني المدير. مع Firebase تتم المزامنة للجميع؛ وبدونه يطبق على هذا الجهاز فقط.</p>
+          <p class="lesson-settings-help">يتطبق القفل على كل المستخدمين، ويستثني المدير. تُحفظ الحالة في Firebase وتتم مزامنتها للجميع.</p>
           <p class="lesson-settings-help">يتم حفظ التغيير تلقائيًا عند تحديد اللعبة أو إلغاء تحديدها.</p>
           <form id="game-settings-form">
             <div id="game-settings-list" class="game-settings-list"></div>

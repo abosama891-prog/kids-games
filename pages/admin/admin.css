@@ -149,6 +149,43 @@ body {
   color: #294b6a;
 }
 
+.site-maintenance-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.site-maintenance-form > label:not(.maintenance-toggle) {
+  display: grid;
+  gap: 7px;
+  color: var(--header-text);
+  font-weight: 800;
+}
+
+.site-maintenance-form textarea,
+.site-maintenance-form input[type="datetime-local"] {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+}
+
+.maintenance-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--header-text);
+  font-weight: 800;
+}
+
+.maintenance-toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--primary);
+}
+
 .connection-status.partial {
   border-color: rgba(224, 168, 91, .35);
   background: #fff8e9;

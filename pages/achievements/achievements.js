@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const cloud = await window.KidsGamesCloudReady;
+  if (!cloud?.enabled) return;
   const progress = window.KidsGames.readProgress();
   const mazeCompleted = Array.isArray(progress.maze?.completed) ? progress.maze.completed.length : 0;
   const drawCompleted = Array.isArray(progress.draw?.completed) ? progress.draw.completed.length : 0;

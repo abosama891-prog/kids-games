@@ -1,4 +1,6 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const cloud = await window.KidsGamesCloudReady;
+  if (!cloud?.enabled) return;
   const commandCountElement = document.getElementById('commandCount');
   const programElement = document.getElementById('program');
   const frogToken = document.getElementById('frogToken');
