@@ -7,156 +7,133 @@ const programElement = document.getElementById('program');
 const levelHintElement = document.getElementById('levelHint');
 const boardWrapElement = document.querySelector('.board-wrap');
 
+const visualThemes = [
+  { className: 'garden', playerIcon: '🐰', goalIcon: '🥕', wallIcon: '🧱' },
+  { className: 'home', playerIcon: '🐱', goalIcon: '🐟', wallIcon: '🪵' },
+  { className: 'zoo', playerIcon: '🐶', goalIcon: '🦴', wallIcon: '🪨' },
+  { className: 'space', playerIcon: '🐭', goalIcon: '🧀', wallIcon: '✨' }
+];
+
 const levels = [
   {
     title: 'المستوى 1',
     hint: 'اذهب إلى الخضار في أقصر طريق',
-    board: ['#####', '#S..#', '#.#.#', '#..G#', '#####'],
+    board: ['#.##G', '#S...', '#####', '#####', '#####'],
     tools: ['right', 'down']
   },
   {
     title: 'المستوى 2',
     hint: 'بعض الجدران تمنع الطريق',
-    board: ['#####', '#S#.#', '#...#', '#.#G#', '#####'],
+    board: ['#.###', '#S..#', '###.#', '##G.#', '#####'],
     tools: ['right', 'down']
   },
   {
     title: 'المستوى 3',
-    hint: 'ابدأ بقفزة إلى اليمين، ثم انزل نحو الجزرة',
-    board: ['#####', '#S#.#', '##..#', '###G#', '#####'],
+    hint: 'خطط للقفز والانعطاف للوصول إلى الهدف',
+    board: ['#.###', '.S###', '.#G##', '...##', '#####'],
     tools: ['down', 'jump']
   },
   {
     title: 'المستوى 4',
     hint: 'خطة أفضل من التعميم العشوائي',
-    board: ['#####', '#S..#', '#.##.', '#...G', '#####'],
+    board: ['#.###', '.S###', '.####', '.#G##', '...##'],
     tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 5',
     hint: 'الهدف هو العبور بأمان',
-    board: ['#####', '#S#.#', '#...#', '#...G', '#####'],
+    board: ['#####', '.S###', '.####', '.###.', '....G'],
     tools: ['right', 'down', 'repeat2']
   },
   {
     title: 'المستوى 6',
     hint: 'اتبع الممر المفتوح وتجنب الجدار الأوسط',
-    board: ['#####', '#S..#', '##..#', '#..G#', '#####'],
-    tools: ['right', 'down', 'repeat2'],
-    playerIcon: '🦊',
-    goalIcon: '🍎'
+    board: ['#.####', '.S####', '#..###', '##.###', '##..#G', '###...'],
+    tools: ['right', 'down', 'repeat2']
   },
   {
     title: 'المستوى 7',
     hint: 'تحرك حول الحائط الطويل',
-    board: ['#####', '#S#.#', '#...#', '#.#G#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3'],
-    playerIcon: '🦊',
-    goalIcon: '🍎'
+    board: ['######', '#S####', '..####', '.###.#', '..##G.', '#....#'],
+    tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 8',
     hint: 'خطط للانعطاف قبل الوصول إلى الهدف',
-    board: ['#####', '#S..#', '#.#.#', '#G..#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'jump'],
-    playerIcon: '🦊',
-    goalIcon: '🍎'
+    board: ['#.....', '.S###.', '#####.', '####..', '####.#', '###.G.'],
+    tools: ['right', 'down', 'repeat2', 'jump']
   },
   {
     title: 'المستوى 9',
     hint: 'الممر يلتف حول جدارين',
-    board: ['#####', '#S#.#', '#...#', '#..G#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3'],
-    playerIcon: '🦊',
-    goalIcon: '🍎'
+    board: ['##....', '#S.##.', '#####.', '#####.', '###.#.', '##.G..'],
+    tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 10',
-    hint: 'التسلسل: ضع الأوامر بالترتيب، يمينًا ثم إلى الهدف',
-    board: ['#####', '#S..#', '#.#.#', '#.#G#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3'],
-    playerIcon: '🦊',
-    goalIcon: '🍎'
+    hint: 'حلل الخريطة قبل أن تكتب تسلسل الأوامر',
+    board: ['#.####', '#S.###', '..##.G', '.#...#', '.#.###', '...###'],
+    tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 11',
     hint: 'الحلقات: كرر الأمر نفسه بدل إضافته مرات كثيرة',
-    board: ['#####', '#S#.#', '#...#', '#G..#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump'],
-    playerIcon: '🐱',
-    goalIcon: '🐟'
+    board: ['#.###.G', '.S.###.', '.#####.', '.###...', '.....##', '#######', '#######'],
+    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump']
   },
   {
     title: 'المستوى 12',
     hint: 'التصحيح: اختبر برنامجك، ثم غيّر الأمر الذي يسبب الاصطدام',
-    board: ['#####', '#S..#', '###.#', '#G..#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3'],
-    playerIcon: '🐱',
-    goalIcon: '🐟'
+    board: ['#.#####', '.S.####', '.#####.', '.#####G', '.####..', '.####.#', '......#'],
+    tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 13',
     hint: 'التخطيط: قسّم الطريق إلى مقاطع قصيرة قبل التشغيل',
-    board: ['#####', '#S#.#', '#...#', '#.#G#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump'],
-    playerIcon: '🐱',
-    goalIcon: '🐟'
+    board: ['#######', '#S.....', '######.', '######.', '#......', '#.#####', '#.G####'],
+    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump']
   },
   {
     title: 'المستوى 14',
     hint: 'التكرار: استخدم ×2 أو ×3 عندما تتكرر الحركة نفسها',
-    board: ['#####', '#S#.#', '#..##', '#.G.#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3'],
-    playerIcon: '🐱',
-    goalIcon: '🐟'
+    board: ['#.##...', '.S##.#.', '#....#.', '######.', '####...', '##G..##', '##.####'],
+    tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 15',
     hint: 'الاختبار: شغّل البرنامج، وحدد موضع أول خطأ ثم أصلحه',
-    board: ['#####', '#S#.#', '#...#', '#G..#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump'],
-    playerIcon: '🐱',
-    goalIcon: '🐟'
+    board: ['#.....#', '.S###..', '#.####.', '######.', '####...', '.###.##', 'G....##'],
+    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump']
   },
   {
     title: 'المستوى 16',
     hint: 'تحسين الخوارزمية: حاول الوصول بأوامر أقل باستخدام التكرار',
-    board: ['#####', '#S..#', '###.#', '#..G#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3'],
-    playerIcon: '🐻',
-    goalIcon: '🍯'
+    board: ['##.##...', '.S.#..#.', '##...##.', '#####...', '#####.##', '#####...', '#######G', '#######.'],
+    tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 17',
     hint: 'القفز يتحرك خانتين في اتجاه آخر حركة؛ خطط لاتجاهه أولًا',
-    board: ['#####', '#S#.#', '#...#', '#..G#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump'],
-    playerIcon: '🐻',
-    goalIcon: '🍯'
+    board: ['#....###', '.S##.###', '#.##...#', '.#####.#', 'G####..#', '.####.##', '......##', '########'],
+    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump']
   },
   {
     title: 'المستوى 18',
     hint: 'حل المشكلة: خطط للممرات ثم اكتب الأوامر بالترتيب',
-    board: ['#####', '#S..#', '##..#', '#G..#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3'],
-    playerIcon: '🐻',
-    goalIcon: '🍯'
+    board: ['##...###', '.S.#.###', '#..#....', '#######.', '#######.', '#.#####.', '.G#####.', '#.......'],
+    tools: ['right', 'down', 'repeat2', 'repeat3']
   },
   {
     title: 'المستوى 19',
     hint: 'التصحيح والتحسين: راجع الانعطافات واختصر الحركات المتكررة',
-    board: ['#####', '#S#.#', '#...#', '#G#.#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump'],
-    playerIcon: '🐻',
-    goalIcon: '🍯'
+    board: ['#.########', '.S.#######', '.#########', '..########', '#..######.', '##...###.G', '####...##.', '######.##.', '######.#..', '######...#'],
+    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump']
   },
   {
     title: 'المستوى 20',
-    hint: 'التحدي الأخير: اجمع بين التسلسل والتكرار والقفز للوصول إلى الطاقة',
-    board: ['#####', '#S#.#', '##..#', '#..G#', '#####'],
-    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump'],
-    playerIcon: '🐻',
-    goalIcon: '🍯'
+    hint: 'التحدي الأخير: اجمع بين التسلسل والتكرار والقفز للوصول إلى الجبنة',
+    board: ['#.....####', '.S###.####', '##....####', '##.#######', '##.#######', '##.#######', '...#######', '.#########', '.###.#####', '....G.####'],
+    tools: ['right', 'down', 'repeat2', 'repeat3', 'jump']
   }
 ];
 
@@ -204,25 +181,38 @@ function setFeedback(message, ok = true) {
 
 function animateBoard(outcome) {
   clearTimeout(boardAnimationTimeout);
-  boardWrapElement.classList.remove('maze-fail', 'maze-win');
+  boardWrapElement.classList.remove('maze-fail', 'maze-win', 'maze-arrival');
   void boardWrapElement.offsetWidth;
   boardWrapElement.classList.add(`maze-${outcome}`);
   boardAnimationTimeout = setTimeout(() => {
     boardWrapElement.classList.remove(`maze-${outcome}`);
-  }, 1500);
+  }, outcome === 'win' ? 2200 : 1500);
+}
+
+function getCurrentTheme() {
+  return visualThemes[Math.floor(currentLevel / 5)] || visualThemes[0];
 }
 
 function getCharacterSet() {
-  return {
-    playerIcon: levels[currentLevel].playerIcon || '🐰',
-    goalIcon: levels[currentLevel].goalIcon || '🥕'
-  };
+  return getCurrentTheme();
 }
 
-function renderBoard() {
+function renderBoard(animatePlayer = false) {
   const board = levels[currentLevel].board;
   const characterSet = getCharacterSet();
+  const columns = board[0].length;
+  const gap = columns >= 9 ? 2 : columns >= 7 ? 4 : 6;
+  const padding = columns >= 9 ? 6 : 8;
+  const availableWidth = Math.max(0, boardWrapElement.clientWidth - 24);
+  const cellSize = Math.max(22, Math.min(62, Math.floor(
+    (availableWidth - padding * 2 - gap * (columns - 1)) / columns
+  )));
   boardElement.innerHTML = '';
+  boardElement.style.setProperty('--maze-columns', columns);
+  boardElement.style.setProperty('--maze-gap', `${gap}px`);
+  boardElement.style.setProperty('--maze-padding', `${padding}px`);
+  boardElement.style.setProperty('--maze-cell-size', `${cellSize}px`);
+  boardWrapElement.dataset.theme = characterSet.className;
 
   for (let y = 0; y < board.length; y += 1) {
     for (let x = 0; x < board[y].length; x += 1) {
@@ -232,14 +222,19 @@ function renderBoard() {
 
       if (char === '#') cell.classList.add('wall');
       if (char === 'G') cell.classList.add('goal');
-      if (x === player.x && y === player.y) cell.classList.add('player');
+      const isPlayer = x === player.x && y === player.y;
+      const hasReachedGoal = isPlayer && player.x === goal.x && player.y === goal.y;
+      if (isPlayer) {
+        cell.classList.add('player');
+        if (animatePlayer) cell.classList.add(hasReachedGoal ? 'goal-arrival' : 'player-step');
+      }
 
-      if (x === player.x && y === player.y) {
+      if (isPlayer) {
         cell.textContent = characterSet.playerIcon;
       } else if (char === 'G') {
         cell.textContent = characterSet.goalIcon;
       } else if (char === '#') {
-        cell.textContent = '🧱';
+        cell.textContent = characterSet.wallIcon;
       }
 
       boardElement.appendChild(cell);
@@ -319,7 +314,7 @@ function movePlayer(dx, dy) {
   }
 
   player = { x: nextX, y: nextY };
-  renderBoard();
+  renderBoard(true);
   if (nextX === goal.x && nextY === goal.y) {
     animateBoard('win');
     return 'win';
@@ -553,6 +548,7 @@ document.getElementById('runButton').addEventListener('click', runProgram);
 document.getElementById('clearButton').addEventListener('click', clearProgram);
 document.getElementById('nextLevelButton').addEventListener('click', nextLevel);
 document.getElementById('resetButton').addEventListener('click', resetLevel);
+window.addEventListener('resize', () => renderBoard());
 
 document.querySelectorAll('.help-q').forEach(button => {
   button.addEventListener('click', () => {
