@@ -1049,7 +1049,9 @@
     if (normalized.localOnly) stopCloudProgressSync();
     const { password, pinSalt, pinHash, ...sessionUser } = normalized;
     safeSetItem(AUTH_STORAGE_KEY, JSON.stringify(sessionUser));
-    return normalizeUser(sessionUser);
+    const savedUser = normalizeUser(sessionUser);
+    window.dispatchEvent(new CustomEvent('kids-games-user-changed', { detail: savedUser }));
+    return savedUser;
   }
 
   let localAccountIds = null;
@@ -1073,6 +1075,7 @@
   function logoutUser() {
     stopCloudProgressSync();
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    window.dispatchEvent(new CustomEvent('kids-games-user-changed', { detail: null }));
     return true;
   }
 
@@ -1809,7 +1812,9 @@
     }
   });
   const adminPagePath = new URL('pages/admin/', APP_BASE_URL).pathname;
-  if (!window.location.pathname.startsWith(adminPagePath)) {
+  const authPagePath = new URL('pages/auth/', APP_BASE_URL).pathname;
+  if (!window.location.pathname.startsWith(adminPagePath)
+    && !window.location.pathname.startsWith(authPagePath)) {
     let maintenanceScreen = null;
     let inertPageElements = [];
 
@@ -1824,7 +1829,7 @@
     }
 
     function renderMaintenanceScreen(settings) {
-      if (!settings.enabled) {
+      if (window.KidsGamesAuth?.getCurrentUser?.()?.role === 'admin' || !settings.enabled) {
         hideMaintenanceScreen();
         return;
       }
@@ -1920,6 +1925,15 @@
         expectedTime.hidden = true;
       }
     }
+
+    window.addEventListener('kids-games-user-changed', () => {
+      window.KidsGamesCloudReady.then(cloud => {
+        if (!cloud?.enabled || typeof cloud.getMaintenanceMode !== 'function') return;
+        cloud.getMaintenanceMode().then(renderMaintenanceScreen).catch(error => {
+          console.error('Unable to refresh maintenance mode after account change:', error);
+        });
+      }).catch(error => console.error('Unable to initialize maintenance refresh:', error));
+    });
 
     window.KidsGamesCloudReady.then(cloud => {
       if (!cloud?.enabled || typeof cloud.watchMaintenanceMode !== 'function') return;
