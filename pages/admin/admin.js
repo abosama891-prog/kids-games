@@ -117,27 +117,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           lockedGames: Array.from(gameSettingsForm.querySelectorAll('input[type="checkbox"]:checked'))
             .map(input => input.value)
         };
-        let savedLocally = false;
-
         try {
-          window.KidsGames.saveGameSettings(settings);
-          savedLocally = true;
+          if (!cloudApi || currentUser.role !== 'admin'
+            || !cloudApi.isCurrentUserLinked?.()) {
+            throw new Error('سجّل الدخول بحساب مدير Firebase لحفظ إعدادات الألعاب.');
+          }
           gameSettingsMessage.className = '';
           gameSettingsMessage.textContent = 'جارٍ حفظ حالة الألعاب...';
-
-          if (cloudApi && currentUser.role === 'admin'
-            && cloudApi.isCurrentUserLinked?.()) {
-            await cloudApi.saveGameSettings(settings);
-            gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب ومزامنتها مع جميع المستخدمين.';
-          } else {
-            gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب على هذا الجهاز فقط.';
-          }
+          await cloudApi.saveGameSettings(settings);
+          gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب في Firebase ومزامنتها مع جميع المستخدمين.';
         } catch (error) {
           console.error('Unable to save game availability settings:', error);
           gameSettingsMessage.className = 'game-settings-message error';
-          gameSettingsMessage.textContent = savedLocally
-            ? 'حُفظت الإعدادات على هذا الجهاز، وتعذرت مزامنتها. تحقق من اتصال Firebase ثم أعد المحاولة.'
-            : 'تعذر حفظ الإعدادات على هذا الجهاز. تحقق من مساحة التخزين ثم أعد المحاولة.';
+          gameSettingsMessage.textContent = error.message || 'تعذر حفظ الإعدادات في Firebase. تحقق من اتصال المدير وصلاحياته ثم أعد المحاولة.';
         }
       });
     return gameSettingsSaveQueue;

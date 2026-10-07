@@ -428,16 +428,39 @@
   }
 
   async function getEffectiveGameSettings() {
-    if (isLocalOnlySession()) return getGameSettings();
     const cloud = await window.KidsGamesCloudReady;
-    if (!cloud.enabled || !cloud.isCurrentUserLinked?.()) return getGameSettings();
+    if (!cloud.enabled || typeof cloud.getGameSettings !== 'function') return getGameSettings();
     try {
       const savedSettings = await cloud.getGameSettings();
-      return savedSettings ? saveGameSettings(savedSettings) : getGameSettings();
+      if (!savedSettings) return getGameSettings();
+      const normalized = normalizeGameSettings(savedSettings);
+      try {
+        saveGameSettings(normalized);
+      } catch (error) {
+        console.error('Unable to cache cloud game settings on this device:', error);
+      }
+      return normalized;
     } catch (error) {
       console.error('Unable to load cloud game settings; using this device copy:', error);
       return getGameSettings();
     }
+  }
+
+  function watchEffectiveGameSettings(onChange) {
+    if (typeof onChange !== 'function') throw new TypeError('A game settings listener is required.');
+    window.KidsGamesCloudReady.then(cloud => {
+      if (!cloud?.enabled || typeof cloud.watchGameSettings !== 'function') return;
+      cloud.watchGameSettings(settings => {
+        const normalized = normalizeGameSettings(settings);
+        try {
+          saveGameSettings(normalized);
+        } catch (error) {
+          console.error('Unable to cache cloud game settings on this device:', error);
+        }
+        window.dispatchEvent(new CustomEvent('kids-games-game-settings', { detail: normalized }));
+        onChange(normalized);
+      }, error => console.error('Unable to watch shared game settings:', error));
+    }).catch(error => console.error('Unable to initialize game settings listener:', error));
   }
 
   function renderGameHeader(gameKey, levelNumber) {
@@ -534,6 +557,7 @@
     getGameSettings,
     saveGameSettings,
     getEffectiveGameSettings,
+    watchEffectiveGameSettings,
     syncCloud: syncCloudNow,
     renderGameHeader,
     showLevelVictory,
@@ -1671,7 +1695,7 @@
           return unlockAt;
         },
         async getGameSettings() {
-          const snapshot = await database.collection('settings').doc('games').get();
+          const snapshot = await database.collection('settings').doc('games').get({ source: 'server' });
           if (!snapshot.exists) return null;
           return snapshot.data().availability || null;
         },
@@ -1681,6 +1705,16 @@
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
           return availability;
+        },
+        watchGameSettings(onChange, onError) {
+          if (typeof onChange !== 'function') throw new TypeError('A game settings listener is required.');
+          return database.collection('settings').doc('games').onSnapshot(snapshot => {
+            if (!snapshot.exists) return;
+            onChange(snapshot.data().availability || { lockedGames: [] });
+          }, error => {
+            if (typeof onError === 'function') onError(error);
+            else console.error('Unable to watch game settings:', error);
+          });
         },
         async getMaintenanceMode() {
           const snapshot = await database.collection('settings').doc('site').get();
@@ -1893,6 +1927,15 @@
       const maintenanceUrl = new URL('pages/games/maintenance.html', APP_BASE_URL);
       maintenanceUrl.searchParams.set('game', currentGame.key);
       maintenanceUrl.searchParams.set('verify', 'failed');
+      window.location.replace(maintenanceUrl.href);
+    });
+  }
+
+  if (currentUser?.role !== 'admin') {
+    window.KidsGames.watchEffectiveGameSettings(settings => {
+      if (!currentGame || !settings.lockedGames.includes(currentGame.key)) return;
+      const maintenanceUrl = new URL('pages/games/maintenance.html', APP_BASE_URL);
+      maintenanceUrl.searchParams.set('game', currentGame.key);
       window.location.replace(maintenanceUrl.href);
     });
   }

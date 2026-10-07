@@ -121,7 +121,7 @@ service cloud.firestore {
     }
 
     match /settings/games {
-      allow read: if signedIn();
+      allow read: if true;
       allow create, update: if activeAdmin()
         && request.resource.data.keys().hasOnly(['availability', 'updatedAt'])
         && request.resource.data.availability.keys().hasAll(['lockedGames'])

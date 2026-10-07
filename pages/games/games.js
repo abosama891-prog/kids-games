@@ -18,6 +18,16 @@ window.KidsGames.getEffectiveGameSettings().then(settings => {
   message.hidden = false;
 });
 
+window.addEventListener('kids-games-game-settings', event => {
+  const settings = event.detail;
+  const locked = unavailableGame && settings.lockedGames.includes(unavailableGame.key);
+  if (locked && !isAdmin) {
+    window.location.replace(getMaintenanceHref(unavailableGame.key));
+    return;
+  }
+  renderGames(settings);
+});
+
 function getMaintenanceHref(gameKey) {
   const url = new URL('maintenance.html', window.location.href);
   url.searchParams.set('game', gameKey);
