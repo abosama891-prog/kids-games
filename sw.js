@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'kids-games-';
-const APP_VERSION = '2026.10.07.08';
+const APP_VERSION = '2026.10.07.09';
 const CACHE_NAME = `${CACHE_PREFIX}v${APP_VERSION}`;
 const APP_BASE_URL = new URL('./', self.location);
 let resolveInstallWait;

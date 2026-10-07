@@ -199,9 +199,34 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.KidsGames.saveGameSettings(settings);
           const errorMessage = String(error?.message || 'تعذر حفظ الإعدادات في Firebase.');
           gameSettingsMessage.className = 'game-settings-message error';
-          gameSettingsMessage.textContent = errorMessage.includes('على هذا الجهاز فقط')
-            ? errorMessage
-            : `${errorMessage} حُفظت الحالة على هذا الجهاز فقط؛ أعد المحاولة للمزامنة.`;
+          if (error?.code === 'permission-denied') {
+            let authorizationMessage = `رفضت قواعد Firestore الحفظ. تحقق من الملف users/${cloudApi?.getCurrentUserId?.() || currentUser.id}: يجب أن يكون role=admin وstatus=active.`;
+            try {
+              const authorization = await withTimeout(
+                cloudApi.getAdminAuthorizationStatus(),
+                remainingTime(),
+                'تعذر التحقق من صلاحية المدير قبل انتهاء المهلة.'
+              );
+              if (!authorization.authenticated) {
+                authorizationMessage = 'لا توجد جلسة Firebase نشطة. سجّل الدخول بحساب المدير السحابي.';
+              } else if (authorization.uid !== currentUser.id) {
+                authorizationMessage = `UID جلسة Firebase (${authorization.uid}) لا يطابق UID الحساب الحالي (${currentUser.id}). سجّل الدخول بالحساب السحابي الصحيح.`;
+              } else if (!authorization.profileExists
+                || authorization.profileRole !== 'admin'
+                || authorization.profileStatus !== 'active') {
+                authorizationMessage = `صلاحية Firestore غير مكتملة للـ UID ${authorization.uid}: يلزم ملف users/${authorization.uid} موجودًا وبالقيم role=admin وstatus=active.`;
+              } else {
+                authorizationMessage = `الملف السحابي للمدير نشط، لكن Firestore رفض الكتابة رغم ذلك (UID: ${authorization.uid}). تحقق من نشر القواعد على المشروع ${cloudApi.projectId} ومن إعدادات القاعدة.`;
+              }
+            } catch (diagnosticError) {
+              console.error('Unable to diagnose Firestore permission failure:', diagnosticError);
+            }
+            gameSettingsMessage.textContent = `${authorizationMessage} حُفظت الحالة على هذا الجهاز فقط؛ لم تتم مزامنتها.`;
+          } else {
+            gameSettingsMessage.textContent = errorMessage.includes('على هذا الجهاز فقط')
+              ? errorMessage
+              : `${errorMessage} حُفظت الحالة على هذا الجهاز فقط؛ أعد المحاولة للمزامنة.`;
+          }
         } catch (localError) {
           console.error('Unable to save game settings locally:', localError);
           gameSettingsMessage.className = 'game-settings-message error';

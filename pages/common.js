@@ -1539,6 +1539,24 @@
             && auth.currentUser.uid === user.id
             && user.cloudUid === auth.currentUser.uid);
         },
+        async getAdminAuthorizationStatus() {
+          const firebaseUser = auth.currentUser;
+          if (!firebaseUser) return { authenticated: false, uid: null, profileExists: false };
+          const [token, profileSnapshot] = await Promise.all([
+            firebaseUser.getIdTokenResult(),
+            database.collection('users').doc(firebaseUser.uid).get({ source: 'server' })
+          ]);
+          const profile = profileSnapshot.exists ? profileSnapshot.data() : {};
+          return {
+            authenticated: true,
+            uid: firebaseUser.uid,
+            claimsAdmin: token.claims.admin === true,
+            claimsRole: token.claims.role || null,
+            profileExists: profileSnapshot.exists,
+            profileRole: profile.role || null,
+            profileStatus: profile.status || null
+          };
+        },
         async signInWithUsername(username, password) {
           const localUser = findUserByIdentifier(username);
           let previousLocalProgress = null;
