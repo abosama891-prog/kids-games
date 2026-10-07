@@ -121,11 +121,17 @@
 
   let cloudSyncQueue = Promise.resolve();
 
-  function syncCloudProgress(progress = readProgress()) {
+  function syncCloudProgress(progress = readProgress(), recordFullSync = false) {
     const write = cloudSyncQueue.then(async () => {
       const cloud = await window.KidsGamesCloudReady;
       if (!cloud?.enabled || typeof cloud.saveProgress !== 'function') return false;
-      return cloud.saveProgress(progress);
+      const saved = await cloud.saveProgress(readProgress() || progress);
+      if (!saved) throw new Error('No matching signed-in Firebase account is available.');
+      if (saved && recordFullSync) {
+        safeSetItem(STORAGE_KEYS.fullSyncAt, new Date().toISOString());
+        window.dispatchEvent(new Event('kids-games-full-sync'));
+      }
+      return saved;
     });
     cloudSyncQueue = write.catch(error => {
       console.error('Firebase progress synchronization failed:', error);
@@ -135,10 +141,11 @@
 
   async function syncCloudNow() {
     const cloud = await window.KidsGamesCloudReady;
-    if (!cloud?.enabled) throw new Error('Firebase is unavailable; local progress is still saved.');
-    await cloud.saveProgress(readProgress());
-    safeSetItem(STORAGE_KEYS.fullSyncAt, new Date().toISOString());
-    window.dispatchEvent(new Event('kids-games-full-sync'));
+    if (!cloud?.enabled || typeof cloud.saveProgress !== 'function') {
+      throw new Error('Firebase is unavailable; local progress is still saved.');
+    }
+    const synced = await syncCloudProgress(readProgress(), true);
+    if (!synced) throw new Error('Cloud synchronization did not complete.');
     return true;
   }
 
@@ -146,7 +153,9 @@
     safeSetItem(progressStorageKey(), JSON.stringify(nextState));
     safeSetItem(STORAGE_KEYS.partialSyncAt, new Date().toISOString());
     window.dispatchEvent(new Event('kids-games-partial-sync'));
-    syncCloudProgress(nextState).catch(() => {});
+    syncCloudProgress(nextState).catch(error => {
+      console.error('Progress remains saved locally; cloud synchronization will retry:', error);
+    });
     return nextState;
   }
 
@@ -1370,6 +1379,64 @@
           const credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
           return syncAccount(credential.user, false, previousLocalProgress);
         },
+        async adminCreateAccount(username, password, role) {
+          const admin = auth.currentUser;
+          if (!admin || getCurrentUser()?.id !== admin.uid || getCurrentUser()?.role !== 'admin') {
+            throw new Error('يجب تسجيل الدخول بحساب مدير سحابي لإنشاء حساب.');
+          }
+          if (!['child', 'parent', 'teacher'].includes(role)) {
+            throw new TypeError('إنشاء حساب مدير يحتاج إلى خدمة موثوقة.');
+          }
+          const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
+          if (!/^[a-z0-9._-]{1,32}$/.test(normalizedUsername)) {
+            throw new TypeError('اسم المستخدم يجب أن يكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -.');
+          }
+          if (typeof password !== 'string' || password.length < 6 || password.length > 128) {
+            throw new TypeError('كلمة المرور يجب أن تتكون من 6 إلى 128 حرفًا.');
+          }
+
+          const appName = `kids-games-admin-create-${uuid()}`;
+          const secondaryApp = firebase.initializeApp(config, appName);
+          const secondaryAuth = secondaryApp.auth();
+          let createdUser = null;
+          try {
+            await secondaryAuth.setPersistence(firebase.auth.Auth.Persistence.NONE);
+            const credential = await secondaryAuth.createUserWithEmailAndPassword(
+              usernameEmail(normalizedUsername),
+              password
+            );
+            createdUser = credential.user;
+            await createdUser.updateProfile({ displayName: normalizedUsername });
+            await secondaryApp.firestore().collection('users').doc(createdUser.uid).set({
+              username: normalizedUsername,
+              email: createdUser.email || '',
+              fullName: normalizedUsername,
+              role,
+              avatar: 'child',
+              provider: 'local',
+              status: 'active',
+              progress: cloneState(defaultState),
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            return { uid: createdUser.uid, username: normalizedUsername, role, status: 'active' };
+          } catch (error) {
+            if (createdUser) {
+              try {
+                await createdUser.delete();
+              } catch (cleanupError) {
+                console.error('Unable to remove Auth account after profile creation failed:', cleanupError);
+              }
+            }
+            throw error;
+          } finally {
+            try {
+              await secondaryAuth.signOut();
+              await firebase.app(appName).delete();
+            } catch (cleanupError) {
+              console.error('Unable to clean up secondary Firebase Auth session:', cleanupError);
+            }
+          }
+        },
         async createAccount(username, pin, fullName, role, avatar) {
           const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
           const normalizedFullName = String(fullName || '').trim();
@@ -1488,8 +1555,14 @@
   window.KidsGamesCloudReady = initializeCloud();
   window.KidsGamesCloudReady.then(cloud => {
     if (!cloud?.enabled) return;
-    syncCloudProgress().catch(() => {});
-    window.setInterval(() => syncCloudProgress().catch(() => {}), 5 * 60 * 1000);
+    syncCloudProgress(readProgress(), true).catch(error => {
+      console.error('Initial cloud progress synchronization failed:', error);
+    });
+    window.setInterval(() => {
+      syncCloudProgress(readProgress(), true).catch(error => {
+        console.error('Scheduled cloud progress synchronization failed:', error);
+      });
+    }, 5 * 60 * 1000);
   }).catch(error => console.error('Unable to schedule cloud progress synchronization:', error));
 
   const currentGame = gameCatalog.find(game =>

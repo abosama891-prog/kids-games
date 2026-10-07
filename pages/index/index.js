@@ -46,6 +46,22 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('kids-games-full-sync', updateSyncStatus);
   window.addEventListener('kids-games-partial-sync', updateSyncStatus);
 
+  const syncCloudButton = document.getElementById('sync-cloud-button');
+  const syncCloudMessage = document.getElementById('sync-cloud-message');
+  syncCloudButton.addEventListener('click', async () => {
+    syncCloudButton.disabled = true;
+    syncCloudMessage.textContent = 'جارٍ المزامنة...';
+    try {
+      await window.KidsGames.syncCloud();
+      syncCloudMessage.textContent = 'تم تحديث التقدم سحابيًا.';
+    } catch (error) {
+      console.error('Manual cloud progress synchronization failed:', error);
+      syncCloudMessage.textContent = 'تعذرت المزامنة؛ تقدمك محفوظ على هذا الجهاز.';
+    } finally {
+      syncCloudButton.disabled = false;
+    }
+  });
+
   const siteNav = document.getElementById('site-nav');
   const siteNavToggle = document.getElementById('site-nav-toggle');
   const navHiddenKey = window.KidsGames.STORAGE_KEYS.siteNavHidden;

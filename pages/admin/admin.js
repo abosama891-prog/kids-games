@@ -464,11 +464,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       status: isEditing ? statusInput.value : 'active'
     };
     if (passwordInput.value) payload.password = passwordInput.value;
-    if (!isEditing) {
-      payload.provider = 'local';
-      payload.localOnly = true;
-      payload.password = passwordInput.value;
-    }
+    if (!isEditing) payload.password = passwordInput.value;
     if (!/^[a-z0-9._-]{1,32}$/i.test(payload.username)) {
       showMessage('اسم المستخدم يجب أن يكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -.', 'error');
       usernameInput.focus();
@@ -536,15 +532,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderUsers();
       showMessage('تم تحديث بيانات الحساب محليًا.');
     } else {
-      if (cloudAccounts && payload.role === 'admin') {
-        showMessage('لا يمكن إنشاء مدير محلي من جلسة Firebase؛ إنشاء حساب مدير يحتاج إلى خدمة موثوقة.', 'error');
+      if (!cloudAccounts || !cloudApi) {
+        showMessage('لإنشاء حساب متاح من أي مكان، سجّل الدخول بحساب مدير Firebase نشط.', 'error');
+        return;
+      }
+      if (payload.role === 'admin') {
+        showMessage('إنشاء حساب مدير يحتاج إلى خدمة موثوقة؛ اختر طفلًا أو ولي أمر أو معلمًا.', 'error');
         return;
       }
       let added;
       try {
-        added = window.KidsGamesAuth.addUser(payload);
+        added = await cloudApi.adminCreateAccount(payload.username, payload.password, payload.role);
       } catch (error) {
-        console.error('Unable to create local account:', error);
+        console.error('Unable to create account:', error);
         showMessage(error.message || 'تعذر إنشاء الحساب.', 'error');
         return;
       }
@@ -553,8 +553,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       userDialog.close();
-      renderUsers();
-      showMessage(`تمت إضافة ${added.username} إلى حسابات هذا الجهاز فقط.`);
+      try {
+        await refreshCloudAccounts();
+        showMessage(`تم إنشاء حساب ${added.username} في Firebase بنجاح.`);
+      } catch (error) {
+        console.error('Account was created, but the cloud account list could not be refreshed:', error);
+        showMessage(`تم إنشاء الحساب ${added.username}، لكن تعذر تحديث القائمة. أعد تحميل الصفحة.`, 'error');
+      }
     }
   });
 

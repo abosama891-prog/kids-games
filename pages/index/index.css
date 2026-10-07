@@ -335,12 +335,56 @@ body {
 }
 
 .sync-status p {
+  flex: 1 1 240px;
   min-width: 0;
+  margin: 0;
   line-height: 1.6;
+}
+
+.sync-status-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+
+.sync-status-actions button {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: #e8f4f2;
+  color: #176b63;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sync-status-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.sync-status-actions span {
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .sync-status span:last-child {
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .sync-status {
+    flex-wrap: wrap;
+  }
+
+  .sync-status-actions {
+    width: 100%;
+    justify-content: flex-start;
+    margin-inline-start: 0;
+  }
 }
 
 .stats {

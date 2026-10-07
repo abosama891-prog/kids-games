@@ -44,6 +44,10 @@
       <section class="sync-status" aria-label="حالة تحديث التقدم">
         <p><span aria-hidden="true">☁️</span> <span id="last-full-sync">آخر تحديث كلي: لم تتم مزامنة كاملة بعد</span></p>
         <p><span aria-hidden="true">🎮</span> <span id="last-partial-sync">آخر تحديث جزئي: لا توجد حركات جديدة</span></p>
+        <div class="sync-status-actions">
+          <button id="sync-cloud-button" type="button">☁️ تحديث سحابي</button>
+          <span id="sync-cloud-message" role="status" aria-live="polite"></span>
+        </div>
       </section>
 
       <section class="stats" aria-label="إحصاءات المشروع">
