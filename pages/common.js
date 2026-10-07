@@ -120,13 +120,22 @@
   }
 
   let cloudSyncQueue = Promise.resolve();
+  let cloudProgressSyncInterval = null;
+
+  function stopCloudProgressSync() {
+    if (cloudProgressSyncInterval === null) return;
+    window.clearInterval(cloudProgressSyncInterval);
+    cloudProgressSyncInterval = null;
+  }
 
   function syncCloudProgress(progress = readProgress(), recordFullSync = false) {
+    if (isLocalOnlySession()) return Promise.resolve(false);
     const write = cloudSyncQueue.then(async () => {
       const cloud = await window.KidsGamesCloudReady;
       if (!cloud?.enabled || typeof cloud.saveProgress !== 'function') return false;
+      if (!cloud.isCurrentUserLinked?.()) return false;
       const saved = await cloud.saveProgress(readProgress() || progress);
-      if (!saved) throw new Error('No matching signed-in Firebase account is available.');
+      if (!saved) return false;
       if (saved && recordFullSync) {
         safeSetItem(STORAGE_KEYS.fullSyncAt, new Date().toISOString());
         window.dispatchEvent(new Event('kids-games-full-sync'));
@@ -139,9 +148,22 @@
     return write;
   }
 
+  function startCloudProgressSync() {
+    if (cloudProgressSyncInterval !== null) return;
+    syncCloudProgress(readProgress(), true).catch(error => {
+      console.error('Initial cloud progress synchronization failed:', error);
+    });
+    cloudProgressSyncInterval = window.setInterval(() => {
+      syncCloudProgress(readProgress(), true).catch(error => {
+        console.error('Scheduled cloud progress synchronization failed:', error);
+      });
+    }, 5 * 60 * 1000);
+  }
+
   async function syncCloudNow() {
+    if (isLocalOnlySession()) return false;
     const cloud = await window.KidsGamesCloudReady;
-    if (!cloud?.enabled || typeof cloud.saveProgress !== 'function') {
+    if (!cloud?.enabled || typeof cloud.saveProgress !== 'function' || !cloud.isCurrentUserLinked?.()) {
       throw new Error('Firebase is unavailable; local progress is still saved.');
     }
     const synced = await syncCloudProgress(readProgress(), true);
@@ -366,8 +388,9 @@
   }
 
   async function getEffectiveGameSettings() {
+    if (isLocalOnlySession()) return getGameSettings();
     const cloud = await window.KidsGamesCloudReady;
-    if (!cloud.enabled) return getGameSettings();
+    if (!cloud.enabled || !cloud.isCurrentUserLinked?.()) return getGameSettings();
     try {
       const savedSettings = await cloud.getGameSettings();
       return savedSettings ? saveGameSettings(savedSettings) : getGameSettings();
@@ -782,7 +805,8 @@
       pinHash: user.pinHash || '',
       provider: user.provider || 'local',
       status: user.status === 'inactive' ? 'inactive' : 'active',
-      localOnly: user.localOnly === true
+      localOnly: user.localOnly === true,
+      cloudUid: typeof user.cloudUid === 'string' ? user.cloudUid : null
     };
   }
 
@@ -903,12 +927,32 @@
 
   function setCurrentUser(user) {
     const normalized = normalizeUser(user);
+    if (normalized.localOnly) stopCloudProgressSync();
     const { password, pinSalt, pinHash, ...sessionUser } = normalized;
     safeSetItem(AUTH_STORAGE_KEY, JSON.stringify(sessionUser));
     return normalizeUser(sessionUser);
   }
 
+  let localAccountIds = null;
+
+  function isLocalOnlySession(user = getCurrentUser()) {
+    if (!user) return true;
+    if (user.cloudUid === user.id) return false;
+    if (user.localOnly || user.id.endsWith('-demo')) return true;
+    if (localAccountIds?.has(user.id)) return true;
+    if (localAccountIds) return false;
+    localAccountIds = new Set();
+    try {
+      window.KidsGamesAuth?.getUsers?.().forEach(account => localAccountIds.add(account.id));
+      return localAccountIds.has(user.id);
+    } catch (error) {
+      console.error('Unable to identify the local account before cloud synchronization:', error);
+      return false;
+    }
+  }
+
   function logoutUser() {
+    stopCloudProgressSync();
     localStorage.removeItem(AUTH_STORAGE_KEY);
     return true;
   }
@@ -945,7 +989,7 @@
     if (!user.password || String(user.password).length === 0) return null;
     if (user.provider && user.provider !== 'local') return null;
 
-    return setCurrentUser(user);
+    return setCurrentUser({ ...user, localOnly: true, cloudUid: null });
   }
 
   function encodeBytes(bytes) {
@@ -1029,7 +1073,7 @@
     if (actual.length !== expected.length) return null;
     let mismatch = 0;
     for (let index = 0; index < actual.length; index += 1) mismatch |= actual[index] ^ expected[index];
-    return mismatch === 0 ? setCurrentUser(user) : null;
+    return mismatch === 0 ? setCurrentUser({ ...user, localOnly: true, cloudUid: null }) : null;
   }
 
   function canAccess(permission, user = getCurrentUser()) {
@@ -1306,6 +1350,7 @@
         const provider = firebaseUser.providerData.some(item => item.providerId === 'google.com') ? 'google' : 'local';
         const user = normalizeUser({
           id: firebaseUser.uid,
+          cloudUid: firebaseUser.uid,
           username: cloudData.username || token.claims.username || (firebaseUser.email || '').split('@')[0],
           email: firebaseUser.email || '',
           fullName: cloudData.fullName || initialProfile?.fullName || firebaseUser.displayName || cloudData.username || firebaseUser.email || 'مستخدم Google',
@@ -1337,6 +1382,7 @@
           progress,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         }, { merge: true });
+        startCloudProgressSync();
 
         if (reloadIfChanged && changed) {
           const reloadKey = STORAGE_KEYS.cloudSyncReload(firebaseUser.uid);
@@ -1353,7 +1399,9 @@
       }
 
       auth.onAuthStateChanged(firebaseUser => {
-        if (firebaseUser && !accountCreationInProgress) {
+        const appUser = getCurrentUser();
+        if (firebaseUser && appUser?.id === firebaseUser.uid
+          && !isLocalOnlySession(appUser) && !accountCreationInProgress) {
           syncAccount(firebaseUser, true).catch(error => console.error(error));
         }
       });
@@ -1363,6 +1411,12 @@
         projectId: config.projectId,
         getCurrentUserId() {
           return auth.currentUser?.uid || null;
+        },
+        isCurrentUserLinked() {
+          const user = getCurrentUser();
+          return Boolean(auth.currentUser && user
+            && auth.currentUser.uid === user.id
+            && user.cloudUid === auth.currentUser.uid);
         },
         async signInWithUsername(username, password) {
           const localUser = findUserByIdentifier(username);
@@ -1710,18 +1764,6 @@
       });
     }).catch(error => console.error('Unable to initialize maintenance mode check:', error));
   }
-
-  window.KidsGamesCloudReady.then(cloud => {
-    if (!cloud?.enabled) return;
-    syncCloudProgress(readProgress(), true).catch(error => {
-      console.error('Initial cloud progress synchronization failed:', error);
-    });
-    window.setInterval(() => {
-      syncCloudProgress(readProgress(), true).catch(error => {
-        console.error('Scheduled cloud progress synchronization failed:', error);
-      });
-    }, 5 * 60 * 1000);
-  }).catch(error => console.error('Unable to schedule cloud progress synchronization:', error));
 
   const currentGame = gameCatalog.find(game =>
     new URL(game.href).pathname.replace(/\/+$/, '').toLowerCase() ===

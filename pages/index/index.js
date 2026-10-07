@@ -52,8 +52,10 @@ document.addEventListener('DOMContentLoaded', () => {
     syncCloudButton.disabled = true;
     syncCloudMessage.textContent = 'جارٍ المزامنة...';
     try {
-      await window.KidsGames.syncCloud();
-      syncCloudMessage.textContent = 'تم تحديث التقدم سحابيًا.';
+      const synced = await window.KidsGames.syncCloud();
+      syncCloudMessage.textContent = synced
+        ? 'تم تحديث التقدم سحابيًا.'
+        : 'هذا حساب محلي؛ تقدمك محفوظ على هذا الجهاز.';
     } catch (error) {
       console.error('Manual cloud progress synchronization failed:', error);
       syncCloudMessage.textContent = 'تعذرت المزامنة؛ تقدمك محفوظ على هذا الجهاز.';

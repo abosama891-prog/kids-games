@@ -125,10 +125,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           gameSettingsMessage.className = '';
           gameSettingsMessage.textContent = 'جارٍ حفظ حالة الألعاب...';
 
-          const cloud = await window.KidsGamesCloudReady;
-          if (cloud.enabled && currentUser.role === 'admin'
-            && cloud.getCurrentUserId?.() === currentUser.id) {
-            await cloud.saveGameSettings(settings);
+          if (cloudApi && currentUser.role === 'admin'
+            && cloudApi.isCurrentUserLinked?.()) {
+            await cloudApi.saveGameSettings(settings);
             gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب ومزامنتها مع جميع المستخدمين.';
           } else {
             gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب على هذا الجهاز فقط.';
@@ -616,8 +615,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (logoutButton) {
     logoutButton.addEventListener('click', async () => {
       try {
-        const cloud = await window.KidsGamesCloudReady;
-        if (cloud.enabled && cloud.getCurrentUserId?.()) await cloud.signOut();
+        if (cloudApi?.isCurrentUserLinked?.()) await cloudApi.signOut();
         else window.KidsGamesAuth.logoutUser();
         window.location.href = '../auth/index.html';
       } catch (error) {
@@ -628,13 +626,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   renderUsers();
+  let localAccountExists = currentUser.localOnly || currentUser.id.endsWith('-demo');
+  try {
+    localAccountExists ||= window.KidsGamesAuth.getUsers().some(account => account.id === currentUser.id);
+  } catch (error) {
+    console.error('Unable to identify the admin account source:', error);
+  }
+  if (!currentUser.cloudUid && localAccountExists) {
+    connectionStatus.className = 'connection-status offline';
+    connectionStatus.textContent = 'هذا حساب محلي؛ لا توجد مزامنة Firebase. الحسابات والإعدادات المحلية متاحة على هذا الجهاز.';
+    maintenanceStatus.textContent = 'وضع الصيانة السحابي متاح بعد تسجيل الدخول بحساب مدير Firebase.';
+    return;
+  }
   connectionStatus.textContent = 'جارٍ التحقق من ربط الحساب...';
 
   let timeoutId;
   try {
     const loadCloudAdminData = async () => {
       const cloud = await window.KidsGamesCloudReady;
-      if (!cloud.enabled || cloud.getCurrentUserId?.() !== currentUser.id || currentUser.role !== 'admin') {
+      if (!cloud.enabled || !cloud.isCurrentUserLinked?.()
+        || cloud.getCurrentUserId?.() !== currentUser.id || currentUser.role !== 'admin') {
         return { cloud };
       }
 
