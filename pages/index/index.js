@@ -45,13 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
     syncCloudButton.disabled = true;
     syncCloudMessage.textContent = 'جارٍ المزامنة...';
     try {
-      const synced = await window.KidsGames.syncCloud();
-      if (!synced) {
+      const result = await window.KidsGames.syncCloud();
+      if (result.status === 'local-only') {
         syncCloudMessage.textContent = 'هذا حساب محلي؛ تقدمك محفوظ على هذا الجهاز.';
         return;
       }
       updateProgressStats();
-      syncCloudMessage.textContent = 'تم جلب التقدم وحفظه على الجهاز والسحابة.';
+      updateSyncStatus();
+      syncCloudMessage.textContent = result.status === 'updated'
+        ? 'تم استيراد تقدم جديد وحفظه على الجهاز والسحابة.'
+        : 'لا يوجد تحديث جديد؛ تقدمك المحلي محدث بالفعل.';
     } catch (error) {
       console.error('Manual cloud progress synchronization failed:', error);
       syncCloudMessage.textContent = 'تعذرت المزامنة؛ تقدمك محفوظ على هذا الجهاز.';

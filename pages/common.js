@@ -161,7 +161,7 @@
   }
 
   async function syncCloudNow() {
-    if (isLocalOnlySession()) return false;
+    if (isLocalOnlySession()) return { status: 'local-only' };
     const sync = cloudSyncQueue.then(async () => {
       const cloud = await window.KidsGamesCloudReady;
       if (!cloud?.enabled
@@ -173,6 +173,26 @@
       const localProgress = readProgress();
       const cloudProgress = await cloud.getProgress();
       const progress = cloudProgress ? mergeProgress(localProgress, cloudProgress) : localProgress;
+      const progressSignature = value => JSON.stringify({
+        stars: Number(value.stars) || 0,
+        unattributedStars: Number(value.unattributedStars) || 0,
+        games: gameCatalog.map(game => {
+          const gameProgress = value[game.key] || {};
+          const completed = Array.isArray(gameProgress.completed)
+            ? [...new Set(gameProgress.completed.map(Number).filter(level =>
+              Number.isInteger(level) && level >= 1 && level <= game.levels
+            ))].sort((a, b) => a - b)
+            : [];
+          return [
+            game.key,
+            Number(gameProgress.currentLevel) || 1,
+            Number(gameProgress.unlocked) || 1,
+            completed,
+            Number(gameProgress.stars) || 0
+          ];
+        })
+      });
+      const hasNewProgress = progressSignature(progress) !== progressSignature(localProgress);
       if (!safeSetItem(progressStorageKey(), JSON.stringify(progress))) {
         throw new Error('Unable to update saved progress on this device.');
       }
@@ -183,7 +203,7 @@
       safeSetItem(STORAGE_KEYS.partialSyncAt, new Date().toISOString());
       window.dispatchEvent(new Event('kids-games-full-sync'));
       window.dispatchEvent(new Event('kids-games-partial-sync'));
-      return true;
+      return { status: hasNewProgress ? 'updated' : 'unchanged' };
     });
     cloudSyncQueue = sync.catch(error => {
       console.error('Manual Firebase progress synchronization failed:', error);
@@ -1717,7 +1737,7 @@
           if (!auth.currentUser || !user || auth.currentUser.uid !== user.id) {
             throw new Error('يجب تسجيل الدخول بحساب سحابي لمزامنة التقدم.');
           }
-          const snapshot = await database.collection('users').doc(user.id).get();
+          const snapshot = await database.collection('users').doc(user.id).get({ source: 'server' });
           return snapshot.exists ? snapshot.data().progress || null : null;
         }
       };
