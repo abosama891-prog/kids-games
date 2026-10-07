@@ -100,13 +100,15 @@ document.addEventListener('DOMContentLoaded', () => {
     submitButton.disabled = true;
     try {
       const cloud = await cloudReady;
-      const localAdmin = window.KidsGamesAuth.findUserByIdentifier(username);
-      const isLocalAdmin = localAdmin?.id === 'admin-demo'
-        && localAdmin.role === 'admin'
-        && localAdmin.provider === 'local';
+      const localAccount = window.KidsGamesAuth.findUserByIdentifier(username);
+      const isLocalAdmin = localAccount?.id === 'admin-demo'
+        && localAccount.role === 'admin'
+        && localAccount.provider === 'local';
+      const isLocalPin = /^\d{4}$/.test(password)
+        || (localAccount?.pinSalt && localAccount?.pinHash && /^\d{6,}$/.test(password));
       let user;
       if (isLocalAdmin || !cloud.enabled) {
-        user = /^\d{4}$/.test(password)
+        user = isLocalPin
           ? await window.KidsGamesAuth.loginWithPin(username, password)
           : window.KidsGamesAuth.loginWithUsername(username, password);
       } else {
@@ -116,7 +118,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const localAccount = window.KidsGamesAuth.findUserByIdentifier(username);
           if (!isCloudUnavailable(error) || localAccount?.provider !== 'local') throw error;
           if (cloud.getCurrentUserId?.()) await cloud.signOut();
-          user = /^\d{4}$/.test(password)
+          const isLocalPin = /^\d{4}$/.test(password)
+            || (localAccount.pinSalt && localAccount.pinHash && /^\d{6,}$/.test(password));
+          user = isLocalPin
             ? await window.KidsGamesAuth.loginWithPin(username, password)
             : window.KidsGamesAuth.loginWithUsername(username, password);
           if (!user) throw error;
@@ -171,8 +175,8 @@ document.addEventListener('DOMContentLoaded', () => {
       setMessage('اختر شخصية من القائمة.', 'error');
       return;
     }
-    if (!/^\d{4}$/.test(pin)) {
-      setMessage('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.', 'error');
+    if (!/^\d{6,}$/.test(pin)) {
+      setMessage('رمز الدخول يجب أن يتكون من 6 أرقام على الأقل.', 'error');
       return;
     }
     if (pin !== pinConfirm) {

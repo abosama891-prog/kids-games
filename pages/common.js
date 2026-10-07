@@ -980,7 +980,7 @@
       || !fullName || fullName.length > 60
       || !['child', 'parent', 'teacher'].includes(role)
       || !['child', 'girl', 'engineer'].includes(avatar)
-      || !/^\d{4}$/.test(pin)) {
+      || !/^\d{6,128}$/.test(pin)) {
       return null;
     }
 
@@ -1010,7 +1010,7 @@
   async function loginWithPin(username, pin) {
     const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
     const normalizedPin = normalizePin(pin);
-    if (!/^\d{4}$/.test(normalizedPin)) return null;
+    if (!/^(?:\d{4}|\d{6,128})$/.test(normalizedPin)) return null;
     const user = findUserByIdentifier(normalizedUsername);
     if (!user || user.status === 'inactive' || user.provider !== 'local' || !user.pinSalt || !user.pinHash) return null;
     const actual = await hashLocalPin(normalizedPin, decodeBytes(user.pinSalt));
@@ -1398,7 +1398,7 @@
           }
           if (!allowedRoles.includes(role)) throw new TypeError('اختر نوع حساب صحيحًا.');
           if (!allowedAvatars.includes(avatar)) throw new TypeError('اختر شخصية من القائمة.');
-          if (!/^\d{4}$/.test(String(pin || ''))) throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');
+          if (!/^\d{6,128}$/.test(String(pin || ''))) throw new TypeError('رمز الدخول يجب أن يتكون من 6 إلى 128 رقمًا.');
           accountCreationInProgress = true;
           try {
             const result = await functions.httpsCallable('registerAccount')({

@@ -40,6 +40,18 @@ function validatePinCredentials(username, pin) {
   return { username: normalizedUsername, password: normalizedPin };
 }
 
+function validateSignupPinCredentials(username, pin) {
+  const normalizedUsername = normalizeUsername(username);
+  const normalizedPin = normalizePin(pin);
+  if (!/^[a-z0-9._-]{1,32}$/.test(normalizedUsername)) {
+    throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
+  }
+  if (!/^\d{6,128}$/.test(normalizedPin)) {
+    throw new TypeError('رمز الدخول يجب أن يتكون من 6 إلى 128 رقمًا.');
+  }
+  return { username: normalizedUsername, password: normalizedPin };
+}
+
 async function hashPassword(password, salt = crypto.randomBytes(16)) {
   const derivedKey = await scrypt(password, salt, KEY_LENGTH, SCRYPT_OPTIONS);
   return {
@@ -66,6 +78,7 @@ module.exports = {
   normalizePin,
   validateCredentials,
   validatePinCredentials,
+  validateSignupPinCredentials,
   hashPassword,
   verifyPassword,
   hashRateLimitKey

@@ -8,6 +8,7 @@ const {
   normalizePin,
   validateCredentials,
   validatePinCredentials,
+  validateSignupPinCredentials,
   hashPassword,
   verifyPassword,
   hashRateLimitKey
@@ -101,7 +102,9 @@ exports.authenticateUsername = onCall(async request => {
     const normalizedPin = normalizePin(request.data?.password);
     credentials = /^\d{4}$/.test(normalizedPin)
       ? validatePinCredentials(request.data?.username, normalizedPin)
-      : validateCredentials(request.data?.username, request.data?.password);
+      : /^\d{6,128}$/.test(normalizedPin)
+        ? validateSignupPinCredentials(request.data?.username, normalizedPin)
+        : validateCredentials(request.data?.username, request.data?.password);
   } catch (error) {
     throw new HttpsError('invalid-argument', error.message);
   }
@@ -132,7 +135,7 @@ exports.authenticateUsername = onCall(async request => {
 exports.registerAccount = onCall(async request => {
   let credentials;
   try {
-    credentials = validatePinCredentials(request.data?.username, request.data?.pin);
+    credentials = validateSignupPinCredentials(request.data?.username, request.data?.pin);
   } catch (error) {
     throw new HttpsError('invalid-argument', error.message);
   }

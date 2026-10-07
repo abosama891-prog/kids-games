@@ -5,6 +5,7 @@ const {
   normalizePin,
   validateCredentials,
   validatePinCredentials,
+  validateSignupPinCredentials,
   hashPassword,
   verifyPassword,
   hashRateLimitKey
@@ -37,6 +38,17 @@ test('normalizes and validates account credentials', () => {
   });
   assert.throws(() => validatePinCredentials('valid_name', '42'), TypeError);
   assert.throws(() => validatePinCredentials('valid_name', '12a4'), TypeError);
+  assert.deepEqual(validateSignupPinCredentials(' Child-1 ', '123456'), {
+    username: 'child-1',
+    password: '123456'
+  });
+  assert.deepEqual(validateSignupPinCredentials(' Child-1 ', '١٢٣٤٥٦'), {
+    username: 'child-1',
+    password: '123456'
+  });
+  assert.throws(() => validateSignupPinCredentials('valid_name', '1234'), TypeError);
+  assert.throws(() => validateSignupPinCredentials('valid_name', '12a456'), TypeError);
+  assert.throws(() => validateSignupPinCredentials('valid_name', '1'.repeat(129)), TypeError);
 });
 
 test('password hashes are salted and only verify the matching password', async () => {
