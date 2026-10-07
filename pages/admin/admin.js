@@ -577,46 +577,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  renderUsers();
+  connectionStatus.textContent = 'جارٍ التحقق من ربط الحساب...';
+
+  let timeoutId;
   try {
-    const cloud = await window.KidsGamesCloudReady;
-    if (cloud.enabled && cloud.getCurrentUserId?.() === currentUser.id && currentUser.role === 'admin') {
+    const loadCloudAdminData = async () => {
+      const cloud = await window.KidsGamesCloudReady;
+      if (!cloud.enabled || cloud.getCurrentUserId?.() !== currentUser.id || currentUser.role !== 'admin') {
+        return { cloud };
+      }
+
+      const [savedSettings, savedGameSettings, accounts] = await Promise.all([
+        cloud.getLessonSettings(),
+        cloud.getGameSettings(),
+        cloud.listAccounts()
+      ]);
+      return { cloud, savedSettings, savedGameSettings, accounts };
+    };
+    const timeout = new Promise((resolve, reject) => {
+      timeoutId = window.setTimeout(() => reject(new Error('Cloud account check timed out after 5 seconds.')), 5000);
+    });
+    const result = await Promise.race([loadCloudAdminData(), timeout]);
+    window.clearTimeout(timeoutId);
+
+    const { cloud } = result;
+    if (cloud.enabled && result.accounts) {
       cloudApi = cloud;
-      const savedSettings = await cloud.getLessonSettings();
-      if (savedSettings) {
-        window.KidsGames.saveLessonSettings(savedSettings);
-        Object.entries(savedSettings).forEach(([key, value]) => {
+      if (result.savedSettings) {
+        window.KidsGames.saveLessonSettings(result.savedSettings);
+        Object.entries(result.savedSettings).forEach(([key, value]) => {
           const input = lessonSettingsForm.elements.namedItem(key);
           if (input) input.value = String(value);
         });
       } else {
-        await cloud.saveLessonSettings(defaultLessonSettings);
+        cloud.saveLessonSettings(defaultLessonSettings).catch(error => {
+          console.error('Unable to initialize cloud lesson settings:', error);
+        });
       }
-      const savedGameSettings = await cloud.getGameSettings();
-      if (savedGameSettings) {
-        window.KidsGames.saveGameSettings(savedGameSettings);
+      if (result.savedGameSettings) {
+        window.KidsGames.saveGameSettings(result.savedGameSettings);
       } else {
-        await cloud.saveGameSettings(window.KidsGames.getGameSettings());
+        cloud.saveGameSettings(window.KidsGames.getGameSettings()).catch(error => {
+          console.error('Unable to initialize cloud game settings:', error);
+        });
       }
       gameSettingsForm.querySelectorAll('input[type="checkbox"]').forEach(input => {
         input.checked = window.KidsGames.getGameSettings().lockedGames.includes(input.value);
       });
-      cloudAccounts = await cloud.listAccounts();
+      cloudAccounts = result.accounts;
       renderUsers();
       connectionStatus.className = 'connection-status';
-      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). الإضافة محلية على هذا الجهاز؛ وتعديل المستخدمين السحابيين متاح هنا.`;
+      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}).`;
     } else if (!cloud.enabled) {
-      renderUsers();
       connectionStatus.className = 'connection-status offline';
       connectionStatus.textContent = 'قاعدة Firebase غير مفعّلة؛ الحسابات والتقدم محفوظان محليًا على هذا الجهاز.';
     } else {
-      renderUsers();
       connectionStatus.className = 'connection-status partial';
       connectionStatus.textContent = `Firebase جاهز (${cloud.projectId})، لكن جلسة المدير ليست حسابًا سحابيًا. سجّل الدخول بحساب مدير Firebase لإدارة الحسابات السحابية.`;
     }
   } catch (error) {
+    window.clearTimeout(timeoutId);
     console.error('Unable to check account connection:', error);
-    renderUsers();
     connectionStatus.className = 'connection-status offline';
-    connectionStatus.textContent = 'تعذر التحقق من الاتصال السحابي. الحسابات المعروضة محفوظة محليًا على هذا الجهاز.';
+    connectionStatus.textContent = String(error?.message || error).includes('timed out')
+      ? 'استغرق الاتصال بـ Firebase أكثر من 5 ثوانٍ. تظهر الحسابات المحلية؛ أعد تحميل الصفحة للمحاولة مرة أخرى.'
+      : 'تعذر التحقق من الاتصال السحابي. الحسابات المعروضة محفوظة محليًا على هذا الجهاز.';
   }
 });
