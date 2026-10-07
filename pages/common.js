@@ -915,8 +915,9 @@
 
   function usernameEmail(username) {
     const normalized = String(username || '').trim().toLocaleLowerCase('en-US');
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return normalized;
     if (!/^[a-z0-9._-]{1,32}$/.test(normalized)) {
-      throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
+      throw new TypeError('أدخل اسم مستخدم صالحًا أو بريدًا إلكترونيًا صحيحًا.');
     }
     return `${normalized}@accounts.kids-games.invalid`;
   }
