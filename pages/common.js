@@ -9,6 +9,8 @@
     authSession: 'kids_games_current_user_v1',
     users: 'kids_games_users_v1',
     siteNavHidden: 'kids_games_site_nav_hidden',
+    fullSyncAt: 'kids_games_full_sync_at_v1',
+    partialSyncAt: 'kids_games_partial_sync_at_v1',
     serviceWorkerUpdateCheck: 'kids_games_sw_update_check_v1',
     cloudSyncReload: userId => `kids_games_cloud_sync_${userId}`,
     legacyAdminBackups: ['oldAdmin', 'adminBackup']
@@ -135,11 +137,15 @@
     const cloud = await window.KidsGamesCloudReady;
     if (!cloud?.enabled) throw new Error('Firebase is unavailable; local progress is still saved.');
     await cloud.saveProgress(readProgress());
+    safeSetItem(STORAGE_KEYS.fullSyncAt, new Date().toISOString());
+    window.dispatchEvent(new Event('kids-games-full-sync'));
     return true;
   }
 
   function saveProgress(nextState) {
     safeSetItem(progressStorageKey(), JSON.stringify(nextState));
+    safeSetItem(STORAGE_KEYS.partialSyncAt, new Date().toISOString());
+    window.dispatchEvent(new Event('kids-games-partial-sync'));
     syncCloudProgress(nextState).catch(() => {});
     return nextState;
   }

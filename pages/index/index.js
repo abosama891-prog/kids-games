@@ -1,4 +1,51 @@
 document.addEventListener('DOMContentLoaded', () => {
+  const syncStorageKeys = {
+    full: window.KidsGames.STORAGE_KEYS.fullSyncAt,
+    partial: window.KidsGames.STORAGE_KEYS.partialSyncAt
+  };
+
+  function formatSyncTime(timestamp) {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) return null;
+    const parts = new Intl.DateTimeFormat('ar-EG', {
+      weekday: 'long',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }).formatToParts(date);
+    const value = type => parts.find(part => part.type === type)?.value || '';
+    return `${value('weekday')} ${value('year')}/${value('month')}/${value('day')} ${value('hour')}:${value('minute')} ${value('dayPeriod')}`;
+  }
+
+  function updateSyncStatus() {
+    let fullSyncAt = null;
+    let partialSyncAt = null;
+    try {
+      fullSyncAt = localStorage.getItem(syncStorageKeys.full);
+      partialSyncAt = localStorage.getItem(syncStorageKeys.partial);
+    } catch (error) {
+      console.error('Unable to read sync timestamps:', error);
+    }
+
+    const fullSyncText = document.getElementById('last-full-sync');
+    const partialSyncText = document.getElementById('last-partial-sync');
+    const formattedFullSync = fullSyncAt && formatSyncTime(fullSyncAt);
+    const formattedPartialSync = partialSyncAt && formatSyncTime(partialSyncAt);
+    fullSyncText.textContent = `آخر تحديث كلي: ${formattedFullSync || 'لم تتم مزامنة كاملة بعد'}`;
+    partialSyncText.textContent = `آخر تحديث جزئي: ${formattedPartialSync || 'لا توجد حركات جديدة'}`;
+  }
+
+  updateSyncStatus();
+  window.setInterval(updateSyncStatus, 60 * 1000);
+  window.addEventListener('storage', event => {
+    if (Object.values(syncStorageKeys).includes(event.key)) updateSyncStatus();
+  });
+  window.addEventListener('kids-games-full-sync', updateSyncStatus);
+  window.addEventListener('kids-games-partial-sync', updateSyncStatus);
+
   const siteNav = document.getElementById('site-nav');
   const siteNavToggle = document.getElementById('site-nav-toggle');
   const navHiddenKey = window.KidsGames.STORAGE_KEYS.siteNavHidden;

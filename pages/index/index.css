@@ -319,6 +319,30 @@ body {
   color: #fff;
 }
 
+.sync-status {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px 20px;
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(23, 107, 99, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #315b62;
+  box-shadow: 0 3px 12px rgba(18, 56, 95, 0.08);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.sync-status p {
+  min-width: 0;
+  line-height: 1.6;
+}
+
+.sync-status span:last-child {
+  overflow-wrap: anywhere;
+}
+
 .stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -537,6 +561,13 @@ body {
   .stat-box {
     min-height: 58px;
     padding: 7px 5px;
+  }
+
+  .sync-status {
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 11px;
+    font-size: 0.76rem;
   }
 
   .stat-icon {
