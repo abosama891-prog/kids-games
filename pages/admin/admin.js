@@ -72,36 +72,67 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function saveMaintenanceMode(enabled, message, expectedTime) {
-    if (!cloudApi) throw new Error('يجب الاتصال بحساب مدير Firebase لحفظ وضع الصيانة.');
-    return cloudApi.saveMaintenanceMode({ enabled, message, expectedTime });
+    const deadline = Date.now() + 5000;
+    const remainingTime = () => Math.max(1, deadline - Date.now());
+    const cloud = cloudApi || await withTimeout(
+      window.KidsGamesCloudReady,
+      Math.min(2000, remainingTime()),
+      'انتهت مهلة الاتصال بـ Firebase.'
+    );
+    if (currentUser.role !== 'admin' || !cloud?.enabled
+      || !cloud.isCurrentUserLinked?.()
+      || cloud.getCurrentUserId?.() !== currentUser.id) {
+      throw new Error('حساب المدير غير مرتبط بـ Firebase؛ لم يتم تغيير وضع الصيانة.');
+    }
+    cloudApi = cloud;
+    return withTimeout(
+      cloud.saveMaintenanceMode({ enabled, message, expectedTime }),
+      remainingTime(),
+      'انتهت مهلة حفظ وضع الصيانة في Firebase بعد 5 ثوانٍ.'
+    );
   }
 
-  maintenanceToggle.addEventListener('click', () => {
-    maintenanceEnabled = !maintenanceEnabled;
+  async function persistMaintenanceMode(enabled) {
+    const previousState = maintenanceEnabled;
+    maintenanceEnabled = enabled;
     updateMaintenanceToggle();
-  });
-
-  maintenanceForm.addEventListener('submit', async event => {
-    event.preventDefault();
+    maintenanceToggle.disabled = true;
     maintenanceSaveButton.disabled = true;
     maintenanceStatus.className = '';
     maintenanceStatus.textContent = 'جارٍ حفظ إعداد الصيانة...';
     try {
       const saved = await saveMaintenanceMode(
-        maintenanceEnabled,
+        enabled,
         maintenanceMessageInput.value.trim(),
         maintenanceExpectedTimeInput.value || null
       );
       maintenanceEnabled = saved.enabled;
       updateMaintenanceToggle();
-      maintenanceStatus.textContent = 'تم حفظ وضع الصيانة ومزامنته مع المستخدمين.';
+      maintenanceStatus.textContent = saved.enabled
+        ? 'تم تفعيل وضع الصيانة ومزامنته مع المستخدمين.'
+        : 'تم إيقاف وضع الصيانة ومزامنة التغيير مع المستخدمين.';
+      return true;
     } catch (error) {
       console.error('Unable to save maintenance mode:', error);
+      maintenanceEnabled = previousState;
+      updateMaintenanceToggle();
       maintenanceStatus.className = 'error';
-      maintenanceStatus.textContent = error.message || 'تعذر حفظ وضع الصيانة. تحقق من اتصال Firebase وصلاحيات المدير.';
+      maintenanceStatus.textContent = error.message
+        || 'تعذر حفظ وضع الصيانة في Firebase. تحقق من اتصال المدير وصلاحياته.';
+      return false;
     } finally {
+      maintenanceToggle.disabled = !cloudApi;
       maintenanceSaveButton.disabled = !cloudApi;
     }
+  }
+
+  maintenanceToggle.addEventListener('click', () => {
+    persistMaintenanceMode(!maintenanceEnabled);
+  });
+
+  maintenanceForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    await persistMaintenanceMode(maintenanceEnabled);
   });
 
   window.KidsGames.gameCatalog.forEach(game => {
