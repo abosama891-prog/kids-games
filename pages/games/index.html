@@ -112,8 +112,79 @@
     </div>
 
     <script>
-      window.requestAnimationFrame(() => {
-        window.setTimeout(() => {
+      (() => {
+        const games = [
+          { key: 'draw', levels: 10 },
+          { key: 'maze', levels: 20 },
+          { key: 'gas', levels: 10 },
+          { key: 'frog', levels: 5 },
+          { key: 'potion', levels: 3 },
+          { key: 'robot', levels: 10 },
+          { key: 'code-park', levels: 5 }
+        ];
+        const progressKey = 'kids_games_progress_v1';
+        let user = null;
+        let progress = null;
+        let lockedGames = [];
+
+        try {
+          user = JSON.parse(localStorage.getItem('kids_games_current_user_v1') || 'null');
+          const userProgressKey = user?.id ? `${progressKey}_${user.id}` : progressKey;
+          progress = JSON.parse(
+            localStorage.getItem(userProgressKey)
+              || (userProgressKey !== progressKey ? localStorage.getItem(progressKey) : null)
+              || '{}'
+          );
+          const savedSettings = JSON.parse(localStorage.getItem('kids_games_availability_v1') || '{}');
+          const settings = savedSettings?.availability && typeof savedSettings.availability === 'object'
+            ? savedSettings.availability
+            : savedSettings;
+          const savedLocks = Array.isArray(settings)
+            ? settings
+            : Array.isArray(settings?.lockedGames)
+              ? settings.lockedGames
+              : Array.isArray(settings?.games)
+                ? settings.games
+                : [];
+          lockedGames = savedLocks.filter(key => games.some(game => game.key === key));
+        } catch (error) {
+          console.error('Unable to read locally saved games data:', error);
+          progress = {};
+        }
+
+        games.forEach(game => {
+          const card = document.querySelector(`[data-game-key="${game.key}"]`);
+          if (!card) return;
+          const completedLevels = Array.isArray(progress?.[game.key]?.completed)
+            ? new Set(progress[game.key].completed.map(Number).filter(level =>
+              Number.isInteger(level) && level >= 1 && level <= game.levels
+            )).size
+            : 0;
+          const blocked = user?.role !== 'admin' && lockedGames.includes(game.key);
+          const details = card.querySelector('.game-details');
+          const count = details.querySelector('.level-count');
+          const bar = details.querySelector('.game-progress-track');
+          count.textContent = `${completedLevels} / ${game.levels}`;
+          bar.setAttribute('aria-valuenow', String(completedLevels));
+          bar.firstElementChild.style.width = `${Math.round((completedLevels / game.levels) * 100)}%`;
+          card.href = blocked ? `maintenance.html?game=${encodeURIComponent(game.key)}` : card.href;
+          card.classList.toggle('is-locked', blocked);
+          card.setAttribute('aria-label', blocked ? `${details.querySelector('h2').textContent} متوقفة مؤقتًا للتحديث` : card.getAttribute('aria-label'));
+          card.querySelector('.launch-game').textContent = blocked ? '🔒' : '▶';
+          if (blocked) {
+            const status = document.createElement('span');
+            status.className = 'game-status';
+            status.textContent = 'تحديثات جارية';
+            details.querySelector('h2').after(status);
+          }
+        });
+
+        const unavailable = new URLSearchParams(location.search).get('unavailable');
+        if (unavailable && lockedGames.includes(unavailable) && user?.role !== 'admin') {
+          location.replace(`maintenance.html?game=${encodeURIComponent(unavailable)}`);
+        }
+
+        const startSharedFeatures = () => {
           const commonScript = document.createElement('script');
           commonScript.src = '../common.js';
           commonScript.onload = () => {
@@ -121,21 +192,29 @@
             gamesScript.src = 'games.js';
             gamesScript.onerror = () => {
               console.error('Unable to load the games page script.');
-              const message = document.getElementById('games-message');
-              message.textContent = 'تعذر تحميل تفاصيل الألعاب؛ يمكنك فتح أي لعبة من القائمة.';
-              message.hidden = false;
+              showLocalDataMessage();
             };
             document.body.appendChild(gamesScript);
           };
           commonScript.onerror = () => {
             console.error('Unable to load shared page features.');
-            const message = document.getElementById('games-message');
-            message.textContent = 'تعذر تحميل تفاصيل الألعاب؛ يمكنك فتح أي لعبة من القائمة.';
-            message.hidden = false;
+            showLocalDataMessage();
           };
           document.body.appendChild(commonScript);
-        }, 0);
-      });
+        };
+
+        function showLocalDataMessage() {
+          const message = document.getElementById('games-message');
+          message.textContent = 'تعذر تحديث البيانات؛ يتم عرض التقدم المحفوظ على هذا الجهاز.';
+          message.hidden = false;
+        }
+
+        if (typeof window.requestIdleCallback === 'function') {
+          window.requestIdleCallback(startSharedFeatures, { timeout: 2000 });
+        } else {
+          window.setTimeout(startSharedFeatures, 500);
+        }
+      })();
     </script>
   </body>
 </html>
