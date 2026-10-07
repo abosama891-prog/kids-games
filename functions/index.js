@@ -25,7 +25,7 @@ const RATE_LIMITS = 'authRateLimits';
 const ALLOWED_ROLES = new Set(['child', 'parent', 'teacher', 'admin']);
 
 async function requireAdmin(request) {
-  if (!request.auth || request.auth.token.admin !== true || request.auth.token.role !== 'admin') {
+  if (!request.auth) {
     throw new HttpsError('permission-denied', 'يتطلب هذا الإجراء صلاحية المدير.');
   }
   const profile = await database.collection(USERS).doc(request.auth.uid).get();

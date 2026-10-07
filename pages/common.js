@@ -778,7 +778,7 @@
         const provider = firebaseUser.providerData.some(item => item.providerId === 'google.com') ? 'google' : 'local';
         const role = isValidRole(cloudData.role)
           ? cloudData.role
-          : (isValidRole(token.claims.role) ? token.claims.role : 'child');
+          : 'child';
         const user = normalizeUser({
           id: firebaseUser.uid,
           username: cloudData.username || token.claims.username || (firebaseUser.email || '').split('@')[0],

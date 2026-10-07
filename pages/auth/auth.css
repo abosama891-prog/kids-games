@@ -286,14 +286,6 @@ body {
   color: #1d7d5d;
 }
 
-@media (max-width: 560px) {
-  .auth-card {
-    padding: 20px 12px 14px;
-    border-radius: 24px;
-  }
-
-}
-
 body {
   overflow: hidden;
   background:
@@ -302,50 +294,52 @@ body {
     #0a1533;
 }
 
-.auth-shell {
-  width: min(400px, 100%);
-}
+@media (min-width: 601px) {
+  .auth-shell {
+    width: min(400px, 100%);
+  }
 
-.login-device {
-  width: 100%;
-  height: min(780px, calc(100dvh - 32px));
-  min-height: min(620px, calc(100dvh - 24px));
-  padding: 14px;
-  border: 4px solid #3d4a6b;
-  border-radius: 46px;
-  background: #0b0b14;
-  box-shadow:
-    0 0 0 3px #111,
-    0 0 60px rgba(0, 255, 255, 0.15),
-    0 0 120px rgba(128, 0, 255, 0.12),
-    inset 0 0 20px rgba(0, 0, 0, 0.8);
-  animation: login-device-float 5s ease-in-out infinite;
-}
+  .login-device {
+    width: 100%;
+    height: min(780px, calc(100dvh - 32px));
+    min-height: min(620px, calc(100dvh - 24px));
+    padding: 14px;
+    border: 4px solid #3d4a6b;
+    border-radius: 46px;
+    background: #0b0b14;
+    box-shadow:
+      0 0 0 3px #111,
+      0 0 60px rgba(0, 255, 255, 0.15),
+      0 0 120px rgba(128, 0, 255, 0.12),
+      inset 0 0 20px rgba(0, 0, 0, 0.8);
+    animation: login-device-float 5s ease-in-out infinite;
+  }
 
-.login-device::before {
-  top: 15px;
-  right: auto;
-  left: 50%;
-  z-index: 5;
-  width: 90px;
-  height: 19px;
-  border-radius: 14px;
-  background: #050508;
-  content: "";
-  transform: translateX(-50%);
-}
+  .login-device::before {
+    top: 15px;
+    right: auto;
+    left: 50%;
+    z-index: 5;
+    width: 90px;
+    height: 19px;
+    border-radius: 14px;
+    background: #050508;
+    content: "";
+    transform: translateX(-50%);
+  }
 
-.login-device::after {
-  top: 120px;
-  right: -8px;
-  bottom: auto;
-  left: auto;
-  width: 4px;
-  height: 64px;
-  border-radius: 4px;
-  background: #2a2a3a;
-  content: "";
-  opacity: 1;
+  .login-device::after {
+    top: 120px;
+    right: -8px;
+    bottom: auto;
+    left: auto;
+    width: 4px;
+    height: 64px;
+    border-radius: 4px;
+    background: #2a2a3a;
+    content: "";
+    opacity: 1;
+  }
 }
 
 .splash-screen {
@@ -598,18 +592,56 @@ body {
   .splash-status { margin-top: 18px; }
 }
 
-@media (max-width: 420px) {
-  body { padding: 10px; }
-  .login-device {
-    height: calc(100dvh - 20px);
-    min-height: 0;
-    padding: 10px;
-    border-radius: 36px;
+@media (max-width: 600px) {
+  body {
+    display: block;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 0;
   }
-  .login-device::before { top: 11px; height: 16px; }
-  .splash-screen { inset: 10px; border-radius: 27px; }
-  .account-screen { border-radius: 25px; }
-  .splash-logo { min-height: 86px; }
+
+  .auth-shell {
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .auth-card,
+  .login-device {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: none;
+  }
+
+  .login-device::before,
+  .login-device::after {
+    display: none;
+    content: none;
+  }
+
+  .splash-screen {
+    inset: 0;
+    border-radius: 0;
+  }
+
+  .account-screen {
+    border-radius: 0;
+  }
+
+  .splash-logo {
+    min-height: 86px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
