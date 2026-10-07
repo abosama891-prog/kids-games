@@ -79,7 +79,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function redirectByRole(user) {
-    if (user.role === 'admin') {
+    const role = user?.role ?? 'child';
+    if (role === 'admin') {
       window.location.href = '../admin/index.html';
       return;
     }
