@@ -117,16 +117,30 @@
     }
   }
 
-  async function saveProgress(nextState) {
-    safeSetItem(progressStorageKey(), JSON.stringify(nextState));
-    try {
+  let cloudSyncQueue = Promise.resolve();
+
+  function syncCloudProgress(progress = readProgress()) {
+    const write = cloudSyncQueue.then(async () => {
       const cloud = await window.KidsGamesCloudReady;
-      if (cloud?.enabled && typeof cloud.saveProgress === 'function') {
-        await cloud.saveProgress(nextState);
-      }
-    } catch (error) {
-      console.error('Progress sync failed:', error);
-    }
+      if (!cloud?.enabled || typeof cloud.saveProgress !== 'function') return false;
+      return cloud.saveProgress(progress);
+    });
+    cloudSyncQueue = write.catch(error => {
+      console.error('Firebase progress synchronization failed:', error);
+    });
+    return write;
+  }
+
+  async function syncCloudNow() {
+    const cloud = await window.KidsGamesCloudReady;
+    if (!cloud?.enabled) throw new Error('Firebase is unavailable; local progress is still saved.');
+    await cloud.saveProgress(readProgress());
+    return true;
+  }
+
+  function saveProgress(nextState) {
+    safeSetItem(progressStorageKey(), JSON.stringify(nextState));
+    syncCloudProgress(nextState).catch(() => {});
     return nextState;
   }
 
@@ -442,6 +456,7 @@
     getGameSettings,
     saveGameSettings,
     getEffectiveGameSettings,
+    syncCloud: syncCloudNow,
     renderGameHeader,
     showLevelVictory,
     hideLevelVictory,
@@ -1518,6 +1533,11 @@
   }
 
   window.KidsGamesCloudReady = initializeCloud();
+  window.KidsGamesCloudReady.then(cloud => {
+    if (!cloud?.enabled) return;
+    syncCloudProgress().catch(() => {});
+    window.setInterval(() => syncCloudProgress().catch(() => {}), 5 * 60 * 1000);
+  }).catch(error => console.error('Unable to schedule cloud progress synchronization:', error));
 
   const currentGame = gameCatalog.find(game =>
     new URL(game.href).pathname.replace(/\/+$/, '').toLowerCase() ===
