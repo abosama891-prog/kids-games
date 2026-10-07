@@ -715,4 +715,16 @@ body {
   .site-nav {
     box-shadow: none;
   }
+
+  .site-nav.is-hidden {
+    max-height: 160px;
+    overflow: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .site-nav-toggle,
+  .site-nav-toggle.is-hidden {
+    top: 76px;
+  }
 }

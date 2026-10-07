@@ -65,25 +65,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const siteNav = document.getElementById('site-nav');
   const siteNavToggle = document.getElementById('site-nav-toggle');
+  const accountMenu = document.querySelector('.account-menu');
+  const mobileViewport = window.matchMedia('(max-width: 600px)');
   const navHiddenKey = window.KidsGames.STORAGE_KEYS.siteNavHidden;
   let isNavHidden = false;
   try {
-    isNavHidden = localStorage.getItem(navHiddenKey) === 'true';
+    isNavHidden = !mobileViewport.matches && localStorage.getItem(navHiddenKey) === 'true';
   } catch (error) {
     console.error('Unable to read navigation visibility preference:', error);
   }
 
   function updateSiteNavVisibility() {
-    siteNav.classList.toggle('is-hidden', isNavHidden);
-    siteNavToggle.classList.toggle('is-hidden', isNavHidden);
-    siteNavToggle.setAttribute('aria-expanded', String(!isNavHidden));
-    siteNavToggle.setAttribute('aria-label', isNavHidden ? 'إظهار شريط التنقل' : 'إخفاء شريط التنقل');
-    siteNavToggle.title = isNavHidden ? 'إظهار شريط التنقل' : 'إخفاء شريط التنقل';
-    siteNavToggle.textContent = isNavHidden ? '☰' : '⌃';
+    const isMobile = mobileViewport.matches;
+    siteNav.classList.toggle('is-hidden', !isMobile && isNavHidden);
+    siteNavToggle.classList.toggle('is-hidden', !isMobile && isNavHidden);
+    siteNavToggle.setAttribute('aria-expanded', String(isMobile ? accountMenu.open : !isNavHidden));
+    siteNavToggle.setAttribute('aria-label', isMobile
+      ? (accountMenu.open ? 'إغلاق قائمة الحساب' : 'فتح قائمة الحساب')
+      : (isNavHidden ? 'إظهار شريط التنقل' : 'إخفاء شريط التنقل'));
+    siteNavToggle.title = siteNavToggle.getAttribute('aria-label');
+    siteNavToggle.textContent = isMobile ? '☰' : isNavHidden ? '☰' : '⌃';
   }
 
   updateSiteNavVisibility();
+  mobileViewport.addEventListener('change', event => {
+    if (event.matches) isNavHidden = false;
+    updateSiteNavVisibility();
+  });
   siteNavToggle.addEventListener('click', () => {
+    if (mobileViewport.matches) {
+      accountMenu.open = !accountMenu.open;
+      updateSiteNavVisibility();
+      return;
+    }
     isNavHidden = !isNavHidden;
     updateSiteNavVisibility();
     try {
@@ -101,7 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const userName = document.getElementById('current-user-name');
   const userRole = document.getElementById('current-user-role');
-  const accountMenu = document.querySelector('.account-menu');
   const accountTrigger = document.querySelector('.account-trigger');
   const displayName = currentUser.fullName || currentUser.username || 'المستخدم';
   const isChild = currentUser.role === 'child';
