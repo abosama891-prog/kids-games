@@ -146,6 +146,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     return cell;
   }
 
+  function getVisibleAccounts() {
+    const localAccounts = window.KidsGamesAuth.getUsers();
+    if (!cloudAccounts) return localAccounts;
+    const cloudIds = new Set(cloudAccounts.map(user => user.id));
+    const cloudUsernames = new Set(cloudAccounts.map(user => user.username.toLocaleLowerCase()));
+    return [
+      ...cloudAccounts,
+      ...localAccounts.filter(user =>
+        !cloudIds.has(user.id) && !cloudUsernames.has(user.username.toLocaleLowerCase())
+      )
+    ];
+  }
+
+  function findAccount(userId) {
+    return cloudAccounts?.find(user => user.id === userId)
+      || window.KidsGamesAuth.getUsers().find(user => user.id === userId)
+      || null;
+  }
+
+  function isCloudAccount(userId) {
+    return Boolean(cloudAccounts?.some(user => user.id === userId));
+  }
+
   function createSelectCell(row, field, value, options, userId) {
     const cell = document.createElement('td');
     cell.className = `${field}-cell`;
@@ -154,7 +177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     select.dataset.field = field;
     select.dataset.id = userId;
     select.dataset.value = value;
-    const user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
+    const user = findAccount(userId);
     select.disabled = user?.role === 'admin' || Boolean(cloudAccounts && userId === currentUser.id);
     select.setAttribute('aria-label', field === 'role' ? 'دور المستخدم' : 'حالة المستخدم');
     options.forEach(([optionValue, label]) => {
@@ -171,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderUsers() {
     let users;
     try {
-      users = cloudAccounts || window.KidsGamesAuth.getUsers();
+      users = getVisibleAccounts();
     } catch (error) {
       console.error('Unable to render saved accounts:', error);
       usersTableBody.replaceChildren();
@@ -223,8 +246,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       deleteButton.dataset.action = 'delete';
       deleteButton.dataset.id = user.id;
       deleteButton.textContent = 'حذف';
-      deleteButton.disabled = Boolean(cloudAccounts) || user.id === currentUser.id;
-      deleteButton.title = cloudAccounts ? 'الحذف من Firebase Console.' : '';
+      deleteButton.disabled = isCloudAccount(user.id) || user.id === currentUser.id;
+      deleteButton.title = isCloudAccount(user.id) ? 'حذف الحسابات السحابية غير متاح من هذه اللوحة.' : '';
       deleteButton.setAttribute('aria-label', `حذف ${user.username}`);
       actions.append(editButton, deleteButton);
       row.appendChild(actions);
@@ -284,7 +307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         .map(value => String(value || '').trim().toLocaleLowerCase('en-US'))
         .filter(Boolean)
     );
-    const users = cloudAccounts || window.KidsGamesAuth.getUsers();
+    const users = getVisibleAccounts();
     return !users.some(user =>
       user.id !== excludedId &&
       [user.username, user.email]
@@ -336,7 +359,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let user;
     try {
-      user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === id);
+      user = findAccount(id);
     } catch (error) {
       console.error('Unable to find the account to update:', error);
       showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
@@ -348,7 +371,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     let updated;
-    if (cloudAccounts) {
+    if (isCloudAccount(id)) {
       try {
         updated = await window.KidsGamesCloud.updateAccount({
           uid: user.uid,
@@ -376,13 +399,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (!updated) {
       showMessage('تعذر حفظ التغيير. لم يتم العثور على المستخدم.', 'error');
-      if (cloudAccounts) await refreshCloudAccounts();
+      if (isCloudAccount(id)) await refreshCloudAccounts();
       else renderUsers();
       return;
     }
-    if (id === currentUser.id && !cloudAccounts) window.KidsGamesAuth.setCurrentUser(updated);
-    showMessage(cloudAccounts ? 'تم حفظ التغيير في قاعدة البيانات.' : 'تم حفظ التغيير على هذا الجهاز.');
-    if (cloudAccounts) await refreshCloudAccounts();
+    if (id === currentUser.id && !isCloudAccount(id)) window.KidsGamesAuth.setCurrentUser(updated);
+    showMessage(isCloudAccount(id) ? 'تم حفظ التغيير في قاعدة البيانات.' : 'تم حفظ التغيير على هذا الجهاز.');
+    if (isCloudAccount(id)) await refreshCloudAccounts();
     else renderUsers();
   });
 
@@ -395,7 +418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (action === 'edit' && userId) {
       let user;
       try {
-        user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
+        user = findAccount(userId);
       } catch (error) {
         console.error('Unable to read account before deletion:', error);
         showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
@@ -409,11 +432,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         showMessage('لا يمكن حذف الحساب الذي تستخدمه حاليًا.', 'error');
         return;
       }
-      const user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
+      const user = findAccount(userId);
       if (!user || !window.confirm(`هل تريد حذف حساب "${user.username}"؟ لا يمكن التراجع عن ذلك.`)) return;
 
-      if (cloudAccounts) {
-        showMessage('لحذف حساب سحابي، احذفه من Firebase Authentication ثم احذف ملفه من Firestore.', 'error');
+      if (isCloudAccount(userId)) {
+        showMessage('حذف الحسابات السحابية غير متاح من هذه اللوحة.', 'error');
         return;
       }
       try {
@@ -443,6 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (passwordInput.value) payload.password = passwordInput.value;
     if (!isEditing) {
       payload.provider = 'local';
+      payload.localOnly = true;
       payload.password = passwordInput.value;
     }
     if (!/^[a-z0-9._-]{1,32}$/i.test(payload.username)) {
@@ -452,16 +476,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     validatePasswordConfirmation();
     if (!userForm.reportValidity()) return;
-    if (!cloudAccounts && !validateUniqueIdentity(payload, isEditing ? editingUserId : null)) {
+    if (!validateUniqueIdentity(payload, isEditing ? editingUserId : null)) {
       showMessage('اسم المستخدم مسجّل بالفعل. اختر اسمًا مختلفًا.', 'error');
       return;
     }
 
     let existing = null;
     try {
-      existing = isEditing
-        ? (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === editingUserId)
-        : null;
+      existing = isEditing ? findAccount(editingUserId) : null;
     } catch (error) {
       console.error('Unable to read account before saving:', error);
       showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
@@ -480,7 +502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         showMessage('لا يمكن تغيير صلاحية المدير أو حالة حسابه.', 'error');
         return;
       }
-      if (cloudAccounts) {
+      if (isCloudAccount(editingUserId)) {
         try {
           await window.KidsGamesCloud.updateAccount({
             uid: existing.uid,
@@ -514,16 +536,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderUsers();
       showMessage('تم تحديث بيانات الحساب محليًا.');
     } else {
-      if (cloudAccounts) {
-        try {
-          await window.KidsGamesCloud.createAdminAccount(payload);
-          userDialog.close();
-          await refreshCloudAccounts();
-          showMessage(`تم إنشاء حساب ${payload.role === 'admin' ? 'المدير' : 'المستخدم'} ومزامنته مع Firebase.`);
-        } catch (error) {
-          console.error('Unable to create cloud account:', error);
-          showMessage(error.message || 'تعذر إنشاء الحساب في Firebase.', 'error');
-        }
+      if (cloudAccounts && payload.role === 'admin') {
+        showMessage('لا يمكن إنشاء مدير محلي من جلسة Firebase؛ إنشاء حساب مدير يحتاج إلى خدمة موثوقة.', 'error');
         return;
       }
       let added;
@@ -540,7 +554,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       userDialog.close();
       renderUsers();
-      showMessage(`تمت إضافة ${added.username} إلى حسابات هذا الجهاز.`);
+      showMessage(`تمت إضافة ${added.username} إلى حسابات هذا الجهاز فقط.`);
     }
   });
 
@@ -584,7 +598,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       cloudAccounts = await cloud.listAccounts();
       renderUsers();
       connectionStatus.className = 'connection-status';
-      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). يمكنك إضافة الحسابات وتعديل الأدوار والحالة هنا.`;
+      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). الإضافة محلية على هذا الجهاز؛ وتعديل المستخدمين السحابيين متاح هنا.`;
     } else if (!cloud.enabled) {
       renderUsers();
       connectionStatus.className = 'connection-status offline';

@@ -772,7 +772,8 @@
       pinSalt: user.pinSalt || '',
       pinHash: user.pinHash || '',
       provider: user.provider || 'local',
-      status: user.status === 'inactive' ? 'inactive' : 'active'
+      status: user.status === 'inactive' ? 'inactive' : 'active',
+      localOnly: user.localOnly === true
     };
   }
 
@@ -1274,13 +1275,11 @@
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-app-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-auth-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-firestore-compat.js`);
-      await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-functions-compat.js`);
 
       const firebase = window.firebase;
       const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
       const auth = app.auth();
       const database = app.firestore();
-      const functions = app.functions('us-central1');
       await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       let accountCreationInProgress = false;
 
@@ -1384,16 +1383,13 @@
           if (!/^\d{6,128}$/.test(String(pin || ''))) throw new TypeError('رمز الدخول يجب أن يتكون من 6 إلى 128 رقمًا.');
           accountCreationInProgress = true;
           try {
-            const result = await functions.httpsCallable('registerAccount')({
-              username: normalizedUsername,
-              pin,
-              fullName: normalizedFullName,
-              role,
-              avatar
-            });
-            const credential = await auth.signInWithCustomToken(result.data.token);
-            await credential.user.updatePassword(String(pin));
+            const credential = await auth.createUserWithEmailAndPassword(
+              usernameEmail(normalizedUsername),
+              String(pin)
+            );
+            await credential.user.updateProfile({ displayName: normalizedFullName });
             return await syncAccount(credential.user, false, null, {
+              username: normalizedUsername,
               fullName: normalizedFullName,
               role,
               avatar
@@ -1401,14 +1397,6 @@
           } finally {
             accountCreationInProgress = false;
           }
-        },
-        async createAdminAccount({ username, password, role }) {
-          const result = await functions.httpsCallable('createAccount')({
-            username,
-            password,
-            role
-          });
-          return result.data;
         },
         async listAccounts() {
           const snapshot = await database.collection('users').orderBy('username').get();
@@ -1431,50 +1419,17 @@
             throw new Error('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
           }
           if (currentCredential || newCredential) {
-            try {
-              const result = await functions.httpsCallable('updateOwnProfile')({
-                fullName,
-                avatar,
-                currentCredential,
-                newCredential
-              });
-              return setCurrentUser({ ...current, ...result.data });
-            } catch (error) {
-              const legacyAccount = error.code === 'functions/failed-precondition'
-                && error.message.includes('الحساب القديم');
-              const functionNotDeployed = error.code === 'functions/not-found';
-              if (legacyAccount) {
-                const firebaseUser = auth.currentUser;
-                if (!firebaseUser?.email) {
-                  throw new Error('تعذر التحقق من الحساب القديم. تواصل مع مدير النظام.');
-                }
-                const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
-                await firebaseUser.reauthenticateWithCredential(credential);
-                await firebaseUser.getIdToken(true);
-                const result = await functions.httpsCallable('updateOwnProfile')({
-                  fullName,
-                  avatar,
-                  currentCredential,
-                  newCredential
-                });
-                return setCurrentUser({ ...current, ...result.data });
+            const firebaseUser = auth.currentUser;
+            if (!firebaseUser?.email) {
+              throw new Error('تعذر التحقق من بيانات الحساب الحالية.');
+            }
+            const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
+            await firebaseUser.reauthenticateWithCredential(credential);
+            if (newCredential) {
+              if (newCredential.length < 6 || newCredential.length > 128) {
+                throw new TypeError('كلمة المرور الجديدة يجب أن تتكون من 6 إلى 128 حرفًا.');
               }
-              if (newCredential.length < 6 || !functionNotDeployed) throw error;
-
-              const firebaseUser = auth.currentUser;
-              if (!firebaseUser?.email) {
-                throw new Error('تعذر التحقق من الحساب القديم. تواصل مع مدير النظام.');
-              }
-              const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
-              await firebaseUser.reauthenticateWithCredential(credential);
               await firebaseUser.updatePassword(newCredential);
-              await firebaseUser.updateProfile({ displayName: fullName });
-              await database.collection('users').doc(current.id).update({
-                fullName,
-                avatar,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-              });
-              return setCurrentUser({ ...current, fullName, avatar });
             }
           }
           await auth.currentUser.updateProfile({ displayName: fullName });

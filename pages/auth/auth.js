@@ -104,10 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const isLocalAdmin = localAccount?.id === 'admin-demo'
         && localAccount.role === 'admin'
         && localAccount.provider === 'local';
+      const isLocalOnlyAccount = localAccount?.localOnly === true;
       const isLocalPin = /^\d{4}$/.test(password)
         || (localAccount?.pinSalt && localAccount?.pinHash && /^\d{6,}$/.test(password));
       let user;
-      if (isLocalAdmin || !cloud.enabled) {
+      if (isLocalAdmin || isLocalOnlyAccount || !cloud.enabled) {
+        if (isLocalOnlyAccount && cloud.getCurrentUserId?.()) await cloud.signOut();
         user = isLocalPin
           ? await window.KidsGamesAuth.loginWithPin(username, password)
           : window.KidsGamesAuth.loginWithUsername(username, password);

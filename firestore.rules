@@ -8,6 +8,7 @@ service cloud.firestore {
     function activeAdmin() {
       return signedIn()
         && request.auth.token.admin == true
+        && request.auth.token.role == 'admin'
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
@@ -24,7 +25,12 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
           'username', 'email', 'fullName', 'role', 'avatar', 'provider', 'status', 'progress', 'updatedAt'
         ])
-        && request.resource.data.role in ['child', 'parent', 'teacher']
+        && (
+          request.resource.data.role in ['child', 'parent', 'teacher']
+          || (request.resource.data.role == 'admin'
+            && request.auth.token.admin == true
+            && request.auth.token.role == 'admin')
+        )
         && validAvatar(request.resource.data.avatar)
         && request.resource.data.status == 'active'
         && request.resource.data.provider in ['local', 'google']
@@ -51,6 +57,16 @@ service cloud.firestore {
           && request.resource.data.role == resource.data.role
           && request.resource.data.provider == resource.data.provider
           && request.resource.data.status == resource.data.status
+          && request.resource.data.username == resource.data.username)
+        || (request.auth.uid == userId
+          && request.auth.token.admin == true
+          && request.auth.token.role == 'admin'
+          && request.resource.data.role == 'admin'
+          && request.resource.data.status == 'active'
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['email', 'fullName', 'avatar', 'progress', 'updatedAt', 'role', 'status'])
+          && validAvatar(request.resource.data.avatar)
+          && request.resource.data.provider == resource.data.provider
           && request.resource.data.username == resource.data.username)
         || (activeAdmin()
           && request.auth.uid != userId
