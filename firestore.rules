@@ -58,9 +58,8 @@ service cloud.firestore {
           && request.resource.data.provider == resource.data.provider
           && request.resource.data.status == resource.data.status
           && request.resource.data.username == resource.data.username)
-        || (request.auth.uid == userId
-          && request.auth.token.admin == true
-          && request.auth.token.role == 'admin'
+        || (activeAdmin()
+          && request.auth.uid == userId
           && request.resource.data.role == 'admin'
           && request.resource.data.status == 'active'
           && request.resource.data.diff(resource.data).affectedKeys()
