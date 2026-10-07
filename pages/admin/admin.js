@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       if (cloudAccounts) {
         try {
-          await window.KidsGamesCloud.createManagedAccount(payload);
+          await window.KidsGamesCloud.createAdminAccount(payload);
           userDialog.close();
           await refreshCloudAccounts();
           showMessage(`تم إنشاء حساب ${payload.role === 'admin' ? 'المدير' : 'المستخدم'} ومزامنته مع Firebase.`);
