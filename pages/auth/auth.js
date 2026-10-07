@@ -99,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitButton = loginForm.querySelector('[type="submit"]');
     submitButton.disabled = true;
     try {
-      const cloud = await cloudReady;
       const localAccount = window.KidsGamesAuth.findUserByIdentifier(username);
       const isLocalAdmin = localAccount?.id === 'admin-demo'
         && localAccount.role === 'admin'
@@ -107,6 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const isLocalOnlyAccount = localAccount?.localOnly === true;
       const isLocalPin = /^\d{4}$/.test(password)
         || (localAccount?.pinSalt && localAccount?.pinHash && /^\d{6,}$/.test(password));
+      const cloud = isLocalAdmin || isLocalOnlyAccount
+        ? { enabled: false }
+        : await cloudReady;
       let user;
       if (isLocalAdmin || isLocalOnlyAccount || !cloud.enabled) {
         if (isLocalOnlyAccount && cloud.getCurrentUserId?.()) await cloud.signOut();

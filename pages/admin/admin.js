@@ -581,12 +581,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderUsers();
       showMessage('تم تحديث بيانات الحساب محليًا.');
     } else {
-      if (!cloudAccounts || !cloudApi) {
-        showMessage('لإنشاء حساب متاح من أي مكان، سجّل الدخول بحساب مدير Firebase نشط.', 'error');
-        return;
-      }
       if (payload.role === 'admin') {
         showMessage('إنشاء حساب مدير يحتاج إلى خدمة موثوقة؛ اختر طفلًا أو ولي أمر أو معلمًا.', 'error');
+        return;
+      }
+      if (!cloudAccounts || !cloudApi) {
+        let added;
+        try {
+          added = window.KidsGamesAuth.addUser({
+            ...payload,
+            provider: 'local',
+            localOnly: true
+          });
+        } catch (error) {
+          console.error('Unable to create local account:', error);
+          showMessage(error.message || 'تعذر إنشاء الحساب على هذا الجهاز.', 'error');
+          return;
+        }
+        if (!added) {
+          showMessage('تعذر إضافة الحساب. راجع البيانات وحاول مرة أخرى.', 'error');
+          return;
+        }
+        userDialog.close();
+        renderUsers();
+        showMessage(`تم إنشاء حساب ${added.username} على هذا الجهاز فقط؛ تعذر التحقق من Firebase.`);
         return;
       }
       let added;
@@ -640,7 +658,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   connectionStatus.textContent = 'جارٍ التحقق من ربط الحساب...';
 
-  let timeoutId;
   try {
     const loadCloudAdminData = async () => {
       const cloud = await window.KidsGamesCloudReady;
@@ -658,11 +675,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ]);
       return { cloud, savedSettings, savedGameSettings, accounts, maintenance };
     };
-    const timeout = new Promise((resolve, reject) => {
-      timeoutId = window.setTimeout(() => reject(new Error('Cloud account check timed out after 5 seconds.')), 5000);
-    });
-    const result = await Promise.race([loadCloudAdminData(), timeout]);
-    window.clearTimeout(timeoutId);
+    const result = await loadCloudAdminData();
 
     const { cloud } = result;
     if (cloud.enabled && result.accounts) {
@@ -707,11 +720,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       connectionStatus.textContent = `Firebase جاهز (${cloud.projectId})، لكن جلسة المدير ليست حسابًا سحابيًا. سجّل الدخول بحساب مدير Firebase لإدارة الحسابات السحابية.`;
     }
   } catch (error) {
-    window.clearTimeout(timeoutId);
     console.error('Unable to check account connection:', error);
     connectionStatus.className = 'connection-status offline';
-    connectionStatus.textContent = String(error?.message || error).includes('timed out')
-      ? 'استغرق الاتصال بـ Firebase أكثر من 5 ثوانٍ. تظهر الحسابات المحلية؛ أعد تحميل الصفحة للمحاولة مرة أخرى.'
-      : 'تعذر التحقق من الاتصال السحابي. الحسابات المعروضة محفوظة محليًا على هذا الجهاز.';
+    connectionStatus.textContent = 'تعذر التحقق من الاتصال السحابي. الحسابات المحلية متاحة على هذا الجهاز.';
   }
 });
