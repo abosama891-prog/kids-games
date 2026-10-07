@@ -631,11 +631,13 @@ body {
 
   .auth-shell {
     width: 100%;
+    max-width: 100%;
     height: 100vh;
     height: 100dvh;
     margin: 0;
   }
 
+  .auth-card,
   .login-device {
     width: 100%;
     height: 100%;
@@ -644,6 +646,7 @@ body {
     border: 0;
     border-radius: 0;
     box-shadow: none;
+    outline: 0;
     animation: none;
     background: transparent;
   }
@@ -656,9 +659,13 @@ body {
   .splash-screen {
     inset: 0;
     border-radius: 0;
+    border: 0;
+    box-shadow: none;
   }
 
   .account-screen {
     border-radius: 0;
+    border: 0;
+    box-shadow: none;
   }
 }
