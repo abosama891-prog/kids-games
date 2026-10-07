@@ -774,11 +774,8 @@
           throw new Error('هذا الحساب غير نشط.');
         }
 
-        const token = await firebaseUser.getIdTokenResult();
         const provider = firebaseUser.providerData.some(item => item.providerId === 'google.com') ? 'google' : 'local';
-        const role = isValidRole(cloudData.role)
-          ? cloudData.role
-          : (isValidRole(token.claims.role) ? token.claims.role : 'child');
+        const role = isValidRole(cloudData.role) ? cloudData.role : 'child';
         const user = normalizeUser({
           id: firebaseUser.uid,
           username: cloudData.username || token.claims.username || (firebaseUser.email || '').split('@')[0],

@@ -25,11 +25,13 @@ const RATE_LIMITS = 'authRateLimits';
 const ALLOWED_ROLES = new Set(['child', 'parent', 'teacher', 'admin']);
 
 async function requireAdmin(request) {
-  if (!request.auth || request.auth.token.admin !== true || request.auth.token.role !== 'admin') {
+  if (!request.auth || !request.auth.uid) {
     throw new HttpsError('permission-denied', 'يتطلب هذا الإجراء صلاحية المدير.');
   }
+
   const profile = await database.collection(USERS).doc(request.auth.uid).get();
-  if (!profile.exists || profile.data().role !== 'admin' || profile.data().status !== 'active') {
+  const profileData = profile.exists ? profile.data() : null;
+  if (!profileData || profileData.role !== 'admin' || profileData.status !== 'active') {
     throw new HttpsError('permission-denied', 'حساب المدير غير نشط أو لم تعد لديه صلاحية الإدارة.');
   }
 }
