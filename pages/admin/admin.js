@@ -243,17 +243,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     passwordInput.required = !user;
     passwordInput.value = '';
     passwordConfirmationInput.value = '';
-    passwordInput.disabled = Boolean(cloudAccounts) || user?.provider === 'google';
+    passwordInput.disabled = (Boolean(cloudAccounts) && Boolean(user)) || user?.provider === 'google';
     passwordConfirmationInput.disabled = passwordInput.disabled;
     passwordConfirmationField.hidden = passwordInput.disabled;
     passwordConfirmationInput.required = !passwordInput.disabled && !user;
-    usernameInput.disabled = Boolean(cloudAccounts);
+    usernameInput.disabled = Boolean(cloudAccounts) && Boolean(user);
     roleInput.disabled = user?.role === 'admin';
     statusInput.disabled = user?.role === 'admin';
     roleInput.title = '';
     statusInput.title = '';
     passwordInput.placeholder = user ? 'اتركها فارغة دون تغيير' : '6 أحرف على الأقل';
-    passwordHint.textContent = cloudAccounts
+    passwordHint.textContent = cloudAccounts && user
       ? 'تُدار كلمة المرور من Firebase Console.'
       : user
         ? 'اختيارية؛ اتركها فارغة للإبقاء على كلمة المرور الحالية.'
@@ -311,10 +311,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   addUserButton.addEventListener('click', () => {
-    if (cloudAccounts) {
-      showMessage('أنشئ الحساب من Firebase Console باستخدام البريد المعرّف المذكور في التعليمات.', 'error');
-      return;
-    }
     openUserDialog();
   });
   document.getElementById('close-dialog-button').addEventListener('click', () => userDialog.close());
@@ -456,10 +452,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     validatePasswordConfirmation();
     if (!userForm.reportValidity()) return;
-    if (cloudAccounts && !isEditing) {
-      showMessage('أنشئ الحساب أولًا من Firebase Console، ثم يسجّل المستخدم الدخول مرة واحدة.', 'error');
-      return;
-    }
     if (!cloudAccounts && !validateUniqueIdentity(payload, isEditing ? editingUserId : null)) {
       showMessage('اسم المستخدم مسجّل بالفعل. اختر اسمًا مختلفًا.', 'error');
       return;
@@ -522,6 +514,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderUsers();
       showMessage('تم تحديث بيانات الحساب محليًا.');
     } else {
+      if (cloudAccounts) {
+        try {
+          await window.KidsGamesCloud.createAdminAccount(payload);
+          userDialog.close();
+          await refreshCloudAccounts();
+          showMessage(`تم إنشاء حساب ${payload.role === 'admin' ? 'المدير' : 'المستخدم'} ومزامنته مع Firebase.`);
+        } catch (error) {
+          console.error('Unable to create cloud account:', error);
+          showMessage(error.message || 'تعذر إنشاء الحساب في Firebase.', 'error');
+        }
+        return;
+      }
       let added;
       try {
         added = window.KidsGamesAuth.addUser(payload);
@@ -578,12 +582,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         input.checked = window.KidsGames.getGameSettings().lockedGames.includes(input.value);
       });
       cloudAccounts = await cloud.listAccounts();
-      addUserButton.disabled = true;
-      addUserButton.textContent = 'الحسابات من Firebase Console';
-      addUserButton.title = 'أنشئ الحسابات من Firebase Console.';
       renderUsers();
       connectionStatus.className = 'connection-status';
-      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). أضف الحسابات واحذفها من Firebase Console؛ ويمكنك هنا تعديل الأدوار والحالة.`;
+      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). يمكنك إضافة الحسابات وتعديل الأدوار والحالة هنا.`;
     } else if (!cloud.enabled) {
       renderUsers();
       connectionStatus.className = 'connection-status offline';

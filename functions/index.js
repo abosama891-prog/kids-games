@@ -232,7 +232,11 @@ exports.createAccount = onCall(async request => {
   const existing = await ref.get();
   if (existing.exists) throw new HttpsError('already-exists', 'اسم المستخدم مستخدم بالفعل.');
 
-  const userRecord = await auth.createUser({ displayName: credentials.username });
+  const userRecord = await auth.createUser({
+    email: `${credentials.username}@accounts.kids-games.invalid`,
+    password: credentials.password,
+    displayName: credentials.username
+  });
   const passwordData = await hashPassword(credentials.password);
   const profile = {
     uid: userRecord.uid,

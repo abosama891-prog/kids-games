@@ -1367,26 +1367,8 @@
             }
           }
 
-          try {
-            const result = await functions.httpsCallable('authenticateUsername')({
-              username,
-              password
-            });
-            const credential = await auth.signInWithCustomToken(result.data.token);
-            return syncAccount(credential.user);
-          } catch (error) {
-            if (!['functions/unauthenticated', 'functions/not-found', 'functions/invalid-argument'].includes(error.code)) {
-              throw error;
-            }
-
-            try {
-              const credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
-              return syncAccount(credential.user, false, previousLocalProgress);
-            } catch (legacyError) {
-              if (legacyError.code === 'auth/invalid-email') throw error;
-              throw legacyError;
-            }
-          }
+          const credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
+          return syncAccount(credential.user, false, previousLocalProgress);
         },
         async createAccount(username, pin, fullName, role, avatar) {
           const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
@@ -1409,6 +1391,7 @@
               avatar
             });
             const credential = await auth.signInWithCustomToken(result.data.token);
+            await credential.user.updatePassword(String(pin));
             return await syncAccount(credential.user, false, null, {
               fullName: normalizedFullName,
               role,
@@ -1417,6 +1400,14 @@
           } finally {
             accountCreationInProgress = false;
           }
+        },
+        async createAdminAccount({ username, password, role }) {
+          const result = await functions.httpsCallable('createAccount')({
+            username,
+            password,
+            role
+          });
+          return result.data;
         },
         async listAccounts() {
           const snapshot = await database.collection('users').orderBy('username').get();
