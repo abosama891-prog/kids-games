@@ -608,10 +608,26 @@ body {
   }
 
   .sync-status {
-    flex-direction: column;
-    gap: 3px;
-    padding: 8px 11px;
-    font-size: 0.76rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+    padding: 9px 11px;
+    font-size: 0.75rem;
+  }
+
+  .sync-status p {
+    flex: none;
+    line-height: 1.4;
+  }
+
+  .sync-status-actions {
+    grid-column: 1;
+    width: auto;
+    margin: 2px 0 0;
+  }
+
+  .sync-status-actions button {
+    padding: 6px 10px;
   }
 
   .stat-icon {
