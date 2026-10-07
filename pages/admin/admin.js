@@ -33,15 +33,65 @@ document.addEventListener('DOMContentLoaded', async () => {
   const gameSettingsForm = document.getElementById('game-settings-form');
   const gameSettingsList = document.getElementById('game-settings-list');
   const gameSettingsMessage = document.getElementById('game-settings-message');
+  const maintenanceForm = document.getElementById('maintenance-form');
+  const maintenanceToggle = document.getElementById('maintenance-toggle');
+  const maintenanceMessageInput = document.getElementById('maintenance-message');
+  const maintenanceExpectedTimeInput = document.getElementById('maintenance-expected-time');
+  const maintenanceSaveButton = document.getElementById('save-maintenance');
+  const maintenanceStatus = document.getElementById('maintenance-status');
   let editingUserId = null;
   let cloudAccounts = null;
   let cloudApi = null;
+  let maintenanceEnabled = false;
   let gameSettingsSaveQueue = Promise.resolve();
 
   const defaultLessonSettings = window.KidsGames.getLessonSettings();
   Object.entries(defaultLessonSettings).forEach(([key, value]) => {
     const input = lessonSettingsForm.elements.namedItem(key);
     if (input) input.value = String(value);
+  });
+
+  function updateMaintenanceToggle() {
+    maintenanceToggle.textContent = maintenanceEnabled ? 'إيقاف وضع الصيانة' : 'تفعيل وضع الصيانة';
+    maintenanceToggle.setAttribute('aria-pressed', String(maintenanceEnabled));
+  }
+
+  async function getMaintenanceMode() {
+    if (!cloudApi) throw new Error('يجب الاتصال بحساب مدير Firebase لقراءة وضع الصيانة.');
+    return cloudApi.getMaintenanceMode();
+  }
+
+  async function saveMaintenanceMode(enabled, message, expectedTime) {
+    if (!cloudApi) throw new Error('يجب الاتصال بحساب مدير Firebase لحفظ وضع الصيانة.');
+    return cloudApi.saveMaintenanceMode({ enabled, message, expectedTime });
+  }
+
+  maintenanceToggle.addEventListener('click', () => {
+    maintenanceEnabled = !maintenanceEnabled;
+    updateMaintenanceToggle();
+  });
+
+  maintenanceForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    maintenanceSaveButton.disabled = true;
+    maintenanceStatus.className = '';
+    maintenanceStatus.textContent = 'جارٍ حفظ إعداد الصيانة...';
+    try {
+      const saved = await saveMaintenanceMode(
+        maintenanceEnabled,
+        maintenanceMessageInput.value.trim(),
+        maintenanceExpectedTimeInput.value || null
+      );
+      maintenanceEnabled = saved.enabled;
+      updateMaintenanceToggle();
+      maintenanceStatus.textContent = 'تم حفظ وضع الصيانة ومزامنته مع المستخدمين.';
+    } catch (error) {
+      console.error('Unable to save maintenance mode:', error);
+      maintenanceStatus.className = 'error';
+      maintenanceStatus.textContent = error.message || 'تعذر حفظ وضع الصيانة. تحقق من اتصال Firebase وصلاحيات المدير.';
+    } finally {
+      maintenanceSaveButton.disabled = !cloudApi;
+    }
   });
 
   window.KidsGames.gameCatalog.forEach(game => {
@@ -588,12 +638,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { cloud };
       }
 
-      const [savedSettings, savedGameSettings, accounts] = await Promise.all([
+      cloudApi = cloud;
+      const [savedSettings, savedGameSettings, accounts, maintenance] = await Promise.all([
         cloud.getLessonSettings(),
         cloud.getGameSettings(),
-        cloud.listAccounts()
+        cloud.listAccounts(),
+        getMaintenanceMode()
       ]);
-      return { cloud, savedSettings, savedGameSettings, accounts };
+      return { cloud, savedSettings, savedGameSettings, accounts, maintenance };
     };
     const timeout = new Promise((resolve, reject) => {
       timeoutId = window.setTimeout(() => reject(new Error('Cloud account check timed out after 5 seconds.')), 5000);
@@ -604,6 +656,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { cloud } = result;
     if (cloud.enabled && result.accounts) {
       cloudApi = cloud;
+      maintenanceEnabled = result.maintenance.enabled;
+      maintenanceMessageInput.value = result.maintenance.message
+        || 'الموقع تحت الصيانة مؤقتًا. سنعود قريبًا.';
+      maintenanceExpectedTimeInput.value = result.maintenance.expectedTime || '';
+      updateMaintenanceToggle();
+      maintenanceToggle.disabled = false;
+      maintenanceSaveButton.disabled = false;
       if (result.savedSettings) {
         window.KidsGames.saveLessonSettings(result.savedSettings);
         Object.entries(result.savedSettings).forEach(([key, value]) => {

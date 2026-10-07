@@ -550,3 +550,71 @@ button, input {
     height: 28px;
   }
 }
+.maintenance-screen {
+  position: fixed;
+  z-index: 2147483647;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 24px;
+  background: radial-gradient(circle at top, #253545, #101820 68%);
+  color: #f4f7f9;
+  font-family: inherit;
+  text-align: center;
+}
+
+.maintenance-screen-panel {
+  width: min(560px, 100%);
+  padding: clamp(26px, 7vw, 48px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 22px;
+  background: rgba(25, 38, 50, 0.92);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+}
+
+.maintenance-screen-icon {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 3rem;
+}
+
+.maintenance-screen-panel h1 {
+  margin: 0 0 14px;
+  color: #fff;
+  font-size: clamp(1.5rem, 5vw, 2.1rem);
+}
+
+.maintenance-screen-message,
+.maintenance-screen-time {
+  margin: 10px 0;
+  color: #d3dde5;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.maintenance-screen-time[hidden] {
+  display: none;
+}
+
+.maintenance-screen-panel button {
+  margin-top: 18px;
+  padding: 11px 24px;
+  border: 0;
+  border-radius: 12px;
+  background: #57c4b2;
+  color: #102729;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .maintenance-screen {
+    padding: 16px;
+  }
+
+  .maintenance-screen-panel {
+    border-radius: 18px;
+  }
+}

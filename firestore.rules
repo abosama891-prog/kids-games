@@ -132,5 +132,20 @@ service cloud.firestore {
         ]);
       allow delete: if activeAdmin();
     }
+
+    match /settings/site {
+      allow read: if true;
+      allow create, update: if activeAdmin()
+        && request.resource.data.keys().hasOnly(['maintenance', 'updatedAt'])
+        && request.resource.data.maintenance.keys().hasAll(['enabled', 'message', 'expectedTime'])
+        && request.resource.data.maintenance.keys().hasOnly(['enabled', 'message', 'expectedTime'])
+        && request.resource.data.maintenance.enabled is bool
+        && request.resource.data.maintenance.message is string
+        && request.resource.data.maintenance.message.size() <= 500
+        && (request.resource.data.maintenance.expectedTime == null
+          || (request.resource.data.maintenance.expectedTime is string
+            && request.resource.data.maintenance.expectedTime.size() <= 64));
+      allow delete: if activeAdmin();
+    }
   }
 }

@@ -1531,6 +1531,43 @@
           });
           return availability;
         },
+        async getMaintenanceMode() {
+          const snapshot = await database.collection('settings').doc('site').get();
+          const settings = snapshot.exists ? snapshot.data() : {};
+          const maintenance = settings.maintenance || {};
+          return {
+            enabled: maintenance.enabled === true,
+            message: typeof maintenance.message === 'string' ? maintenance.message : '',
+            expectedTime: typeof maintenance.expectedTime === 'string' ? maintenance.expectedTime : null
+          };
+        },
+        async saveMaintenanceMode({ enabled, message, expectedTime }) {
+          const maintenance = {
+            enabled: enabled === true,
+            message: String(message || '').trim().slice(0, 500),
+            expectedTime: expectedTime ? String(expectedTime) : null
+          };
+          await database.collection('settings').doc('site').set({
+            maintenance,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          return maintenance;
+        },
+        watchMaintenanceMode(onChange, onError) {
+          if (typeof onChange !== 'function') throw new TypeError('A maintenance mode listener is required.');
+          return database.collection('settings').doc('site').onSnapshot(snapshot => {
+            const settings = snapshot.exists ? snapshot.data() : {};
+            const maintenance = settings.maintenance || {};
+            onChange({
+              enabled: maintenance.enabled === true,
+              message: typeof maintenance.message === 'string' ? maintenance.message : '',
+              expectedTime: typeof maintenance.expectedTime === 'string' ? maintenance.expectedTime : null
+            });
+          }, error => {
+            if (typeof onError === 'function') onError(error);
+            else console.error('Unable to watch maintenance mode:', error);
+          });
+        },
         async signOut() {
           await auth.signOut();
           logoutUser();
@@ -1553,6 +1590,127 @@
   }
 
   window.KidsGamesCloudReady = initializeCloud();
+  const adminPagePath = new URL('pages/admin/', APP_BASE_URL).pathname;
+  if (!window.location.pathname.startsWith(adminPagePath)) {
+    let maintenanceScreen = null;
+    let inertPageElements = [];
+
+    function hideMaintenanceScreen() {
+      if (!maintenanceScreen) return;
+      maintenanceScreen.remove();
+      maintenanceScreen = null;
+      inertPageElements.forEach(({ element, wasInert }) => {
+        element.inert = wasInert;
+      });
+      inertPageElements = [];
+    }
+
+    function renderMaintenanceScreen(settings) {
+      if (!settings.enabled) {
+        hideMaintenanceScreen();
+        return;
+      }
+
+      if (!maintenanceScreen) {
+        maintenanceScreen = document.createElement('main');
+        maintenanceScreen.className = 'maintenance-screen';
+        maintenanceScreen.setAttribute('role', 'alert');
+        maintenanceScreen.setAttribute('aria-live', 'assertive');
+        Object.assign(maintenanceScreen.style, {
+          position: 'fixed',
+          zIndex: '2147483647',
+          inset: '0',
+          display: 'grid',
+          placeItems: 'center',
+          overflowY: 'auto',
+          padding: '24px',
+          background: 'radial-gradient(circle at top, #253545, #101820 68%)',
+          color: '#f4f7f9',
+          fontFamily: 'inherit',
+          textAlign: 'center',
+          boxSizing: 'border-box'
+        });
+        const panel = document.createElement('section');
+        panel.className = 'maintenance-screen-panel';
+        Object.assign(panel.style, {
+          width: 'min(560px, 100%)',
+          padding: 'clamp(26px, 7vw, 48px)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '22px',
+          background: 'rgba(25, 38, 50, 0.92)',
+          boxShadow: '0 24px 70px rgba(0, 0, 0, 0.38)',
+          boxSizing: 'border-box'
+        });
+        const icon = document.createElement('span');
+        icon.className = 'maintenance-screen-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = '🛠️';
+        Object.assign(icon.style, { display: 'block', marginBottom: '14px', fontSize: '3rem' });
+        const title = document.createElement('h1');
+        title.textContent = 'الموقع تحت الصيانة مؤقتًا';
+        Object.assign(title.style, { margin: '0 0 14px', color: '#fff', fontSize: 'clamp(1.5rem, 5vw, 2.1rem)' });
+        const message = document.createElement('p');
+        message.className = 'maintenance-screen-message';
+        Object.assign(message.style, { margin: '10px 0', color: '#d3dde5', lineHeight: '1.8', overflowWrap: 'anywhere' });
+        const expectedTime = document.createElement('p');
+        expectedTime.className = 'maintenance-screen-time';
+        Object.assign(expectedTime.style, { margin: '10px 0', color: '#d3dde5', lineHeight: '1.8', overflowWrap: 'anywhere' });
+        const refreshButton = document.createElement('button');
+        refreshButton.type = 'button';
+        refreshButton.textContent = 'تحديث';
+        Object.assign(refreshButton.style, {
+          marginTop: '18px',
+          padding: '11px 24px',
+          border: '0',
+          borderRadius: '12px',
+          background: '#57c4b2',
+          color: '#102729',
+          font: 'inherit',
+          fontWeight: '800',
+          cursor: 'pointer'
+        });
+        refreshButton.addEventListener('click', () => window.location.reload());
+        panel.append(icon, title, message, expectedTime, refreshButton);
+        maintenanceScreen.appendChild(panel);
+        inertPageElements = Array.from(document.body.children)
+          .filter(element => element !== maintenanceScreen)
+          .map(element => ({ element, wasInert: element.inert }));
+        inertPageElements.forEach(({ element }) => {
+          element.inert = true;
+        });
+        document.body.appendChild(maintenanceScreen);
+      }
+
+      maintenanceScreen.querySelector('.maintenance-screen-message').textContent =
+        settings.message || 'الموقع تحت الصيانة مؤقتًا. سنعود قريبًا.';
+      const expectedTime = maintenanceScreen.querySelector('.maintenance-screen-time');
+      if (settings.expectedTime) {
+        const expectedDate = new Date(settings.expectedTime);
+        expectedTime.textContent = Number.isNaN(expectedDate.getTime())
+          ? `وقت العودة المتوقع: ${settings.expectedTime}`
+          : `وقت العودة المتوقع: ${new Intl.DateTimeFormat('ar-EG', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }).format(expectedDate)}`;
+        expectedTime.hidden = false;
+      } else {
+        expectedTime.textContent = '';
+        expectedTime.hidden = true;
+      }
+    }
+
+    window.KidsGamesCloudReady.then(cloud => {
+      if (!cloud?.enabled || typeof cloud.watchMaintenanceMode !== 'function') return;
+      cloud.watchMaintenanceMode(renderMaintenanceScreen, error => {
+        console.error('Unable to check maintenance mode:', error);
+      });
+    }).catch(error => console.error('Unable to initialize maintenance mode check:', error));
+  }
+
   window.KidsGamesCloudReady.then(cloud => {
     if (!cloud?.enabled) return;
     syncCloudProgress(readProgress(), true).catch(error => {

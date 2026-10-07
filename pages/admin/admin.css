@@ -275,6 +275,73 @@ body {
   line-height: 1.7;
 }
 
+.maintenance-panel h2 {
+  margin-bottom: 10px;
+  color: var(--header-text);
+}
+
+.maintenance-form {
+  display: grid;
+  gap: 14px;
+}
+
+.maintenance-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--header-text);
+  font-weight: 700;
+}
+
+.maintenance-form textarea,
+.maintenance-form input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f7fafb;
+  color: var(--header-text);
+  font: inherit;
+}
+
+.maintenance-form textarea {
+  resize: vertical;
+}
+
+.maintenance-toggle {
+  justify-self: start;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #edf3f6;
+  color: var(--header-text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.maintenance-toggle[aria-pressed="true"] {
+  border-color: #b94a48;
+  background: #fff0ee;
+  color: #963c38;
+}
+
+.maintenance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.maintenance-actions span {
+  color: #215d50;
+  font-weight: 700;
+}
+
+.maintenance-actions span.error {
+  color: var(--danger);
+}
+
 .lesson-settings-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
