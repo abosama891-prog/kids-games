@@ -522,8 +522,11 @@
     const formSnapshots = new WeakMap();
     let updateReloadStarted = false;
     let updateReloadPending = false;
+    let allowReloadWithUnsaved = false;
+    let automaticUpdateTimer = null;
     let serviceWorkerRegistration = null;
     const updateCheckInterval = 5 * 60 * 1000;
+    const automaticUpdateDelay = 60 * 1000;
     const updateCheckStorageKey = STORAGE_KEYS.serviceWorkerUpdateCheck;
 
     function snapshotForm(form) {
@@ -558,7 +561,10 @@
       } else {
         dirtyForms.delete(form);
       }
-      if (updateReloadPending) reloadForServiceWorkerUpdate();
+      if (updateReloadPending) {
+        if (serviceWorkerRegistration?.waiting || serviceWorkerRegistration?.installing) applyWaitingServiceWorker();
+        else reloadForServiceWorkerUpdate();
+      }
     }
 
     function hasUnsavedFormChanges() {
@@ -570,7 +576,7 @@
 
     function reloadForServiceWorkerUpdate() {
       if (!hadControllerOnLoad || updateReloadStarted) return;
-      if (hasUnsavedFormChanges()) {
+      if (hasUnsavedFormChanges() && !allowReloadWithUnsaved) {
         updateReloadPending = true;
         showAppUpdateNotice();
         return;
@@ -580,8 +586,45 @@
       window.location.reload();
     }
 
-    async function checkForServiceWorkerUpdate() {
+    function applyWaitingServiceWorker(confirmIfDirty = false) {
+      const updateWorker = serviceWorkerRegistration?.waiting || serviceWorkerRegistration?.installing;
+      if (!updateWorker) return false;
+      if (hasUnsavedFormChanges()) {
+        if (confirmIfDirty && !window.confirm('قد تفقد التعديلات غير المحفوظة في النموذج. هل تريد التحديث الآن؟')) {
+          return false;
+        }
+        if (!confirmIfDirty) {
+          updateReloadPending = true;
+          showAppUpdateNotice();
+          return false;
+        }
+        allowReloadWithUnsaved = true;
+      }
+      if (automaticUpdateTimer !== null) {
+        window.clearTimeout(automaticUpdateTimer);
+        automaticUpdateTimer = null;
+      }
+      updateReloadPending = false;
+      updateWorker.postMessage({ type: 'SKIP_WAITING' });
+      return true;
+    }
+
+    function handleWaitingServiceWorker() {
+      if (!serviceWorkerRegistration?.waiting && !serviceWorkerRegistration?.installing) return;
+      showAppUpdateNotice();
+      if (automaticUpdateTimer !== null) return;
+      automaticUpdateTimer = window.setTimeout(() => {
+        automaticUpdateTimer = null;
+        applyWaitingServiceWorker();
+      }, automaticUpdateDelay);
+    }
+
+    async function checkForServiceWorkerUpdate(force = false) {
       if (!serviceWorkerRegistration) return;
+      if (serviceWorkerRegistration.waiting) {
+        handleWaitingServiceWorker();
+        return;
+      }
 
       let lastCheck = 0;
       try {
@@ -589,7 +632,7 @@
       } catch (error) {
         console.error('Unable to read the service worker update-check time:', error);
       }
-      if (Date.now() - lastCheck < updateCheckInterval) return;
+      if (!force && Date.now() - lastCheck < updateCheckInterval) return;
 
       try {
         sessionStorage.setItem(updateCheckStorageKey, String(Date.now()));
@@ -608,12 +651,18 @@
       window.setTimeout(() => {
         dirtyForms.delete(form);
         formSnapshots.delete(form);
-        if (updateReloadPending) reloadForServiceWorkerUpdate();
+        if (updateReloadPending) {
+          if (serviceWorkerRegistration?.waiting || serviceWorkerRegistration?.installing) applyWaitingServiceWorker();
+          else reloadForServiceWorkerUpdate();
+        }
       });
     }, true);
 
     const updateSubmissionObserver = new MutationObserver(() => {
-      if (updateReloadPending) reloadForServiceWorkerUpdate();
+      if (updateReloadPending) {
+        if (serviceWorkerRegistration?.waiting || serviceWorkerRegistration?.installing) applyWaitingServiceWorker();
+        else reloadForServiceWorkerUpdate();
+      }
     });
     updateSubmissionObserver.observe(document.documentElement, {
       attributes: true,
@@ -621,16 +670,16 @@
       subtree: true
     });
 
+    navigator.serviceWorker.addEventListener('controllerchange', reloadForServiceWorkerUpdate);
     navigator.serviceWorker.addEventListener('message', event => {
       if (event.data?.type === 'APP_UPDATE_AVAILABLE' && hadControllerOnLoad) {
-        showAppUpdateNotice(event.data.version);
+        handleWaitingServiceWorker();
       }
     });
-    navigator.serviceWorker.addEventListener('controllerchange', reloadForServiceWorkerUpdate);
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible' || !serviceWorkerRegistration) return;
-      checkForServiceWorkerUpdate().catch(error => {
+      checkForServiceWorkerUpdate(true).catch(error => {
         console.error('Unable to check for a service worker update:', error);
       });
     });
@@ -639,6 +688,16 @@
       navigator.serviceWorker.register(new URL('sw.js', APP_BASE_URL).href, { updateViaCache: 'none' })
         .then(registration => {
           serviceWorkerRegistration = registration;
+          if (registration.waiting && hadControllerOnLoad) handleWaitingServiceWorker();
+          registration.addEventListener('updatefound', () => {
+            const installingWorker = registration.installing;
+            if (!installingWorker) return;
+            installingWorker.addEventListener('statechange', () => {
+              if (installingWorker.state === 'installed' && hadControllerOnLoad) {
+                handleWaitingServiceWorker();
+              }
+            });
+          });
           return checkForServiceWorkerUpdate();
         })
         .catch(error => console.error('Unable to register or update the app service worker:', error));
@@ -653,17 +712,13 @@
       notice.setAttribute('aria-live', 'polite');
 
       const message = document.createElement('span');
-      message.textContent = version ? `تحديث متاح (${version})` : 'تحديث متاح';
+      message.textContent = `تم إصدار تحديث جديد${version ? ` (${version})` : ''}. من فضلك حدّث التطبيق للحصول على أحدث الميزات.`;
 
       const reloadButton = document.createElement('button');
       reloadButton.type = 'button';
       reloadButton.textContent = 'تحديث الآن';
       reloadButton.addEventListener('click', () => {
-        if (hasUnsavedFormChanges()
-          && !window.confirm('قد تفقد التعديلات غير المحفوظة في النموذج. هل تريد التحديث الآن؟')) {
-          return;
-        }
-        window.location.reload();
+        applyWaitingServiceWorker(true);
       });
 
       const dismissButton = document.createElement('button');

@@ -347,6 +347,11 @@ button, input {
   box-shadow: 0 8px 28px rgba(20, 54, 49, 0.3);
 }
 
+.app-update-notice span {
+  flex: 1 1 260px;
+  line-height: 1.6;
+}
+
 .app-update-notice button {
   padding: 7px 11px;
   border: 0;
@@ -355,6 +360,12 @@ button, input {
   color: #176b63;
   font-weight: 900;
   cursor: pointer;
+}
+
+.app-update-notice button:not(.app-update-dismiss) {
+  background: #ffdf76;
+  color: #253f39;
+  white-space: nowrap;
 }
 
 .app-update-notice .app-update-dismiss {

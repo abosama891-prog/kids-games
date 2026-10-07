@@ -1,7 +1,8 @@
 const CACHE_PREFIX = 'kids-games-';
-const APP_VERSION = '2026.10.06.10';
+const APP_VERSION = '2026.10.07.01';
 const CACHE_NAME = `${CACHE_PREFIX}v${APP_VERSION}`;
 const APP_BASE_URL = new URL('./', self.location);
+let resolveInstallWait;
 const APP_SHELL = [
   '',
   'index.html',
@@ -36,12 +37,38 @@ function isStaticAsset(request, url) {
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
+    const existingAppCache = (await caches.keys()).some(key => key.startsWith(CACHE_PREFIX));
     const cache = await caches.open(CACHE_NAME);
     await Promise.all(APP_SHELL.map(async appUrl => {
       const response = await fetch(appUrl, { cache: 'reload' });
       if (!response.ok) throw new Error(`Unable to precache ${appUrl}: ${response.status}`);
       await cache.put(appUrl, response);
     }));
+
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const activeClients = clients.filter(client => client.url.startsWith(APP_BASE_URL.href));
+    if (!existingAppCache || activeClients.length === 0) {
+      await self.skipWaiting();
+      return;
+    }
+
+    activeClients.forEach(client => client.postMessage({
+      type: 'APP_UPDATE_AVAILABLE',
+      version: APP_VERSION
+    }));
+
+    await new Promise(resolve => {
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        resolveInstallWait = null;
+        resolve();
+      };
+      const timeout = setTimeout(finish, 60 * 1000);
+      resolveInstallWait = finish;
+    });
     await self.skipWaiting();
   })());
 });
@@ -53,12 +80,14 @@ self.addEventListener('activate', event => {
     await Promise.all(previousAppCaches.map(key => caches.delete(key)));
     await self.clients.claim();
 
-    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    clients.forEach(client => client.postMessage({
-      type: 'APP_UPDATE_AVAILABLE',
-      version: APP_VERSION
-    }));
   })());
+});
+
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    resolveInstallWait?.();
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', event => {
