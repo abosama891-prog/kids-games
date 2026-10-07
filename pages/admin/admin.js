@@ -43,7 +43,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   let cloudAccounts = null;
   let cloudApi = null;
   let maintenanceEnabled = false;
-  let gameSettingsSaveQueue = Promise.resolve();
+  let gameSettingsSaveInProgress = false;
+
+  function withTimeout(promise, timeoutMs, message) {
+    let timeoutId;
+    return Promise.race([
+      promise,
+      new Promise((resolve, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+      })
+    ]).finally(() => window.clearTimeout(timeoutId));
+  }
 
   const defaultLessonSettings = window.KidsGames.getLessonSettings();
   Object.entries(defaultLessonSettings).forEach(([key, value]) => {
@@ -111,28 +121,67 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function saveGameAvailability() {
-    gameSettingsSaveQueue = gameSettingsSaveQueue
-      .then(async () => {
-        const settings = {
-          lockedGames: Array.from(gameSettingsForm.querySelectorAll('input[type="checkbox"]:checked'))
-            .map(input => input.value)
-        };
-        try {
-          if (!cloudApi || currentUser.role !== 'admin'
-            || !cloudApi.isCurrentUserLinked?.()) {
-            throw new Error('سجّل الدخول بحساب مدير Firebase لحفظ إعدادات الألعاب.');
-          }
-          gameSettingsMessage.className = '';
-          gameSettingsMessage.textContent = 'جارٍ حفظ حالة الألعاب...';
-          await cloudApi.saveGameSettings(settings);
-          gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب في Firebase ومزامنتها مع جميع المستخدمين.';
-        } catch (error) {
-          console.error('Unable to save game availability settings:', error);
-          gameSettingsMessage.className = 'game-settings-message error';
-          gameSettingsMessage.textContent = error.message || 'تعذر حفظ الإعدادات في Firebase. تحقق من اتصال المدير وصلاحياته ثم أعد المحاولة.';
+    if (gameSettingsSaveInProgress) return;
+    gameSettingsSaveInProgress = true;
+
+    const settings = {
+      lockedGames: Array.from(gameSettingsForm.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(input => input.value)
+    };
+    const checkboxes = Array.from(gameSettingsForm.querySelectorAll('input[type="checkbox"]'));
+    const saveButton = gameSettingsForm.querySelector('button[type="submit"]');
+    checkboxes.forEach(input => { input.disabled = true; });
+    if (saveButton) saveButton.disabled = true;
+    gameSettingsMessage.className = '';
+    gameSettingsMessage.textContent = 'جارٍ حفظ حالة الألعاب...';
+
+    const deadline = Date.now() + 5000;
+    const remainingTime = () => Math.max(1, deadline - Date.now());
+
+    (async () => {
+      try {
+        const cloud = cloudApi || await withTimeout(
+          window.KidsGamesCloudReady,
+          Math.min(2000, remainingTime()),
+          'انتهت مهلة الاتصال بـ Firebase.'
+        );
+        if (currentUser.role !== 'admin' || !cloud?.enabled
+          || !cloud.isCurrentUserLinked?.()
+          || cloud.getCurrentUserId?.() !== currentUser.id) {
+          throw new Error('حساب المدير غير مرتبط بـ Firebase؛ تم الحفظ على هذا الجهاز فقط.');
         }
-      });
-    return gameSettingsSaveQueue;
+
+        await withTimeout(
+          cloud.saveGameSettings(settings),
+          remainingTime(),
+          'انتهت مهلة حفظ الإعدادات في Firebase بعد 5 ثوانٍ.'
+        );
+        try {
+          window.KidsGames.saveGameSettings(settings);
+        } catch (error) {
+          console.error('Cloud settings were saved, but the local cache could not be updated:', error);
+        }
+        gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب في Firebase ومزامنتها مع جميع المستخدمين.';
+      } catch (error) {
+        console.error('Unable to save game availability settings:', error);
+        try {
+          window.KidsGames.saveGameSettings(settings);
+          const errorMessage = String(error?.message || 'تعذر حفظ الإعدادات في Firebase.');
+          gameSettingsMessage.className = 'game-settings-message error';
+          gameSettingsMessage.textContent = errorMessage.includes('على هذا الجهاز فقط')
+            ? errorMessage
+            : `${errorMessage} حُفظت الحالة على هذا الجهاز فقط؛ أعد المحاولة للمزامنة.`;
+        } catch (localError) {
+          console.error('Unable to save game settings locally:', localError);
+          gameSettingsMessage.className = 'game-settings-message error';
+          gameSettingsMessage.textContent = 'تعذر حفظ الإعدادات في Firebase أو على هذا الجهاز. تحقق من الاتصال ومساحة التخزين ثم أعد المحاولة.';
+        }
+      } finally {
+        gameSettingsSaveInProgress = false;
+        checkboxes.forEach(input => { input.disabled = false; });
+        if (saveButton) saveButton.disabled = false;
+      }
+    })();
   }
 
   gameSettingsForm.addEventListener('change', event => {
