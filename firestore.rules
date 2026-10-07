@@ -37,10 +37,33 @@ service cloud.firestore {
         );
     }
 
+    function validManagedProfile() {
+      return activeAdmin()
+        && request.resource.data.keys().hasAll([
+          'username', 'email', 'fullName', 'role', 'avatar', 'provider', 'status', 'progress', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'username', 'email', 'fullName', 'role', 'avatar', 'provider', 'status', 'progress', 'updatedAt'
+        ])
+        && request.resource.data.username is string
+        && request.resource.data.email is string
+        && request.resource.data.email.split('@')[0] == request.resource.data.username
+        && request.resource.data.email.split('@')[1] == 'kids-games.local'
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() > 0
+        && request.resource.data.fullName.size() <= 60
+        && request.resource.data.role in ['child', 'parent', 'teacher', 'admin']
+        && validAvatar(request.resource.data.avatar)
+        && request.resource.data.provider == 'local'
+        && request.resource.data.status == 'active'
+        && request.resource.data.progress is map
+        && request.resource.data.updatedAt is timestamp;
+    }
+
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || activeAdmin());
 
-      allow create: if signedIn() && validNewProfile(userId);
+      allow create: if signedIn() && (validNewProfile(userId) || validManagedProfile());
 
       allow update: if signedIn() && (
         (request.auth.uid == userId

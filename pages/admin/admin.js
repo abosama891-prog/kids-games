@@ -244,10 +244,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       deleteButton.className = 'table-action';
       deleteButton.dataset.action = 'delete';
       deleteButton.dataset.id = user.id;
-      deleteButton.textContent = 'حذف';
+      deleteButton.textContent = 'تعطيل';
       deleteButton.disabled = user.id === currentUser.id;
-      deleteButton.title = user.id === currentUser.id ? 'لا يمكن حذف الحساب المستخدم حاليًا.' : '';
-      deleteButton.setAttribute('aria-label', `حذف ${user.username}`);
+      deleteButton.title = user.id === currentUser.id ? 'لا يمكن تعطيل الحساب المستخدم حاليًا.' : '';
+      deleteButton.setAttribute('aria-label', `تعطيل ${user.username}`);
       actions.append(editButton, deleteButton);
       row.appendChild(actions);
       usersTableBody.appendChild(row);
@@ -265,18 +265,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     passwordInput.required = !user;
     passwordInput.value = '';
     passwordConfirmationInput.value = '';
-    passwordInput.disabled = user?.provider === 'google';
+    passwordInput.disabled = Boolean(user);
     passwordConfirmationInput.disabled = passwordInput.disabled;
     passwordConfirmationField.hidden = passwordInput.disabled;
     passwordConfirmationInput.required = !passwordInput.disabled && !user;
-    usernameInput.disabled = false;
+    usernameInput.disabled = Boolean(user);
     roleInput.disabled = user?.role === 'admin';
     statusInput.disabled = user?.role === 'admin';
     roleInput.title = '';
     statusInput.title = '';
     passwordInput.placeholder = user ? 'اتركها فارغة دون تغيير' : '6 أحرف على الأقل';
     passwordHint.textContent = user
-      ? 'اختيارية؛ اتركها فارغة للإبقاء على كلمة المرور الحالية.'
+      ? 'تغيير كلمة مرور مستخدم آخر غير متاح من التطبيق.'
       : 'مطلوبة للحساب الجديد (6 أحرف على الأقل).';
     if (user) {
       usernameInput.value = user.username;
@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       const user = cloudAccounts.find(item => item.id === userId);
-      if (!user || !window.confirm(`هل تريد حذف حساب "${user.username}"؟ لا يمكن التراجع عن ذلك.`)) return;
+      if (!user || !window.confirm(`هل تريد تعطيل حساب "${user.username}"؟ لن يتمكن من تسجيل الدخول إلى المنصة.`)) return;
 
       try {
         await cloud.deleteAccount({ uid: user.uid, username: user.username });
@@ -426,7 +426,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       await refreshCloudAccounts();
-      showMessage('تم حذف الحساب من Firebase.');
+      showMessage('تم تعطيل الحساب. لم يتم حذف هويته من Firebase Authentication.');
     }
   });
 
@@ -546,7 +546,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       renderUsers();
       connectionStatus.className = 'connection-status';
-      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). إنشاء الحسابات وتعديلها وحذفها يتم عبر خدمات Firebase.`;
+      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). يمكنك إنشاء الحسابات وإدارة أدوارها وحالاتها مباشرةً.`;
   } catch (error) {
     console.error('Unable to check account connection:', error);
     usersTableBody.replaceChildren();

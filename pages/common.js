@@ -741,13 +741,11 @@
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-app-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-auth-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-firestore-compat.js`);
-      await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-functions-compat.js`);
 
       const firebase = window.firebase;
       const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
       const auth = app.auth();
       const database = app.firestore();
-      const functions = app.functions('us-central1');
       await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       let userProgressUnsubscribe = null;
 
@@ -836,24 +834,105 @@
           });
         },
         async createManagedAccount(account) {
-          const result = await functions.httpsCallable('createAccount')({
-            username: account.username,
-            password: account.password,
-            role: account.role
-          });
-          return result.data;
+          const username = String(account.username || '').trim().toLocaleLowerCase('en-US');
+          const fullName = String(account.fullName || username).trim();
+          const role = account.role;
+          const password = String(account.password || '');
+          if (!/^[a-z0-9._-]{1,32}$/.test(username)) throw new TypeError('اسم المستخدم غير صحيح.');
+          if (!fullName || fullName.length > 60) throw new TypeError('أدخل اسمًا صحيحًا لا يتجاوز 60 حرفًا.');
+          if (!['child', 'parent', 'teacher', 'admin'].includes(role)) throw new TypeError('اختر نوع حساب صحيحًا.');
+          if (password.length < 6 || password.length > 128) throw new TypeError('كلمة المرور يجب أن تكون من 6 إلى 128 حرفًا.');
+
+          const secondaryApp = firebase.initializeApp(config, `managed-account-${Date.now()}`);
+          try {
+            const email = `${username}@kids-games.local`;
+            const credential = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+            try {
+              await database.collection('users').doc(credential.user.uid).set({
+                username,
+                email,
+                fullName,
+                role,
+                status: 'active',
+                avatar: 'child',
+                provider: 'local',
+                progress: {},
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+            } catch (error) {
+              try {
+                await credential.user.delete();
+              } catch (cleanupError) {
+                console.error('Unable to remove Firebase Auth account after profile creation failed:', cleanupError);
+              }
+              throw error;
+            }
+            return { id: credential.user.uid, uid: credential.user.uid, username, email, fullName, role, status: 'active' };
+          } finally {
+            await secondaryApp.delete();
+          }
         },
         async updateAccount(account) {
-          const result = await functions.httpsCallable('updateAccount')(account);
-          return result.data;
+          const userRef = database.collection('users').doc(account.uid);
+          const snapshot = await userRef.get();
+          if (!snapshot.exists) throw new Error('تعذر العثور على الحساب.');
+          const existing = snapshot.data();
+          if (account.username && account.username !== existing.username) {
+            throw new Error('لا يمكن تغيير اسم المستخدم دون خدمة إدارة Firebase.');
+          }
+          if (account.password) {
+            throw new Error('لا يمكن تغيير كلمة مرور مستخدم آخر من التطبيق.');
+          }
+          if (!['child', 'parent', 'teacher', 'admin'].includes(account.role)
+            || !['active', 'inactive'].includes(account.status)) {
+            throw new TypeError('بيانات الدور أو الحالة غير صحيحة.');
+          }
+          await userRef.update({
+            role: account.role,
+            status: account.status,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          return { ...existing, ...account };
         },
         async deleteAccount(account) {
-          return (await functions.httpsCallable('deleteAccount')(account)).data;
+          const userRef = database.collection('users').doc(account.uid);
+          const snapshot = await userRef.get();
+          if (!snapshot.exists) return false;
+          if (snapshot.data().role === 'admin') throw new Error('لا يمكن تعطيل حساب مدير من هذه الواجهة.');
+          await userRef.update({
+            status: 'inactive',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          return true;
         },
         async updateOwnProfile({ fullName, avatar, currentCredential = '', newCredential = '' }) {
-          const result = await functions.httpsCallable('updateOwnProfile')({ fullName, avatar, currentCredential, newCredential });
+          const firebaseUser = auth.currentUser;
           const current = getCurrentUser();
-          setCurrentUser({ ...current, ...result.data });
+          if (!firebaseUser || !current || firebaseUser.uid !== current.id) throw new Error('سجّل الدخول إلى حسابك أولًا.');
+          if (!fullName || fullName.length > 60 || !['child', 'girl', 'engineer'].includes(avatar)) {
+            throw new TypeError('بيانات الملف الشخصي غير صحيحة.');
+          }
+          if (newCredential) {
+            if (!currentCredential || newCredential.length < 6 || newCredential.length > 128) {
+              throw new TypeError('أدخل كلمة المرور الحالية وكلمة مرور جديدة من 6 إلى 128 حرفًا.');
+            }
+            const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
+            await firebaseUser.reauthenticateWithCredential(credential);
+          }
+          await database.collection('users').doc(firebaseUser.uid).update({
+            fullName,
+            avatar,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          setCurrentUser({ ...current, fullName, avatar });
+          if (newCredential) {
+            try {
+              await firebaseUser.updatePassword(newCredential);
+            } catch (error) {
+              console.error('Unable to update Firebase Auth password after saving profile:', error);
+              throw new Error('تم حفظ الاسم والشخصية، لكن تعذر تغيير كلمة المرور. حاول تغييرها مرة أخرى.');
+            }
+          }
           return getCurrentUser();
         },
         async getLessonSettings() {
