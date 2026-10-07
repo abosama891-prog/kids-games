@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const cloud = await window.KidsGamesCloudReady;
-  const currentUser = window.KidsGamesAuth.getCurrentUser();
-  if (!cloud?.enabled || !currentUser || currentUser.role !== 'admin'
-    || cloud.getCurrentUserId?.() !== currentUser.id) {
+  const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
+  if (!currentUser || currentUser.role !== 'admin') {
     window.location.href = '../auth/index.html';
     return;
   }
@@ -35,14 +33,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const gameSettingsForm = document.getElementById('game-settings-form');
   const gameSettingsList = document.getElementById('game-settings-list');
   const gameSettingsMessage = document.getElementById('game-settings-message');
-  const siteMaintenanceForm = document.getElementById('site-maintenance-form');
-  const siteMaintenanceEnabled = document.getElementById('site-maintenance-enabled');
-  const siteMaintenanceMessage = document.getElementById('site-maintenance-message');
-  const siteMaintenanceExpectedTime = document.getElementById('site-maintenance-expected-time');
-  const siteMaintenanceStatus = document.getElementById('site-maintenance-status');
   let editingUserId = null;
-  let cloudAccounts = [];
-  const cloudApi = cloud;
+  let cloudAccounts = null;
+  let cloudApi = null;
   let gameSettingsSaveQueue = Promise.resolve();
 
   const defaultLessonSettings = window.KidsGames.getLessonSettings();
@@ -74,17 +67,28 @@ document.addEventListener('DOMContentLoaded', async () => {
           lockedGames: Array.from(gameSettingsForm.querySelectorAll('input[type="checkbox"]:checked'))
             .map(input => input.value)
         };
+        let savedLocally = false;
+
         try {
+          window.KidsGames.saveGameSettings(settings);
+          savedLocally = true;
           gameSettingsMessage.className = '';
           gameSettingsMessage.textContent = 'جارٍ حفظ حالة الألعاب...';
 
-          await cloud.saveGameSettings(settings);
-          window.KidsGames.saveGameSettings(settings);
-          gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب ومزامنتها مع جميع المستخدمين.';
+          const cloud = await window.KidsGamesCloudReady;
+          if (cloud.enabled && currentUser.role === 'admin'
+            && cloud.getCurrentUserId?.() === currentUser.id) {
+            await cloud.saveGameSettings(settings);
+            gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب ومزامنتها مع جميع المستخدمين.';
+          } else {
+            gameSettingsMessage.textContent = 'تم حفظ حالة الألعاب على هذا الجهاز فقط.';
+          }
         } catch (error) {
           console.error('Unable to save game availability settings:', error);
           gameSettingsMessage.className = 'game-settings-message error';
-          gameSettingsMessage.textContent = 'تعذر حفظ حالة الألعاب في Firebase. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.';
+          gameSettingsMessage.textContent = savedLocally
+            ? 'حُفظت الإعدادات على هذا الجهاز، وتعذرت مزامنتها. تحقق من اتصال Firebase ثم أعد المحاولة.'
+            : 'تعذر حفظ الإعدادات على هذا الجهاز. تحقق من مساحة التخزين ثم أعد المحاولة.';
         }
       });
     return gameSettingsSaveQueue;
@@ -101,34 +105,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveGameAvailability();
   });
 
-  async function saveMaintenanceMode(enabled, message, expectedTime) {
-    return cloud.saveMaintenanceMode(enabled, message, expectedTime);
-  }
-
-  siteMaintenanceForm.addEventListener('submit', async event => {
-    event.preventDefault();
-    const saveButton = document.getElementById('save-site-maintenance');
-    saveButton.disabled = true;
-    siteMaintenanceStatus.className = '';
-    siteMaintenanceStatus.textContent = 'جارٍ حفظ وضع الصيانة في Firebase...';
-    try {
-      const saved = await saveMaintenanceMode(
-        siteMaintenanceEnabled.checked,
-        siteMaintenanceMessage.value.trim(),
-        siteMaintenanceExpectedTime.value ? new Date(siteMaintenanceExpectedTime.value).toISOString() : ''
-      );
-      siteMaintenanceEnabled.checked = saved.enabled;
-      siteMaintenanceMessage.value = saved.message;
-      siteMaintenanceStatus.textContent = 'تم حفظ وضع الصيانة، وسيُحدّث للمستخدمين المتصلين فورًا.';
-    } catch (error) {
-      console.error('Unable to save site maintenance mode:', error);
-      siteMaintenanceStatus.textContent = 'تعذر حفظ وضع الصيانة في Firebase. تحقق من الاتصال والصلاحيات ثم أعد المحاولة.';
-      siteMaintenanceStatus.className = 'error';
-    } finally {
-      saveButton.disabled = false;
-    }
-  });
-
   lessonSettingsForm.addEventListener('submit', async event => {
     event.preventDefault();
     if (!lessonSettingsForm.reportValidity()) return;
@@ -138,10 +114,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         .map(input => [input.name, Number(input.value)])
     );
     try {
-      await cloudApi.saveLessonSettings(settings);
+      if (cloudAccounts && cloudApi) await cloudApi.saveLessonSettings(settings);
       window.KidsGames.saveLessonSettings(settings);
       lessonSettingsMessage.className = '';
-      lessonSettingsMessage.textContent = 'تم حفظ المستويات ومزامنتها مع جميع المستخدمين.';
+      lessonSettingsMessage.textContent = cloudAccounts
+        ? 'تم حفظ المستويات ومزامنتها مع جميع المستخدمين.'
+        : 'تم حفظ مستويات الفتح على هذا الجهاز.';
     } catch (error) {
       console.error('Unable to save lesson unlock settings:', error);
       lessonSettingsMessage.className = 'error';
@@ -176,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     select.dataset.field = field;
     select.dataset.id = userId;
     select.dataset.value = value;
-    const user = cloudAccounts.find(item => item.id === userId);
+    const user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
     select.disabled = user?.role === 'admin' || Boolean(cloudAccounts && userId === currentUser.id);
     select.setAttribute('aria-label', field === 'role' ? 'دور المستخدم' : 'حالة المستخدم');
     options.forEach(([optionValue, label]) => {
@@ -193,7 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderUsers() {
     let users;
     try {
-      users = cloudAccounts;
+      users = cloudAccounts || window.KidsGamesAuth.getUsers();
     } catch (error) {
       console.error('Unable to render saved accounts:', error);
       usersTableBody.replaceChildren();
@@ -227,7 +205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ['active', 'نشط'],
         ['inactive', 'غير نشط']
       ], user.id);
-      createCell(row, user.provider === 'google' ? 'Google' : 'Firebase Auth', 'مصدر الحساب');
+      createCell(row, user.provider === 'google' ? 'Google' : 'محلي', 'مصدر الحساب');
 
       const actions = document.createElement('td');
       actions.className = 'table-actions';
@@ -244,10 +222,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       deleteButton.className = 'table-action';
       deleteButton.dataset.action = 'delete';
       deleteButton.dataset.id = user.id;
-      deleteButton.textContent = 'تعطيل';
-      deleteButton.disabled = user.id === currentUser.id;
-      deleteButton.title = user.id === currentUser.id ? 'لا يمكن تعطيل الحساب المستخدم حاليًا.' : '';
-      deleteButton.setAttribute('aria-label', `تعطيل ${user.username}`);
+      deleteButton.textContent = 'حذف';
+      deleteButton.disabled = Boolean(cloudAccounts) || user.id === currentUser.id;
+      deleteButton.title = cloudAccounts ? 'الحذف من Firebase Console.' : '';
+      deleteButton.setAttribute('aria-label', `حذف ${user.username}`);
       actions.append(editButton, deleteButton);
       row.appendChild(actions);
       usersTableBody.appendChild(row);
@@ -265,19 +243,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     passwordInput.required = !user;
     passwordInput.value = '';
     passwordConfirmationInput.value = '';
-    passwordInput.disabled = Boolean(user);
+    passwordInput.disabled = Boolean(cloudAccounts) || user?.provider === 'google';
     passwordConfirmationInput.disabled = passwordInput.disabled;
     passwordConfirmationField.hidden = passwordInput.disabled;
     passwordConfirmationInput.required = !passwordInput.disabled && !user;
-    usernameInput.disabled = Boolean(user);
+    usernameInput.disabled = Boolean(cloudAccounts);
     roleInput.disabled = user?.role === 'admin';
     statusInput.disabled = user?.role === 'admin';
     roleInput.title = '';
     statusInput.title = '';
     passwordInput.placeholder = user ? 'اتركها فارغة دون تغيير' : '6 أحرف على الأقل';
-    passwordHint.textContent = user
-      ? 'تغيير كلمة مرور مستخدم آخر غير متاح من التطبيق.'
-      : 'مطلوبة للحساب الجديد (6 أحرف على الأقل).';
+    passwordHint.textContent = cloudAccounts
+      ? 'تُدار كلمة المرور من Firebase Console.'
+      : user
+        ? 'اختيارية؛ اتركها فارغة للإبقاء على كلمة المرور الحالية.'
+        : 'مطلوبة للحساب الجديد (6 أحرف على الأقل).';
     if (user) {
       usernameInput.value = user.username;
       roleInput.value = user.role;
@@ -304,7 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         .map(value => String(value || '').trim().toLocaleLowerCase('en-US'))
         .filter(Boolean)
     );
-    const users = cloudAccounts;
+    const users = cloudAccounts || window.KidsGamesAuth.getUsers();
     return !users.some(user =>
       user.id !== excludedId &&
       [user.username, user.email]
@@ -331,6 +311,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   addUserButton.addEventListener('click', () => {
+    if (cloudAccounts) {
+      showMessage('أنشئ الحساب من Firebase Console باستخدام البريد المعرّف المذكور في التعليمات.', 'error');
+      return;
+    }
     openUserDialog();
   });
   document.getElementById('close-dialog-button').addEventListener('click', () => userDialog.close());
@@ -356,7 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let user;
     try {
-      user = cloudAccounts.find(item => item.id === id);
+      user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === id);
     } catch (error) {
       console.error('Unable to find the account to update:', error);
       showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
@@ -368,28 +352,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     let updated;
-    try {
-      updated = await cloud.updateAccount({
-        uid: user.uid,
-        oldUsername: user.username,
-        username: user.username,
-        role: field === 'role' ? target.value : user.role,
-        status: field === 'status' ? target.value : user.status,
-        email: user.email
-      });
-    } catch (error) {
-      console.error('Unable to update Firebase account:', error);
-      showMessage('تعذر تحديث الحساب السحابي.', 'error');
-      await refreshCloudAccounts();
-      return;
+    if (cloudAccounts) {
+      try {
+        updated = await window.KidsGamesCloud.updateAccount({
+          uid: user.uid,
+          oldUsername: user.username,
+          username: user.username,
+          role: field === 'role' ? target.value : user.role,
+          status: field === 'status' ? target.value : user.status,
+          email: user.email
+        });
+      } catch (error) {
+        console.error('Unable to update cloud account:', error);
+        showMessage('تعذر تحديث الحساب السحابي.', 'error');
+        await refreshCloudAccounts();
+        return;
+      }
+    } else {
+      try {
+        updated = window.KidsGamesAuth.updateUser(id, { [field]: target.value });
+      } catch (error) {
+        console.error('Unable to save local account changes:', error);
+        showMessage(error.message || 'تعذر حفظ التغيير.', 'error');
+        renderUsers();
+        return;
+      }
     }
     if (!updated) {
       showMessage('تعذر حفظ التغيير. لم يتم العثور على المستخدم.', 'error');
-      await refreshCloudAccounts();
+      if (cloudAccounts) await refreshCloudAccounts();
+      else renderUsers();
       return;
     }
-    showMessage('تم حفظ التغيير في قاعدة البيانات.');
-    await refreshCloudAccounts();
+    if (id === currentUser.id && !cloudAccounts) window.KidsGamesAuth.setCurrentUser(updated);
+    showMessage(cloudAccounts ? 'تم حفظ التغيير في قاعدة البيانات.' : 'تم حفظ التغيير على هذا الجهاز.');
+    if (cloudAccounts) await refreshCloudAccounts();
+    else renderUsers();
   });
 
   usersTableBody.addEventListener('click', async event => {
@@ -401,7 +399,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (action === 'edit' && userId) {
       let user;
       try {
-        user = cloudAccounts.find(item => item.id === userId);
+        user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
       } catch (error) {
         console.error('Unable to read account before deletion:', error);
         showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
@@ -415,18 +413,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         showMessage('لا يمكن حذف الحساب الذي تستخدمه حاليًا.', 'error');
         return;
       }
-      const user = cloudAccounts.find(item => item.id === userId);
-      if (!user || !window.confirm(`هل تريد تعطيل حساب "${user.username}"؟ لن يتمكن من تسجيل الدخول إلى المنصة.`)) return;
+      const user = (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === userId);
+      if (!user || !window.confirm(`هل تريد حذف حساب "${user.username}"؟ لا يمكن التراجع عن ذلك.`)) return;
 
-      try {
-        await cloud.deleteAccount({ uid: user.uid, username: user.username });
-      } catch (error) {
-        console.error('Unable to delete Firebase account:', error);
-        showMessage(error.message || 'تعذر حذف الحساب السحابي.', 'error');
+      if (cloudAccounts) {
+        showMessage('لحذف حساب سحابي، احذفه من Firebase Authentication ثم احذف ملفه من Firestore.', 'error');
         return;
       }
-      await refreshCloudAccounts();
-      showMessage('تم تعطيل الحساب. لم يتم حذف هويته من Firebase Authentication.');
+      try {
+        if (!window.KidsGamesAuth.deleteUser(userId)) {
+          showMessage('تعذر الحذف. يجب أن يبقى مدير واحد على الأقل، وتأكد من إمكانية حفظ البيانات.', 'error');
+          return;
+        }
+      } catch (error) {
+        console.error('Unable to delete local account:', error);
+        showMessage(error.message || 'تعذر حذف الحساب.', 'error');
+        return;
+      }
+      renderUsers();
+      showMessage('تم حذف الحساب من قائمة هذا الجهاز.');
     }
   });
 
@@ -440,7 +445,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       status: isEditing ? statusInput.value : 'active'
     };
     if (passwordInput.value) payload.password = passwordInput.value;
-    if (!isEditing) payload.password = passwordInput.value;
+    if (!isEditing) {
+      payload.provider = 'local';
+      payload.password = passwordInput.value;
+    }
     if (!/^[a-z0-9._-]{1,32}$/i.test(payload.username)) {
       showMessage('اسم المستخدم يجب أن يكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -.', 'error');
       usernameInput.focus();
@@ -448,14 +456,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     validatePasswordConfirmation();
     if (!userForm.reportValidity()) return;
-    if (!validateUniqueIdentity(payload, isEditing ? editingUserId : null)) {
+    if (cloudAccounts && !isEditing) {
+      showMessage('أنشئ الحساب أولًا من Firebase Console، ثم يسجّل المستخدم الدخول مرة واحدة.', 'error');
+      return;
+    }
+    if (!cloudAccounts && !validateUniqueIdentity(payload, isEditing ? editingUserId : null)) {
       showMessage('اسم المستخدم مسجّل بالفعل. اختر اسمًا مختلفًا.', 'error');
       return;
     }
 
     let existing = null;
     try {
-      existing = isEditing ? cloudAccounts.find(item => item.id === editingUserId) : null;
+      existing = isEditing
+        ? (cloudAccounts || window.KidsGamesAuth.getUsers()).find(item => item.id === editingUserId)
+        : null;
     } catch (error) {
       console.error('Unable to read account before saving:', error);
       showMessage(error.message || 'تعذر قراءة الحسابات.', 'error');
@@ -474,37 +488,64 @@ document.addEventListener('DOMContentLoaded', async () => {
         showMessage('لا يمكن تغيير صلاحية المدير أو حالة حسابه.', 'error');
         return;
       }
-      try {
-        await cloud.updateAccount({
-          uid: existing.uid,
-          oldUsername: existing.username,
-          email: existing.email || '',
-          ...payload
-        });
-        userDialog.close();
-        await refreshCloudAccounts();
-        showMessage('تم تحديث بيانات الحساب في قاعدة البيانات.');
-      } catch (error) {
-        console.error('Unable to update Firebase account:', error);
-        showMessage(error.message || 'تعذر حفظ التعديلات في قاعدة البيانات.', 'error');
+      if (cloudAccounts) {
+        try {
+          await window.KidsGamesCloud.updateAccount({
+            uid: existing.uid,
+            oldUsername: existing.username,
+            email: existing.email || '',
+            ...payload
+          });
+          userDialog.close();
+          await refreshCloudAccounts();
+          showMessage('تم تحديث بيانات الحساب في قاعدة البيانات.');
+        } catch (error) {
+          console.error('Unable to update cloud account:', error);
+          showMessage('تعذر حفظ التعديلات في قاعدة البيانات.', 'error');
+        }
+        return;
       }
+      let updated;
+      try {
+        updated = window.KidsGamesAuth.updateUser(editingUserId, payload);
+      } catch (error) {
+        console.error('Unable to save local account changes:', error);
+        showMessage(error.message || 'تعذر حفظ التعديلات.', 'error');
+        return;
+      }
+      if (!updated) {
+        showMessage('تعذر حفظ التعديلات. راجع البيانات وحاول مرة أخرى.', 'error');
+        return;
+      }
+      if (editingUserId === currentUser.id) window.KidsGamesAuth.setCurrentUser(updated);
+      userDialog.close();
+      renderUsers();
+      showMessage('تم تحديث بيانات الحساب محليًا.');
     } else {
+      let added;
       try {
-        const added = await cloud.createManagedAccount(payload);
-        userDialog.close();
-        await refreshCloudAccounts();
-        showMessage(`تم إنشاء حساب Firebase للمستخدم ${added.username}.`);
+        added = window.KidsGamesAuth.addUser(payload);
       } catch (error) {
-        console.error('Unable to create Firebase account:', error);
+        console.error('Unable to create local account:', error);
         showMessage(error.message || 'تعذر إنشاء الحساب.', 'error');
+        return;
       }
+      if (!added) {
+        showMessage('تعذر إضافة الحساب. راجع البيانات وحاول مرة أخرى.', 'error');
+        return;
+      }
+      userDialog.close();
+      renderUsers();
+      showMessage(`تمت إضافة ${added.username} إلى حسابات هذا الجهاز.`);
     }
   });
 
   if (logoutButton) {
     logoutButton.addEventListener('click', async () => {
       try {
-        await cloud.signOut();
+        const cloud = await window.KidsGamesCloudReady;
+        if (cloud.enabled && cloud.getCurrentUserId?.()) await cloud.signOut();
+        else window.KidsGamesAuth.logoutUser();
         window.location.href = '../auth/index.html';
       } catch (error) {
         console.error('Unable to sign out:', error);
@@ -514,6 +555,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   try {
+    const cloud = await window.KidsGamesCloudReady;
+    if (cloud.enabled && cloud.getCurrentUserId?.() === currentUser.id && currentUser.role === 'admin') {
+      cloudApi = cloud;
       const savedSettings = await cloud.getLessonSettings();
       if (savedSettings) {
         window.KidsGames.saveLessonSettings(savedSettings);
@@ -534,23 +578,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         input.checked = window.KidsGames.getGameSettings().lockedGames.includes(input.value);
       });
       cloudAccounts = await cloud.listAccounts();
-      const maintenance = await cloud.getMaintenanceMode();
-      siteMaintenanceEnabled.checked = maintenance.enabled;
-      siteMaintenanceMessage.value = maintenance.message;
-      if (maintenance.expectedTime) {
-        const expectedDate = new Date(maintenance.expectedTime);
-        if (!Number.isNaN(expectedDate.valueOf())) {
-          expectedDate.setMinutes(expectedDate.getMinutes() - expectedDate.getTimezoneOffset());
-          siteMaintenanceExpectedTime.value = expectedDate.toISOString().slice(0, 16);
-        }
-      }
+      addUserButton.disabled = true;
+      addUserButton.textContent = 'الحسابات من Firebase Console';
+      addUserButton.title = 'أنشئ الحسابات من Firebase Console.';
       renderUsers();
       connectionStatus.className = 'connection-status';
-      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). يمكنك إنشاء الحسابات وإدارة أدوارها وحالاتها مباشرةً.`;
+      connectionStatus.textContent = `الحسابات والتقدم مرتبطان بـ Firebase (${cloud.projectId}). أضف الحسابات واحذفها من Firebase Console؛ ويمكنك هنا تعديل الأدوار والحالة.`;
+    } else if (!cloud.enabled) {
+      renderUsers();
+      connectionStatus.className = 'connection-status offline';
+      connectionStatus.textContent = 'قاعدة Firebase غير مفعّلة؛ الحسابات والتقدم محفوظان محليًا على هذا الجهاز.';
+    } else {
+      renderUsers();
+      connectionStatus.className = 'connection-status partial';
+      connectionStatus.textContent = `Firebase جاهز (${cloud.projectId})، لكن جلسة المدير ليست حسابًا سحابيًا. سجّل الدخول بحساب مدير Firebase لإدارة الحسابات السحابية.`;
+    }
   } catch (error) {
     console.error('Unable to check account connection:', error);
-    usersTableBody.replaceChildren();
+    renderUsers();
     connectionStatus.className = 'connection-status offline';
-    connectionStatus.textContent = 'تعذر تحميل الحسابات أو الإعدادات من Firebase. لم يتم استخدام نسخة محلية.';
+    connectionStatus.textContent = 'تعذر التحقق من الاتصال السحابي. الحسابات المعروضة محفوظة محليًا على هذا الجهاز.';
   }
 });

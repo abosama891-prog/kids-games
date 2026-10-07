@@ -1,6 +1,3 @@
-window.KidsGamesCloudReady.then(cloud => {
-  if (!cloud?.enabled) return;
-
 const boardElement = document.getElementById('board');
 const starsElement = document.getElementById('stars');
 const levelNumElement = document.getElementById('levelNum');
@@ -576,6 +573,3 @@ document.querySelectorAll('.help-q').forEach(button => {
 
 readProgress();
 resetLevel();
-}).catch(error => {
-  console.error('Unable to initialize the maze game:', error);
-});

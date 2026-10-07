@@ -7,6 +7,7 @@ service cloud.firestore {
 
     function activeAdmin() {
       return signedIn()
+        && request.auth.token.admin == true
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
@@ -30,40 +31,16 @@ service cloud.firestore {
         && (
           (request.resource.data.provider == 'local'
             && request.auth.token.email.split('@')[0] == request.resource.data.username
-            && request.resource.data.email == request.auth.token.email
-            && request.auth.token.email.split('@')[1] in ['kids-games.local', 'accounts.kids-games.invalid'])
+            && request.auth.token.email.split('@')[1] == 'accounts.kids-games.invalid')
           || (request.resource.data.provider == 'google'
             && request.auth.token.firebase.sign_in_provider == 'google.com')
         );
     }
 
-    function validManagedProfile() {
-      return activeAdmin()
-        && request.resource.data.keys().hasAll([
-          'username', 'email', 'fullName', 'role', 'avatar', 'provider', 'status', 'progress', 'updatedAt'
-        ])
-        && request.resource.data.keys().hasOnly([
-          'username', 'email', 'fullName', 'role', 'avatar', 'provider', 'status', 'progress', 'updatedAt'
-        ])
-        && request.resource.data.username is string
-        && request.resource.data.email is string
-        && request.resource.data.email.split('@')[0] == request.resource.data.username
-        && request.resource.data.email.split('@')[1] == 'kids-games.local'
-        && request.resource.data.fullName is string
-        && request.resource.data.fullName.size() > 0
-        && request.resource.data.fullName.size() <= 60
-        && request.resource.data.role in ['child', 'parent', 'teacher', 'admin']
-        && validAvatar(request.resource.data.avatar)
-        && request.resource.data.provider == 'local'
-        && request.resource.data.status == 'active'
-        && request.resource.data.progress is map
-        && request.resource.data.updatedAt is timestamp;
-    }
-
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || activeAdmin());
 
-      allow create: if signedIn() && (validNewProfile(userId) || validManagedProfile());
+      allow create: if signedIn() && validNewProfile(userId);
 
       allow update: if signedIn() && (
         (request.auth.uid == userId
@@ -138,23 +115,6 @@ service cloud.firestore {
         && request.resource.data.availability.lockedGames.hasOnly([
           'draw', 'maze', 'gas', 'frog', 'potion', 'robot', 'code-park'
         ]);
-      allow delete: if activeAdmin();
-    }
-
-    match /settings/site {
-      allow read: if true;
-      allow create, update: if activeAdmin()
-        && request.resource.data.keys().hasAll(['maintenance', 'updatedAt'])
-        && request.resource.data.keys().hasOnly(['maintenance', 'updatedAt'])
-        && request.resource.data.maintenance is map
-        && request.resource.data.maintenance.keys().hasAll(['enabled', 'message', 'expectedTime'])
-        && request.resource.data.maintenance.keys().hasOnly(['enabled', 'message', 'expectedTime'])
-        && request.resource.data.maintenance.enabled is bool
-        && request.resource.data.maintenance.message is string
-        && request.resource.data.maintenance.message.size() <= 500
-        && request.resource.data.maintenance.expectedTime is string
-        && request.resource.data.maintenance.expectedTime.size() <= 80
-        && request.resource.data.updatedAt is timestamp;
       allow delete: if activeAdmin();
     }
   }

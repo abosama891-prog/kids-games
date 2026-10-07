@@ -8,7 +8,6 @@ const {
   normalizePin,
   validateCredentials,
   validatePinCredentials,
-  validateLegacyPinCredentials,
   hashPassword,
   verifyPassword,
   hashRateLimitKey
@@ -25,13 +24,11 @@ const RATE_LIMITS = 'authRateLimits';
 const ALLOWED_ROLES = new Set(['child', 'parent', 'teacher', 'admin']);
 
 async function requireAdmin(request) {
-  if (!request.auth || !request.auth.uid) {
+  if (!request.auth || request.auth.token.admin !== true || request.auth.token.role !== 'admin') {
     throw new HttpsError('permission-denied', 'يتطلب هذا الإجراء صلاحية المدير.');
   }
-
   const profile = await database.collection(USERS).doc(request.auth.uid).get();
-  const profileData = profile.exists ? profile.data() : null;
-  if (!profileData || profileData.role !== 'admin' || profileData.status !== 'active') {
+  if (!profile.exists || profile.data().role !== 'admin' || profile.data().status !== 'active') {
     throw new HttpsError('permission-denied', 'حساب المدير غير نشط أو لم تعد لديه صلاحية الإدارة.');
   }
 }
@@ -103,7 +100,7 @@ exports.authenticateUsername = onCall(async request => {
   try {
     const normalizedPin = normalizePin(request.data?.password);
     credentials = /^\d{4}$/.test(normalizedPin)
-      ? validateLegacyPinCredentials(request.data?.username, normalizedPin)
+      ? validatePinCredentials(request.data?.username, normalizedPin)
       : validateCredentials(request.data?.username, request.data?.password);
   } catch (error) {
     throw new HttpsError('invalid-argument', error.message);
@@ -399,20 +396,19 @@ exports.updateOwnProfile = onCall(async request => {
     if (accountSnapshot.exists && accountSnapshot.data().uid !== uid) {
       throw new HttpsError('failed-precondition', 'تعذر تغيير كلمة المرور لهذا الحساب القديم. تواصل مع مدير النظام.');
     }
-    const normalizedCurrentPin = normalizePin(currentCredential);
-    const normalizedCurrentCredential = /^\d+$/.test(normalizedCurrentPin)
-      ? normalizedCurrentPin
+    const normalizedCurrentCredential = /^\d{4}$/.test(normalizePin(currentCredential))
+      ? normalizePin(currentCredential)
       : currentCredential;
-    const normalizedNewPin = normalizePin(newCredential);
-    const normalizedNewCredential = /^\d+$/.test(normalizedNewPin)
-      ? normalizedNewPin
+    const normalizedNewCredential = /^\d{4}$/.test(normalizePin(newCredential))
+      ? normalizePin(newCredential)
       : newCredential;
-    if (normalizedNewCredential.length < 6 || normalizedNewCredential.length > 128) {
-      throw new HttpsError('invalid-argument', 'استخدم رمزًا من 6 أرقام على الأقل أو كلمة مرور من 6 إلى 128 حرفًا.');
+    if (!/^\d{4}$/.test(normalizedNewCredential)
+      && (normalizedNewCredential.length < 6 || normalizedNewCredential.length > 128)) {
+      throw new HttpsError('invalid-argument', 'استخدم رمزًا من 4 أرقام أو كلمة مرور من 6 إلى 128 حرفًا.');
     }
 
     const passwordData = await hashPassword(normalizedNewCredential);
-    const authPassword = /^\d+$/.test(normalizedNewCredential)
+    const authPassword = /^\d{4}$/.test(normalizedNewCredential)
       ? crypto.randomBytes(48).toString('base64url')
       : normalizedNewCredential;
     if (accountSnapshot.exists) {

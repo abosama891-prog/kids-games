@@ -505,8 +505,5 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    const cloud = await window.KidsGamesCloudReady;
-    if (cloud?.enabled) initialize();
-  }, { once: true });
+  document.addEventListener('DOMContentLoaded', initialize, { once: true });
 }());

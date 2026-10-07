@@ -1,9 +1,13 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  const cloud = await window.KidsGamesCloudReady;
-  if (!cloud?.enabled) return;
+document.addEventListener('DOMContentLoaded', () => {
   const siteNav = document.getElementById('site-nav');
   const siteNavToggle = document.getElementById('site-nav-toggle');
+  const navHiddenKey = window.KidsGames.STORAGE_KEYS.siteNavHidden;
   let isNavHidden = false;
+  try {
+    isNavHidden = localStorage.getItem(navHiddenKey) === 'true';
+  } catch (error) {
+    console.error('Unable to read navigation visibility preference:', error);
+  }
 
   function updateSiteNavVisibility() {
     siteNav.classList.toggle('is-hidden', isNavHidden);
@@ -18,6 +22,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   siteNavToggle.addEventListener('click', () => {
     isNavHidden = !isNavHidden;
     updateSiteNavVisibility();
+    try {
+      localStorage.setItem(navHiddenKey, String(isNavHidden));
+    } catch (error) {
+      console.error('Unable to save navigation visibility preference:', error);
+    }
   });
 
   const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
@@ -61,8 +70,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (logoutButton) {
     logoutButton.addEventListener('click', async () => {
       const cloud = await window.KidsGamesCloudReady;
-      if (!cloud?.enabled) throw new Error('Firebase is unavailable.');
-      await cloud.signOut();
+      if (cloud.enabled) await cloud.signOut();
+      else window.KidsGamesAuth.logoutUser();
       window.location.href = '../auth/index.html';
     });
   }

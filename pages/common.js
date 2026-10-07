@@ -1,10 +1,25 @@
 (function () {
+  const DEV_MODE = true;
   const APP_BASE_URL = new URL('../', document.currentScript.src);
-  const FIREBASE_STARTUP_TIMEOUT_MS = 15000;
-  const FIRESTORE_READ_TIMEOUT_MS = 8000;
   const STORAGE_KEYS = Object.freeze({
-    serviceWorkerUpdateCheck: 'kids_games_sw_update_check_v1'
+    progress: 'kids_games_progress_v1',
+    progressForUser: userId => `${STORAGE_KEYS.progress}_${userId}`,
+    lessonSettings: 'kids_games_lesson_unlocks_v1',
+    gameSettings: 'kids_games_availability_v1',
+    authSession: 'kids_games_current_user_v1',
+    users: 'kids_games_users_v1',
+    siteNavHidden: 'kids_games_site_nav_hidden',
+    serviceWorkerUpdateCheck: 'kids_games_sw_update_check_v1',
+    cloudSyncReload: userId => `kids_games_cloud_sync_${userId}`,
+    legacyAdminBackups: ['oldAdmin', 'adminBackup']
   });
+
+  // ✅ FIX #5: uuid helper مع fallback للمتصفحات القديمة
+  function uuid() {
+    return (window.crypto && typeof crypto.randomUUID === 'function')
+      ? crypto.randomUUID()
+      : `id-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  }
 
   const gameCatalog = [
     { key: 'draw', title: 'الرسم', icon: '🎨', href: new URL('pages/draw/index.html', APP_BASE_URL).href, levels: 10, accent: '#f39c12' },
@@ -33,100 +48,86 @@
     return JSON.parse(JSON.stringify(value));
   }
 
-  let currentProgress = cloneState(defaultState);
-  let lastSavedProgress = cloneState(defaultState);
-  let progressSaveQueue = Promise.resolve();
-  let lessonSettingsCache = Object.fromEntries(lessonCatalog.map(lesson => [lesson.key, lesson.unlockAt]));
-  let gameSettingsCache = { lockedGames: [] };
-
-  function normalizeProgress(parsed = {}) {
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new TypeError('Saved cloud progress must be an object.');
-    }
-    const savedUnattributedStars = Number(parsed.unattributedStars);
-    const savedTotalStars = Number(parsed.stars);
-    const state = {
-      stars: 0,
-      unattributedStars: Number.isFinite(savedUnattributedStars) && savedUnattributedStars > 0
-        ? Math.floor(savedUnattributedStars)
-        : 0
-    };
-    let gameStars = 0;
-    gameCatalog.forEach(game => {
-      const savedGame = parsed[game.key] || {};
-      const completed = Array.from(new Set(
-        (Array.isArray(savedGame.completed) ? savedGame.completed : [])
-          .map(Number)
-          .filter(level => Number.isInteger(level) && level >= 1 && level <= game.levels)
-      ));
-      const stars = Number.isFinite(Number(savedGame.stars)) && Number(savedGame.stars) >= 0
-        ? Math.floor(Number(savedGame.stars))
-        : completed.length * 3;
-      state[game.key] = {
-        ...defaultState[game.key],
-        ...savedGame,
-        stars,
-        completed
-      };
-      gameStars += stars;
-    });
-    const legacyTotalStars = Number.isFinite(savedTotalStars) && savedTotalStars > 0
-      ? Math.floor(savedTotalStars)
-      : 0;
-    state.unattributedStars = Math.max(state.unattributedStars, legacyTotalStars - gameStars, 0);
-    state.stars = state.unattributedStars + gameStars;
-    return state;
+  function progressStorageKey() {
+    const user = window.KidsGamesAuth?.getCurrentUser?.();
+    return user?.id ? STORAGE_KEYS.progressForUser(user.id) : STORAGE_KEYS.progress;
   }
 
-  function mergeProgress(firstProgress, secondProgress) {
-    const first = normalizeProgress(firstProgress);
-    const second = normalizeProgress(secondProgress);
-    const merged = {
-      unattributedStars: Math.max(first.unattributedStars, second.unattributedStars)
-    };
-    gameCatalog.forEach(game => {
-      const firstGame = first[game.key];
-      const secondGame = second[game.key];
-      const currentLevel = Math.max(firstGame.currentLevel, secondGame.currentLevel);
-      merged[game.key] = {
-        currentLevel,
-        unlocked: Math.max(currentLevel, firstGame.unlocked, secondGame.unlocked),
-        completed: [...new Set([...firstGame.completed, ...secondGame.completed])].sort((a, b) => a - b),
-        stars: Math.max(firstGame.stars, secondGame.stars)
-      };
-    });
-    merged.stars = merged.unattributedStars
-      + gameCatalog.reduce((total, game) => total + merged[game.key].stars, 0);
-    return merged;
+  // ✅ FIX #6: معالجة QuotaExceededError
+  function safeSetItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (error) {
+      console.error('LocalStorage write failed:', error);
+      return false;
+    }
   }
 
   function readProgress() {
-    return cloneState(currentProgress);
+    try {
+      const key = progressStorageKey();
+      let raw = localStorage.getItem(key);
+      if (!raw && key !== STORAGE_KEYS.progress) {
+        raw = localStorage.getItem(STORAGE_KEYS.progress);
+        if (raw) {
+          if (safeSetItem(key, raw)) {
+            localStorage.removeItem(STORAGE_KEYS.progress);
+          }
+        }
+      }
+      if (!raw) return cloneState(defaultState);
+      const parsed = JSON.parse(raw);
+      const savedUnattributedStars = Number(parsed.unattributedStars);
+      const savedTotalStars = Number(parsed.stars);
+      const state = {
+        stars: 0,
+        unattributedStars: Number.isFinite(savedUnattributedStars) && savedUnattributedStars > 0
+          ? Math.floor(savedUnattributedStars)
+          : 0
+      };
+      let gameStars = 0;
+      gameCatalog.forEach(game => {
+        const savedGame = parsed[game.key] || {};
+        const completed = Array.from(new Set(
+          (Array.isArray(savedGame.completed) ? savedGame.completed : [])
+            .map(Number)
+            .filter(level => Number.isInteger(level) && level >= 1 && level <= game.levels)
+        ));
+        const stars = Number.isFinite(Number(savedGame.stars)) && Number(savedGame.stars) >= 0
+          ? Math.floor(Number(savedGame.stars))
+          : completed.length * 3;
+        state[game.key] = {
+          ...defaultState[game.key],
+          ...savedGame,
+          stars,
+          completed
+        };
+        gameStars += stars;
+      });
+      const legacyTotalStars = Number.isFinite(savedTotalStars) && savedTotalStars > 0
+        ? Math.floor(savedTotalStars)
+        : 0;
+      state.unattributedStars = Math.max(state.unattributedStars, legacyTotalStars - gameStars, 0);
+      state.stars = state.unattributedStars + gameStars;
+      return state;
+    } catch (error) {
+      console.error('Unable to read saved game progress:', error);
+      return cloneState(defaultState);
+    }
   }
 
   async function saveProgress(nextState) {
-    const nextProgress = normalizeProgress(nextState);
-    currentProgress = nextProgress;
-    const write = progressSaveQueue.then(async () => {
-      const cloud = await window.KidsGamesCloudReady;
-      if (!cloud?.enabled) throw new Error('Firebase is unavailable; game progress was not saved.');
-      await cloud.saveProgress(nextProgress);
-      lastSavedProgress = cloneState(nextProgress);
-    });
-    progressSaveQueue = write.catch(() => {});
+    safeSetItem(progressStorageKey(), JSON.stringify(nextState));
     try {
-      await write;
-    } catch (error) {
-      if (JSON.stringify(currentProgress) === JSON.stringify(nextProgress)) {
-        currentProgress = cloneState(lastSavedProgress);
+      const cloud = await window.KidsGamesCloudReady;
+      if (cloud?.enabled && typeof cloud.saveProgress === 'function') {
+        await cloud.saveProgress(nextState);
       }
-      window.dispatchEvent(new CustomEvent('kids-games-save-error', {
-          detail: { message: 'تعذر حفظ تقدمك في Firebase. تحقق من الاتصال ثم أعد تحميل الصفحة؛ لن تُحفظ هذه البيانات محليًا.' }
-      }));
-      console.error('Firebase progress save failed:', error);
-      return false;
+    } catch (error) {
+      console.error('Progress sync failed:', error);
     }
-    return cloneState(currentProgress);
+    return nextState;
   }
 
   function setGameProgress(gameKey, updates) {
@@ -268,7 +269,16 @@
   }
 
   function getLessonSettings() {
-    return { ...lessonSettingsCache };
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.lessonSettings) || '{}');
+      return Object.fromEntries(lessonCatalog.map(lesson => {
+        const unlockAt = Number(saved[lesson.key]);
+        return [lesson.key, Number.isInteger(unlockAt) && unlockAt >= 0 ? unlockAt : lesson.unlockAt];
+      }));
+    } catch (error) {
+      console.error('Unable to read lesson unlock settings:', error);
+      return Object.fromEntries(lessonCatalog.map(lesson => [lesson.key, lesson.unlockAt]));
+    }
   }
 
   function saveLessonSettings(settings) {
@@ -281,7 +291,9 @@
       }
       normalized[lesson.key] = unlockAt;
     });
-    lessonSettingsCache = normalized;
+    if (!safeSetItem(STORAGE_KEYS.lessonSettings, JSON.stringify(normalized))) {
+      throw new Error('Unable to save lesson settings on this device.');
+    }
     return normalized;
   }
 
@@ -305,21 +317,35 @@
   }
 
   function getGameSettings() {
-    return { lockedGames: [...gameSettingsCache.lockedGames] };
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.gameSettings);
+      if (!saved) return { lockedGames: [] };
+      const parsed = JSON.parse(saved);
+      return normalizeGameSettings(parsed);
+    } catch (error) {
+      console.error('Unable to read game availability settings:', error);
+      return { lockedGames: [] };
+    }
   }
 
   function saveGameSettings(settings) {
     const normalized = normalizeGameSettings(settings);
-    gameSettingsCache = normalized;
+    if (!safeSetItem(STORAGE_KEYS.gameSettings, JSON.stringify(normalized))) {
+      throw new Error('Unable to save game availability settings on this device.');
+    }
     return normalized;
   }
 
   async function getEffectiveGameSettings() {
     const cloud = await window.KidsGamesCloudReady;
-    if (!cloud?.enabled) throw new Error('تعذر الاتصال بإعدادات Firebase.');
-    const settings = await cloud.getGameSettings();
-    if (settings) saveGameSettings(settings);
-    return getGameSettings();
+    if (!cloud.enabled) return getGameSettings();
+    try {
+      const savedSettings = await cloud.getGameSettings();
+      return savedSettings ? saveGameSettings(savedSettings) : getGameSettings();
+    } catch (error) {
+      console.error('Unable to load cloud game settings; using this device copy:', error);
+      return getGameSettings();
+    }
   }
 
   function renderGameHeader(gameKey, levelNumber) {
@@ -399,6 +425,7 @@
 
   window.KidsGames = {
     STORAGE_KEYS,
+    STORAGE_KEY: STORAGE_KEYS.progress,
     gameCatalog,
     lessonCatalog,
     defaultState,
@@ -658,42 +685,319 @@
     });
   }
 
+  const AUTH_STORAGE_KEY = STORAGE_KEYS.authSession;
+  const USERS_STORAGE_KEY = STORAGE_KEYS.users;
+
   const ROLE_PERMISSIONS = {
-    admin: ['dashboard', 'manageUsers', 'viewProgress', 'manageChildren', 'playGames', 'viewAchievements', 'viewLessons', 'manageLessons'],
+    admin: [
+      'dashboard',
+      'manageUsers',
+      'viewProgress',
+      'manageChildren',
+      'playGames',
+      'viewAchievements',
+      'viewLessons',
+      'manageLessons'
+    ],
     parent: ['viewProgress', 'manageChildren', 'playGames', 'viewAchievements'],
     child: ['playGames', 'viewAchievements', 'viewLessons'],
     teacher: ['manageLessons', 'viewProgress', 'playGames']
   };
   const isValidRole = role => Object.prototype.hasOwnProperty.call(ROLE_PERMISSIONS, role);
-  let currentUserCache = null;
+
+  const localAdmin = {
+    id: 'admin-demo',
+    username: 'abosama891',
+    password: 'vK8!mR4@Qz2#Lp9$Xc7',
+    email: 'admin@gmail.com',
+    fullName: 'مدير النظام',
+    role: 'admin',
+    provider: 'local',
+    status: 'active'
+  };
+  const defaultUsers = [
+    localAdmin,
+    {
+      id: 'parent-demo',
+      username: 'parent',
+      password: 'parent123',
+      email: 'parent@gmail.com',
+      fullName: 'ولي الأمر',
+      role: 'parent',
+      provider: 'local',
+      status: 'active'
+    },
+    {
+      id: 'child-demo',
+      username: 'child',
+      password: 'child123',
+      email: 'child@gmail.com',
+      fullName: 'طفل تجريبي',
+      role: 'child',
+      provider: 'local',
+      status: 'active'
+    }
+  ];
 
   function normalizeUser(user) {
     return {
-      id: user.id,
+      id: user.id || user.username || uuid(),   // ✅ FIX #5: استخدام uuid() بدل crypto.randomUUID()
       username: user.username || (user.email ? user.email.split('@')[0] : 'user'),
+      password: user.password || '',
       email: user.email || '',
       fullName: user.fullName || user.username || 'مستخدم',
       role: isValidRole(user.role) ? user.role : 'child',
       avatar: ['child', 'girl', 'engineer'].includes(user.avatar) ? user.avatar : 'child',
+      pinSalt: user.pinSalt || '',
+      pinHash: user.pinHash || '',
       provider: user.provider || 'local',
       status: user.status === 'inactive' ? 'inactive' : 'active'
     };
   }
 
+  function clearLegacyAdminStorage() {
+    try {
+      STORAGE_KEYS.legacyAdminBackups.forEach(key => localStorage.removeItem(key));
+    } catch (error) {
+      console.error('Unable to remove legacy local admin backups:', error);
+      throw new Error('تعذر تنظيف بيانات المدير المحلي القديمة على هذا الجهاز.');
+    }
+
+    let rawSession;
+    try {
+      rawSession = localStorage.getItem(AUTH_STORAGE_KEY);
+    } catch (error) {
+      console.error('Unable to read the local admin session:', error);
+      throw new Error('تعذر قراءة جلسة المدير المحلي على هذا الجهاز.');
+    }
+    if (!rawSession) return;
+
+    let session;
+    try {
+      session = JSON.parse(rawSession);
+    } catch (error) {
+      console.error('The saved local session is invalid:', error);
+      return;
+    }
+    if (session.id !== localAdmin.id || session.username !== 'admin') return;
+
+    try {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    } catch (error) {
+      console.error('Unable to clear the outdated local admin session:', error);
+      throw new Error('تعذر إنهاء جلسة المدير المحلي القديمة على هذا الجهاز.');
+    }
+  }
+
+  function getUsers() {
+    clearLegacyAdminStorage();
+
+    let stored;
+    try {
+      stored = localStorage.getItem(USERS_STORAGE_KEY);
+    } catch (error) {
+      console.error('Unable to read saved accounts:', error);
+      throw new Error('تعذر الوصول إلى الحسابات المحفوظة على هذا الجهاز.');
+    }
+    if (!stored) {
+      if (!safeSetItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers))) {
+        throw new Error('تعذر تهيئة الحسابات على هذا الجهاز. تحقق من مساحة التخزين ثم أعد المحاولة.');
+      }
+      return [...defaultUsers];
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(stored);
+    } catch (error) {
+      console.error('Saved account data is invalid; preserving the stored data:', error);
+      throw new Error('تعذر قراءة الحسابات المحفوظة. لم يتم استبدال البيانات.');
+    }
+    if (!Array.isArray(parsed) || parsed.some(user => !user || typeof user !== 'object')) {
+      throw new Error('صيغة بيانات الحسابات المحفوظة غير صالحة. لم يتم استبدال البيانات.');
+    }
+
+    let localAdminSeen = false;
+    let usersChanged = false;
+    const users = parsed.map(normalizeUser).filter(user => {
+      if (user.id !== localAdmin.id) return true;
+      if (localAdminSeen) {
+        usersChanged = true;
+        return false;
+      }
+      localAdminSeen = true;
+      const isLegacyAdmin = user.username === 'admin';
+      if (isLegacyAdmin || user.role !== localAdmin.role) {
+        usersChanged = true;
+        Object.assign(user, {
+          username: localAdmin.username,
+          ...(isLegacyAdmin ? { password: localAdmin.password } : {}),
+          role: localAdmin.role
+        });
+      }
+      return true;
+    });
+    if (usersChanged && !safeSetItem(USERS_STORAGE_KEY, JSON.stringify(users))) {
+      throw new Error('تعذر تحديث بيانات المدير المحلي القديمة على هذا الجهاز.');
+    }
+    return users.filter(user => DEV_MODE || user.id !== localAdmin.id);
+  }
+
+  function saveUsers(users) {
+    const normalizedUsers = users.map(normalizeUser);
+    if (!safeSetItem(USERS_STORAGE_KEY, JSON.stringify(normalizedUsers))) {
+      return null;
+    }
+    return normalizedUsers;
+  }
+
   function getCurrentUser() {
-    return currentUserCache ? { ...currentUserCache } : null;
+    try {
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!raw) return null;
+      const user = JSON.parse(raw);
+      if (user.id === localAdmin.id && user.username === 'admin') {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+      }
+      if (!DEV_MODE && user.id === localAdmin.id) {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        return null;
+      }
+      return normalizeUser(user);
+    } catch (error) {
+      return null;
+    }
   }
 
   function setCurrentUser(user) {
-    currentUserCache = user ? normalizeUser(user) : null;
-    return getCurrentUser();
+    const normalized = normalizeUser(user);
+    const { password, pinSalt, pinHash, ...sessionUser } = normalized;
+    safeSetItem(AUTH_STORAGE_KEY, JSON.stringify(sessionUser));
+    return normalizeUser(sessionUser);
   }
 
   function logoutUser() {
-    currentUserCache = null;
-    currentProgress = cloneState(defaultState);
-    lastSavedProgress = cloneState(defaultState);
+    localStorage.removeItem(AUTH_STORAGE_KEY);
     return true;
+  }
+
+  function findUserByIdentifier(identifier) {
+    const value = String(identifier || '').trim().toLowerCase();
+    if (!value) return null;
+    return getUsers().find(user => {
+      const username = (user.username || '').trim().toLowerCase();
+      const email = (user.email || '').trim().toLowerCase();
+      return username === value || email === value;
+    }) || null;
+  }
+
+  function usernameEmail(username) {
+    const normalized = String(username || '').trim().toLocaleLowerCase('en-US');
+    if (!/^[a-z0-9._-]{1,32}$/.test(normalized)) {
+      throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
+    }
+    return `${normalized}@accounts.kids-games.invalid`;
+  }
+
+  // ✅ FIX #4: منع دخول حسابات Google بكلمة سر فاضية
+  function loginWithUsername(username, password) {
+    const user = getUsers().find(item => {
+      const matchesUser = (item.username || '').trim().toLowerCase() === (username || '').trim().toLowerCase();
+      const matchesEmail = (item.email || '').trim().toLowerCase() === (username || '').trim().toLowerCase();
+      return (matchesUser || matchesEmail) && String(item.password || '') === String(password || '');
+    });
+
+    if (!user || (!DEV_MODE && user.id === 'admin-demo') || user.status === 'inactive') return null;
+    // رفض الدخول لو الحساب مش local (Google) أو كلمة السر فاضية
+    if (!user.password || String(user.password).length === 0) return null;
+    if (user.provider && user.provider !== 'local') return null;
+
+    return setCurrentUser(user);
+  }
+
+  function encodeBytes(bytes) {
+    return btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(''));
+  }
+
+  function normalizePin(value) {
+    return String(value || '').replace(/[٠-٩۰-۹]/g, character => {
+      const code = character.charCodeAt(0);
+      return String(code >= 0x06f0 ? code - 0x06f0 : code - 0x0660);
+    });
+  }
+
+  function decodeBytes(value) {
+    return Uint8Array.from(atob(value), character => character.charCodeAt(0));
+  }
+
+  async function hashLocalPin(pin, salt) {
+    if (!window.crypto?.subtle) throw new Error('تشفير الجهاز غير متاح. افتح الموقع عبر HTTPS ثم حاول مرة أخرى.');
+    const key = await window.crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(pin),
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    );
+    const digest = await window.crypto.subtle.deriveBits({
+      name: 'PBKDF2',
+      salt,
+      iterations: 250000,
+      hash: 'SHA-256'
+    }, key, 256);
+    return new Uint8Array(digest);
+  }
+
+  async function addPinUser(userPayload) {
+    const username = String(userPayload.username || '').trim().toLocaleLowerCase('en-US');
+    const fullName = String(userPayload.fullName || '').trim();
+    const pin = normalizePin(userPayload.pin);
+    const role = userPayload.role || 'child';
+    const avatar = userPayload.avatar || 'child';
+    if (!/^[a-z0-9._-]{1,32}$/.test(username)
+      || !fullName || fullName.length > 60
+      || !['child', 'parent', 'teacher'].includes(role)
+      || !['child', 'girl', 'engineer'].includes(avatar)
+      || !/^\d{4}$/.test(pin)) {
+      return null;
+    }
+
+    if (identityExists(getUsers(), username, '')) return null;
+    const salt = window.crypto.getRandomValues(new Uint8Array(16));
+    const pinHash = await hashLocalPin(pin, salt);
+    const users = getUsers();
+    if (identityExists(users, username, '')) return null;
+    const next = normalizeUser({
+      ...userPayload,
+      id: uuid(),
+      username,
+      fullName,
+      role,
+      avatar,
+      password: '',
+      pinSalt: encodeBytes(salt),
+      pinHash: encodeBytes(pinHash),
+      provider: 'local',
+      status: 'active'
+    });
+    users.push(next);
+    if (!saveUsers(users)) return null;
+    return next;
+  }
+
+  async function loginWithPin(username, pin) {
+    const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
+    const normalizedPin = normalizePin(pin);
+    if (!/^\d{4}$/.test(normalizedPin)) return null;
+    const user = findUserByIdentifier(normalizedUsername);
+    if (!user || user.status === 'inactive' || user.provider !== 'local' || !user.pinSalt || !user.pinHash) return null;
+    const actual = await hashLocalPin(normalizedPin, decodeBytes(user.pinSalt));
+    const expected = decodeBytes(user.pinHash);
+    if (actual.length !== expected.length) return null;
+    let mismatch = 0;
+    for (let index = 0; index < actual.length; index += 1) mismatch |= actual[index] ^ expected[index];
+    return mismatch === 0 ? setCurrentUser(user) : null;
   }
 
   function canAccess(permission, user = getCurrentUser()) {
@@ -702,270 +1006,471 @@
     return permissions.includes(permission);
   }
 
+  function identityExists(users, username, email, excludedId = null) {
+    const identities = new Set(
+      [username, email]
+        .map(value => String(value || '').trim().toLocaleLowerCase('en-US'))
+        .filter(Boolean)
+    );
+    return users.some(user =>
+      user.id !== excludedId &&
+      [user.username, user.email]
+        .some(value => identities.has(String(value || '').trim().toLocaleLowerCase('en-US')))
+    );
+  }
+
+  function addUser(userPayload) {
+    const username = String(userPayload.username || '').trim().toLocaleLowerCase('en-US');
+    const email = String(userPayload.email || '').trim().toLowerCase();
+    const fullName = String(userPayload.fullName || '').trim();
+    const password = String(userPayload.password || '');
+    const role = userPayload.role || 'child';
+    const status = userPayload.status || 'active';
+    const provider = userPayload.provider || 'local';
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!/^[a-z0-9._-]{1,32}$/.test(username)
+      || !fullName || fullName.length > 60
+      || (email && !emailPattern.test(email))
+      || password.length < 6 || password.length > 128
+      || !isValidRole(role)
+      || !['active', 'inactive'].includes(status)
+      || !['local', 'google'].includes(provider)
+      || !['child', 'girl', 'engineer'].includes(userPayload.avatar || 'child')) return null;
+
+    const users = getUsers();
+    if (identityExists(users, username, email)) return null;
+
+    const next = normalizeUser({
+      ...userPayload,
+      id: userPayload.id || uuid(),   // ✅ FIX #5
+      fullName,
+      username,
+      email,
+      password,
+      role,
+      provider,
+      status
+    });
+
+    users.push(next);
+    if (!saveUsers(users)) return null;
+    return next;
+  }
+
+  function updateUser(id, updates) {
+    const users = getUsers();
+    const index = users.findIndex(user => user.id === id);
+    if (index === -1) return null;
+    if ((updates.role !== undefined && !isValidRole(updates.role))
+      || (updates.status !== undefined && !['active', 'inactive'].includes(updates.status))) return null;
+    const nextUsername = updates.username === undefined
+      ? users[index].username
+      : String(updates.username).trim().toLocaleLowerCase('en-US');
+    const nextEmail = updates.email === undefined ? users[index].email : String(updates.email).trim().toLowerCase();
+    const nextFullName = updates.fullName === undefined ? users[index].fullName : String(updates.fullName).trim();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (users[index].role === 'admin' && (
+      (updates.role !== undefined && updates.role !== users[index].role)
+      || (updates.status !== undefined && updates.status !== users[index].status)
+    )) return null;
+    if (!nextUsername
+      || (updates.username !== undefined && !/^[a-z0-9._-]{1,32}$/.test(nextUsername))
+      || !nextFullName
+      || (nextEmail && !emailPattern.test(nextEmail))
+      || identityExists(users, nextUsername, nextEmail, id)) return null;
+
+    const nextRole = updates.role === undefined
+      ? users[index].role
+      : (isValidRole(updates.role) ? updates.role : users[index].role);
+    const nextStatus = updates.status === undefined
+      ? users[index].status
+      : (updates.status === 'inactive' ? 'inactive' : (updates.status === 'active' ? 'active' : users[index].status));
+    const nextUser = normalizeUser({
+      ...users[index],
+      ...updates,
+      username: nextUsername,
+      email: nextEmail,
+      fullName: nextFullName,
+      role: nextRole,
+      status: nextStatus
+    });
+
+    users[index] = nextUser;
+    if (!saveUsers(users)) return null;
+    return nextUser;
+  }
+
+  async function updateOwnProfile({ fullName, avatar, currentCredential, newCredential }) {
+    const current = getCurrentUser();
+    if (!current) throw new Error('سجّل الدخول أولًا.');
+    const normalizedFullName = String(fullName || '').trim();
+    if (!normalizedFullName || normalizedFullName.length > 60) {
+      throw new TypeError('أدخل اسمًا صحيحًا لا يتجاوز 60 حرفًا.');
+    }
+    if (!['child', 'girl', 'engineer'].includes(avatar)) {
+      throw new TypeError('اختر شخصية صحيحة.');
+    }
+
+    const users = getUsers();
+    const index = users.findIndex(user => user.id === current.id);
+    if (index === -1) throw new Error('تعذر العثور على بيانات الحساب المحلي.');
+    const user = users[index];
+    const changesCredential = newCredential !== undefined && String(newCredential) !== '';
+    const updates = { fullName: normalizedFullName, avatar };
+
+    if (changesCredential) {
+      const oldCredential = String(currentCredential || '');
+      const nextCredential = String(newCredential);
+      let oldCredentialMatches = false;
+      if (user.pinSalt && user.pinHash) {
+        const normalizedOldPin = normalizePin(oldCredential);
+        const normalizedNewPin = normalizePin(nextCredential);
+        if (!/^\d{4}$/.test(normalizedOldPin) || !/^\d{4}$/.test(normalizedNewPin)) {
+          throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');
+        }
+        const actual = await hashLocalPin(normalizedOldPin, decodeBytes(user.pinSalt));
+        const expected = decodeBytes(user.pinHash);
+        if (actual.length === expected.length) {
+          let mismatch = 0;
+          for (let byteIndex = 0; byteIndex < actual.length; byteIndex += 1) {
+            mismatch |= actual[byteIndex] ^ expected[byteIndex];
+          }
+          oldCredentialMatches = mismatch === 0;
+        }
+        if (!oldCredentialMatches) throw new Error('رمز الدخول الحالي غير صحيح.');
+        const salt = window.crypto.getRandomValues(new Uint8Array(16));
+        updates.pinSalt = encodeBytes(salt);
+        updates.pinHash = encodeBytes(await hashLocalPin(normalizedNewPin, salt));
+      } else {
+        if (nextCredential.length < 6 || nextCredential.length > 128) {
+          throw new TypeError('كلمة المرور الجديدة يجب أن تتكون من 6 إلى 128 حرفًا.');
+        }
+        oldCredentialMatches = user.provider === 'local'
+          && String(user.password || '') === oldCredential;
+        if (!oldCredentialMatches) throw new Error('كلمة المرور الحالية غير صحيحة.');
+        updates.password = nextCredential;
+      }
+    }
+
+    const updated = updateUser(current.id, updates);
+    if (!updated) throw new Error('تعذر حفظ بيانات الحساب.');
+    return setCurrentUser(updated);
+  }
+
+  function deleteUser(id) {
+    const users = getUsers();
+    const current = getCurrentUser();
+    const target = users.find(user => user.id === id);
+
+    if (!target) return false;
+    if (target.role === 'admin' && users.filter(user => user.role === 'admin').length <= 1) {
+      return false;
+    }
+    const nextUsers = users.filter(user => user.id !== id);
+    if (!saveUsers(nextUsers)) return false;
+    if (current && current.id === id) logoutUser();
+    return true;
+  }
+
   window.KidsGamesAuth = {
+    AUTH_STORAGE_KEY,
+    USERS_STORAGE_KEY,
     ROLE_PERMISSIONS,
+    defaultUsers,
+    getUsers,
+    saveUsers,
     getCurrentUser,
     setCurrentUser,
     logoutUser,
-    canAccess
+    loginWithUsername,
+    loginWithPin,
+    addPinUser,
+    canAccess,
+    addUser,
+    updateUser,
+    updateOwnProfile,
+    deleteUser,
+    findUserByIdentifier
   };
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      const timeout = window.setTimeout(() => {
-        script.remove();
-        reject(new Error(`Timed out loading Firebase SDK: ${src}`));
-      }, 10000);
       script.src = src;
-      script.onload = () => {
-        window.clearTimeout(timeout);
-        resolve();
-      };
-      script.onerror = () => {
-        window.clearTimeout(timeout);
-        reject(new Error(`تعذر تحميل ${src}`));
-      };
+      script.onload = resolve;
+      script.onerror = () => reject(new Error(`تعذر تحميل ${src}`));
       document.head.appendChild(script);
     });
   }
 
-  function withTimeout(promise, timeoutMs, label) {
-    let timeout;
-    return Promise.race([
-      promise,
-      new Promise((resolve, reject) => {
-        timeout = window.setTimeout(() => {
-          reject(new Error(`${label} timed out after ${timeoutMs}ms`));
-        }, timeoutMs);
-      })
-    ]).finally(() => window.clearTimeout(timeout));
-  }
-
-  function normalizeMaintenanceSettings(settings) {
-    const value = settings && typeof settings === 'object' ? settings : {};
-    return {
-      enabled: value.enabled === true,
-      message: typeof value.message === 'string' ? value.message : '',
-      expectedTime: typeof value.expectedTime === 'string' ? value.expectedTime : ''
+  function mergeProgress(localProgress, cloudProgress) {
+    let cloudGameStars = 0;
+    gameCatalog.forEach(game => {
+      const cloudGame = cloudProgress[game.key] || {};
+      const completed = Array.isArray(cloudGame.completed) ? cloudGame.completed : [];
+      cloudGameStars += Number.isFinite(Number(cloudGame.stars))
+        ? Math.max(0, Number(cloudGame.stars))
+        : completed.length * 3;
+    });
+    const cloudUnattributedStars = Math.max(
+      Number(cloudProgress.unattributedStars || 0),
+      Number(cloudProgress.stars || 0) - cloudGameStars,
+      0
+    );
+    const merged = {
+      unattributedStars: Math.max(Number(localProgress.unattributedStars || 0), cloudUnattributedStars)
     };
+    gameCatalog.forEach(game => {
+      const localGame = localProgress[game.key] || defaultState[game.key];
+      const cloudGame = cloudProgress[game.key] || defaultState[game.key];
+      const currentLevel = Math.max(Number(localGame.currentLevel || 1), Number(cloudGame.currentLevel || 1));
+      merged[game.key] = {
+        currentLevel,
+        unlocked: Math.max(currentLevel, Number(localGame.unlocked || 1), Number(cloudGame.unlocked || 1)),
+        completed: [...new Set([...(localGame.completed || []), ...(cloudGame.completed || [])])],
+        stars: Math.max(
+          Number(localGame.stars || 0),
+          Number.isFinite(Number(cloudGame.stars)) ? Math.max(0, Number(cloudGame.stars)) : (cloudGame.completed || []).length * 3
+        )
+      };
+    });
+    merged.stars = merged.unattributedStars + gameCatalog.reduce((total, game) => total + merged[game.key].stars, 0);
+    return merged;
   }
 
   async function initializeCloud() {
     try {
-      const response = await withTimeout(
-        fetch(new URL('firebase-config.json', APP_BASE_URL), { cache: 'no-store' }),
-        FIRESTORE_READ_TIMEOUT_MS,
-        'Firebase configuration request'
-      );
-      if (!response.ok) throw new Error(`Firebase configuration request failed: ${response.status} ${response.statusText}`);
+      const response = await fetch(new URL('firebase-config.json', APP_BASE_URL), { cache: 'no-store' });
+      if (!response.ok) return { enabled: false, reason: 'missing-config' };
       const config = await response.json();
       const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'appId'];
       if (requiredKeys.some(key => !config[key] || String(config[key]).startsWith('YOUR_'))) {
-        throw new Error('Firebase configuration is incomplete.');
+        return { enabled: false, reason: 'missing-config' };
       }
 
       const version = '10.12.5';
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-app-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-auth-compat.js`);
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-firestore-compat.js`);
+      await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-functions-compat.js`);
 
       const firebase = window.firebase;
       const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
       const auth = app.auth();
       const database = app.firestore();
-      await withTimeout(
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL),
-        FIRESTORE_READ_TIMEOUT_MS,
-        'Firebase Auth persistence initialization'
-      );
-      let userProgressUnsubscribe = null;
+      const functions = app.functions('us-central1');
+      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      let accountCreationInProgress = false;
 
-      function setProgressFromCloud(progress) {
-        currentProgress = normalizeProgress(progress || {});
-        lastSavedProgress = cloneState(currentProgress);
-      }
-
-      async function syncAccount(firebaseUser) {
+      async function syncAccount(firebaseUser, reloadIfChanged = false, previousLocalProgress = null, initialProfile = null) {
         const userRef = database.collection('users').doc(firebaseUser.uid);
-        const snapshot = await withTimeout(userRef.get(), FIRESTORE_READ_TIMEOUT_MS, 'Firestore user profile read');
-        if (!snapshot.exists) {
-          throw new Error('تعذر العثور على ملف المستخدم في Firestore.');
-        }
-        const cloudData = snapshot.data();
+        const snapshot = await userRef.get();
+        const cloudData = snapshot.exists ? snapshot.data() : {};
         if (cloudData.status === 'inactive') {
           await auth.signOut();
-          setCurrentUser(null);
+          logoutUser();
           throw new Error('هذا الحساب غير نشط.');
         }
 
+        const token = await firebaseUser.getIdTokenResult();
         const provider = firebaseUser.providerData.some(item => item.providerId === 'google.com') ? 'google' : 'local';
-        const role = isValidRole(cloudData.role) ? cloudData.role : 'child';
         const user = normalizeUser({
           id: firebaseUser.uid,
-          username: cloudData.username || (firebaseUser.email || '').split('@')[0],
+          username: cloudData.username || token.claims.username || (firebaseUser.email || '').split('@')[0],
           email: firebaseUser.email || '',
-          fullName: cloudData.fullName || firebaseUser.displayName || cloudData.username || firebaseUser.email || 'مستخدم',
-          role,
-          avatar: cloudData.avatar || 'child',
+          fullName: cloudData.fullName || initialProfile?.fullName || firebaseUser.displayName || cloudData.username || firebaseUser.email || 'مستخدم Google',
+          role: isValidRole(cloudData.role)
+            ? cloudData.role
+            : (isValidRole(token.claims.role)
+              ? token.claims.role
+              : (isValidRole(initialProfile?.role) ? initialProfile.role : 'child')),
+          avatar: cloudData.avatar || initialProfile?.avatar || 'child',
           provider,
-          status: 'active'
+          status: cloudData.status === 'inactive' ? 'inactive' : 'active'
         });
-        const progress = normalizeProgress(cloudData.progress || {});
         setCurrentUser(user);
-        setProgressFromCloud(progress);
-        userProgressUnsubscribe?.();
-        userProgressUnsubscribe = userRef.onSnapshot(snapshot => {
-          if (!snapshot.exists || getCurrentUser()?.id !== firebaseUser.uid) return;
-          setProgressFromCloud(snapshot.data().progress || {});
-        }, error => {
-          console.error('Unable to synchronize progress from Firestore:', error);
-          window.dispatchEvent(new CustomEvent('kids-games-save-error', {
-            detail: { message: 'تعذر مزامنة التقدم مع Firebase. تحقق من الاتصال ثم أعد تحميل الصفحة.' }
-          }));
-        });
+
+        const localProgress = previousLocalProgress || readProgress();
+        const progress = cloudData.progress
+          ? mergeProgress(localProgress, cloudData.progress)
+          : localProgress;
+        const changed = JSON.stringify(localProgress) !== JSON.stringify(progress);
+        safeSetItem(progressStorageKey(), JSON.stringify(progress));
+        await userRef.set({
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          avatar: user.avatar,
+          provider: user.provider,
+          status: user.status,
+          progress,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        if (reloadIfChanged && changed) {
+          const reloadKey = STORAGE_KEYS.cloudSyncReload(firebaseUser.uid);
+          if (!sessionStorage.getItem(reloadKey)) {
+            sessionStorage.setItem(reloadKey, '1');
+            window.location.reload();
+          } else {
+            sessionStorage.removeItem(reloadKey);
+          }
+        } else {
+          sessionStorage.removeItem(STORAGE_KEYS.cloudSyncReload(firebaseUser.uid));
+        }
         return user;
       }
 
-      async function readSettings() {
-        if (!auth.currentUser) return;
-        const [lessons, games] = await withTimeout(Promise.all([
-          database.collection('settings').doc('lessons').get(),
-          database.collection('settings').doc('games').get()
-        ]), FIRESTORE_READ_TIMEOUT_MS, 'Firestore settings read');
-        if (lessons.exists) {
-          const saved = lessons.data().unlockAt || {};
-          lessonSettingsCache = Object.fromEntries(lessonCatalog.map(lesson => {
-            const unlockAt = Number(saved[lesson.key]);
-            return [lesson.key, Number.isInteger(unlockAt) && unlockAt >= 0 ? unlockAt : lesson.unlockAt];
-          }));
+      auth.onAuthStateChanged(firebaseUser => {
+        if (firebaseUser && !accountCreationInProgress) {
+          syncAccount(firebaseUser, true).catch(error => console.error(error));
         }
-        if (games.exists) gameSettingsCache = normalizeGameSettings(games.data().availability);
-      }
+      });
 
-      const cloud = {
+      window.KidsGamesCloud = {
         enabled: true,
         projectId: config.projectId,
-        async syncAuthenticatedUser(firebaseUser) {
-          const user = await syncAccount(firebaseUser);
-          await readSettings();
-          return user;
-        },
         getCurrentUserId() {
           return auth.currentUser?.uid || null;
         },
-        async listAccounts() {
-          const snapshot = await database.collection('users').get();
-          return snapshot.docs.map(document => {
-            const account = document.data();
-            return {
-              ...account,
-              id: document.id,
-              uid: document.id
-            };
-          });
-        },
-        async createManagedAccount(account) {
-          const username = String(account.username || '').trim().toLocaleLowerCase('en-US');
-          const fullName = String(account.fullName || username).trim();
-          const role = account.role;
-          const password = String(account.password || '');
-          if (!/^[a-z0-9._-]{1,32}$/.test(username)) throw new TypeError('اسم المستخدم غير صحيح.');
-          if (!fullName || fullName.length > 60) throw new TypeError('أدخل اسمًا صحيحًا لا يتجاوز 60 حرفًا.');
-          if (!['child', 'parent', 'teacher', 'admin'].includes(role)) throw new TypeError('اختر نوع حساب صحيحًا.');
-          if (password.length < 6 || password.length > 128) throw new TypeError('كلمة المرور يجب أن تكون من 6 إلى 128 حرفًا.');
-
-          const secondaryApp = firebase.initializeApp(config, `managed-account-${Date.now()}`);
-          try {
-            const email = `${username}@kids-games.local`;
-            const credential = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+        async signInWithUsername(username, password) {
+          const localUser = findUserByIdentifier(username);
+          let previousLocalProgress = null;
+          if (localUser?.provider === 'local') {
             try {
-              await database.collection('users').doc(credential.user.uid).set({
-                username,
-                email,
-                fullName,
-                role,
-                status: 'active',
-                avatar: 'child',
-                provider: 'local',
-                progress: {},
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-              });
+              const storedProgress = localStorage.getItem(STORAGE_KEYS.progressForUser(localUser.id));
+              previousLocalProgress = storedProgress ? JSON.parse(storedProgress) : null;
             } catch (error) {
-              try {
-                await credential.user.delete();
-              } catch (cleanupError) {
-                console.error('Unable to remove Firebase Auth account after profile creation failed:', cleanupError);
-              }
+              console.error('Unable to read legacy local progress:', error);
+            }
+          }
+
+          try {
+            const result = await functions.httpsCallable('authenticateUsername')({
+              username,
+              password
+            });
+            const credential = await auth.signInWithCustomToken(result.data.token);
+            return syncAccount(credential.user);
+          } catch (error) {
+            if (!['functions/unauthenticated', 'functions/not-found', 'functions/invalid-argument'].includes(error.code)) {
               throw error;
             }
-            return { id: credential.user.uid, uid: credential.user.uid, username, email, fullName, role, status: 'active' };
-          } finally {
-            await secondaryApp.delete();
+
+            try {
+              const credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
+              return syncAccount(credential.user, false, previousLocalProgress);
+            } catch (legacyError) {
+              if (legacyError.code === 'auth/invalid-email') throw error;
+              throw legacyError;
+            }
           }
+        },
+        async createAccount(username, pin, fullName, role, avatar) {
+          const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
+          const normalizedFullName = String(fullName || '').trim();
+          const allowedRoles = ['child', 'teacher', 'parent'];
+          const allowedAvatars = ['child', 'girl', 'engineer'];
+          if (!normalizedFullName || normalizedFullName.length > 60) {
+            throw new TypeError('أدخل اسمًا صحيحًا لا يتجاوز 60 حرفًا.');
+          }
+          if (!allowedRoles.includes(role)) throw new TypeError('اختر نوع حساب صحيحًا.');
+          if (!allowedAvatars.includes(avatar)) throw new TypeError('اختر شخصية من القائمة.');
+          if (!/^\d{4}$/.test(String(pin || ''))) throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');
+          accountCreationInProgress = true;
+          try {
+            const result = await functions.httpsCallable('registerAccount')({
+              username: normalizedUsername,
+              pin,
+              fullName: normalizedFullName,
+              role,
+              avatar
+            });
+            const credential = await auth.signInWithCustomToken(result.data.token);
+            return await syncAccount(credential.user, false, null, {
+              fullName: normalizedFullName,
+              role,
+              avatar
+            });
+          } finally {
+            accountCreationInProgress = false;
+          }
+        },
+        async listAccounts() {
+          const snapshot = await database.collection('users').orderBy('username').get();
+          return snapshot.docs.map(document => ({ id: document.id, uid: document.id, ...document.data() }));
         },
         async updateAccount(account) {
-          const userRef = database.collection('users').doc(account.uid);
-          const snapshot = await userRef.get();
-          if (!snapshot.exists) throw new Error('تعذر العثور على الحساب.');
-          const existing = snapshot.data();
-          if (account.username && account.username !== existing.username) {
-            throw new Error('لا يمكن تغيير اسم المستخدم دون خدمة إدارة Firebase.');
-          }
-          if (account.password) {
-            throw new Error('لا يمكن تغيير كلمة مرور مستخدم آخر من التطبيق.');
-          }
-          if (!['child', 'parent', 'teacher', 'admin'].includes(account.role)
-            || !['active', 'inactive'].includes(account.status)) {
-            throw new TypeError('بيانات الدور أو الحالة غير صحيحة.');
-          }
-          await userRef.update({
+          const ref = database.collection('users').doc(account.uid);
+          await ref.update({
             role: account.role,
             status: account.status,
+            email: account.email || '',
+            fullName: account.fullName || account.username,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
-          return { ...existing, ...account };
-        },
-        async deleteAccount(account) {
-          const userRef = database.collection('users').doc(account.uid);
-          const snapshot = await userRef.get();
-          if (!snapshot.exists) return false;
-          if (snapshot.data().role === 'admin') throw new Error('لا يمكن تعطيل حساب مدير من هذه الواجهة.');
-          await userRef.update({
-            status: 'inactive',
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          });
-          return true;
+          return { ...account, id: account.uid };
         },
         async updateOwnProfile({ fullName, avatar, currentCredential = '', newCredential = '' }) {
-          const firebaseUser = auth.currentUser;
           const current = getCurrentUser();
-          if (!firebaseUser || !current || firebaseUser.uid !== current.id) throw new Error('سجّل الدخول إلى حسابك أولًا.');
-          if (!fullName || fullName.length > 60 || !['child', 'girl', 'engineer'].includes(avatar)) {
-            throw new TypeError('بيانات الملف الشخصي غير صحيحة.');
+          if (!current || current.id !== auth.currentUser?.uid) {
+            throw new Error('انتهت جلسة الدخول. سجّل الدخول مرة أخرى.');
           }
-          if (newCredential) {
-            if (!currentCredential || newCredential.length < 6 || newCredential.length > 128) {
-              throw new TypeError('أدخل كلمة المرور الحالية وكلمة مرور جديدة من 6 إلى 128 حرفًا.');
+          if (currentCredential || newCredential) {
+            try {
+              const result = await functions.httpsCallable('updateOwnProfile')({
+                fullName,
+                avatar,
+                currentCredential,
+                newCredential
+              });
+              return setCurrentUser({ ...current, ...result.data });
+            } catch (error) {
+              const legacyAccount = error.code === 'functions/failed-precondition'
+                && error.message.includes('الحساب القديم');
+              const functionNotDeployed = error.code === 'functions/not-found';
+              if (legacyAccount) {
+                const firebaseUser = auth.currentUser;
+                if (!firebaseUser?.email) {
+                  throw new Error('تعذر التحقق من الحساب القديم. تواصل مع مدير النظام.');
+                }
+                const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
+                await firebaseUser.reauthenticateWithCredential(credential);
+                await firebaseUser.getIdToken(true);
+                const result = await functions.httpsCallable('updateOwnProfile')({
+                  fullName,
+                  avatar,
+                  currentCredential,
+                  newCredential
+                });
+                return setCurrentUser({ ...current, ...result.data });
+              }
+              if (newCredential.length < 6 || !functionNotDeployed) throw error;
+
+              const firebaseUser = auth.currentUser;
+              if (!firebaseUser?.email) {
+                throw new Error('تعذر التحقق من الحساب القديم. تواصل مع مدير النظام.');
+              }
+              const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
+              await firebaseUser.reauthenticateWithCredential(credential);
+              await firebaseUser.updatePassword(newCredential);
+              await firebaseUser.updateProfile({ displayName: fullName });
+              await database.collection('users').doc(current.id).update({
+                fullName,
+                avatar,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              return setCurrentUser({ ...current, fullName, avatar });
             }
-            const credential = firebase.auth.EmailAuthProvider.credential(firebaseUser.email, currentCredential);
-            await firebaseUser.reauthenticateWithCredential(credential);
           }
-          await database.collection('users').doc(firebaseUser.uid).update({
+          await auth.currentUser.updateProfile({ displayName: fullName });
+          await database.collection('users').doc(current.id).update({
             fullName,
             avatar,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
-          setCurrentUser({ ...current, fullName, avatar });
-          if (newCredential) {
-            try {
-              await firebaseUser.updatePassword(newCredential);
-            } catch (error) {
-              console.error('Unable to update Firebase Auth password after saving profile:', error);
-              throw new Error('تم حفظ الاسم والشخصية، لكن تعذر تغيير كلمة المرور. حاول تغييرها مرة أخرى.');
-            }
-          }
-          return getCurrentUser();
+          return setCurrentUser({ ...current, fullName, avatar });
         },
         async getLessonSettings() {
           const snapshot = await database.collection('settings').doc('lessons').get();
@@ -973,8 +1478,10 @@
           return snapshot.data().unlockAt || null;
         },
         async saveLessonSettings(unlockAt) {
-          await database.collection('settings').doc('lessons').set({ unlockAt, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-          lessonSettingsCache = { ...unlockAt };
+          await database.collection('settings').doc('lessons').set({
+            unlockAt,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
           return unlockAt;
         },
         async getGameSettings() {
@@ -983,26 +1490,11 @@
           return snapshot.data().availability || null;
         },
         async saveGameSettings(availability) {
-          await database.collection('settings').doc('games').set({ availability, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-          gameSettingsCache = normalizeGameSettings(availability);
-          return getGameSettings();
-        },
-        async getMaintenanceMode() {
-          const snapshot = await database.collection('settings').doc('site').get();
-          return snapshot.exists ? normalizeMaintenanceSettings(snapshot.data().maintenance) : normalizeMaintenanceSettings();
-        },
-        async saveMaintenanceMode(enabled, message, expectedTime) {
-          const maintenance = normalizeMaintenanceSettings({ enabled, message, expectedTime });
-          if (maintenance.message.length > 500 || maintenance.expectedTime.length > 80) {
-            throw new RangeError('رسالة الصيانة أو وقت العودة أطول من المسموح.');
-          }
-          await database.collection('settings').doc('site').set({ maintenance, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-          return maintenance;
-        },
-        subscribeMaintenanceMode(onChange, onError) {
-          return database.collection('settings').doc('site').onSnapshot(snapshot => {
-            onChange(snapshot.exists ? normalizeMaintenanceSettings(snapshot.data().maintenance) : normalizeMaintenanceSettings());
-          }, onError);
+          await database.collection('settings').doc('games').set({
+            availability,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          return availability;
         },
         async signOut() {
           await auth.signOut();
@@ -1010,227 +1502,62 @@
         },
         async saveProgress(progress) {
           const user = getCurrentUser();
-          if (!auth.currentUser || !user || auth.currentUser.uid !== user.id) {
-            throw new Error('سجّل الدخول إلى حساب Firebase قبل حفظ التقدم.');
-          }
-          const userRef = database.collection('users').doc(user.id);
-          let savedProgress;
-          await database.runTransaction(async transaction => {
-            const snapshot = await transaction.get(userRef);
-            if (!snapshot.exists || snapshot.data().status !== 'active') {
-              throw new Error('تعذر العثور على ملف Firebase النشط لهذا الحساب.');
-            }
-            savedProgress = mergeProgress(snapshot.data().progress || {}, progress);
-            transaction.set(userRef, {
-              progress: savedProgress,
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-          });
-          setProgressFromCloud(savedProgress);
+          if (!auth.currentUser || !user || auth.currentUser.uid !== user.id) return false;
+          await database.collection('users').doc(user.id).set({
+            progress,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
           return true;
         }
       };
-      window.KidsGamesCloud = cloud;
-
-      await withTimeout(new Promise((resolve, reject) => {
-        let initialState = true;
-        auth.onAuthStateChanged(async firebaseUser => {
-          try {
-            if (firebaseUser) {
-              await syncAccount(firebaseUser);
-              await readSettings();
-            } else {
-              userProgressUnsubscribe?.();
-              userProgressUnsubscribe = null;
-              setCurrentUser(null);
-              currentProgress = cloneState(defaultState);
-            }
-            if (initialState) {
-              initialState = false;
-              resolve();
-            }
-          } catch (error) {
-            if (initialState) {
-              initialState = false;
-              reject(error);
-            } else {
-              console.error('Unable to synchronize Firebase account state:', error);
-            }
-          }
-        }, error => {
-          if (initialState) {
-            initialState = false;
-            reject(error);
-          } else {
-            console.error('Firebase authentication state listener failed:', error);
-          }
-        });
-      }), FIREBASE_STARTUP_TIMEOUT_MS, 'Firebase Auth initialization');
-      return cloud;
+      return window.KidsGamesCloud;
     } catch (error) {
-      console.error('Firebase initialization failed:', error);
-      return { enabled: false, reason: 'firebase-unavailable', error };
+      console.error('Cloud setup failed:', error);
+      return { enabled: false, reason: 'cloud-error' };
     }
   }
 
-  let resolveCloudReady;
-  window.KidsGamesCloudReady = new Promise(resolve => {
-    resolveCloudReady = resolve;
-  });
+  window.KidsGamesCloudReady = initializeCloud();
 
-  function scheduleCloudInitialization() {
-    const initializeWhenIdle = () => {
-      withTimeout(initializeCloud(), FIREBASE_STARTUP_TIMEOUT_MS, 'Firebase startup').then(resolveCloudReady).catch(error => {
-        console.error('Cloud init failed:', error);
-        resolveCloudReady({ enabled: false, reason: 'cloud-error' });
-      });
-    };
+  const currentGame = gameCatalog.find(game =>
+    new URL(game.href).pathname.replace(/\/+$/, '').toLowerCase() ===
+    window.location.pathname.replace(/\/+$/, '').toLowerCase()
+  );
+  const currentUser = window.KidsGamesAuth.getCurrentUser();
+  if (currentGame && currentUser?.role !== 'admin') {
+    const accessCheck = document.createElement('div');
+    accessCheck.setAttribute('role', 'status');
+    accessCheck.setAttribute('aria-live', 'assertive');
+    accessCheck.textContent = `لحظة واحدة، نتحقق من توفر لعبة ${currentGame.title}.`;
+    Object.assign(accessCheck.style, {
+      position: 'fixed',
+      inset: '0',
+      zIndex: '2147483647',
+      display: 'grid',
+      placeItems: 'center',
+      padding: '24px',
+      background: 'rgba(16, 35, 57, 0.92)',
+      color: '#fff',
+      font: '800 1.1rem/1.8 system-ui, sans-serif',
+      textAlign: 'center',
+      direction: 'rtl'
+    });
+    document.body.appendChild(accessCheck);
 
-    if (typeof window.requestIdleCallback === 'function') {
-      window.requestIdleCallback(initializeWhenIdle, { timeout: 2000 });
-    } else {
-      window.setTimeout(initializeWhenIdle, 0);
-    }
-  }
-
-  scheduleCloudInitialization();
-
-  function isAdminPage() {
-    return /\/pages\/admin(?:\/|$)/i.test(window.location.pathname);
-  }
-
-  function isAuthPage() {
-    return /\/pages\/auth(?:\/|$)/i.test(window.location.pathname);
-  }
-
-  function showAccessScreen(title, message, { maintenance = false, expectedTime = '', loginUrl = '' } = {}) {
-    let screen = document.getElementById('kids-games-access-screen');
-    if (!screen) {
-      screen = document.createElement('section');
-      screen.id = 'kids-games-access-screen';
-      screen.setAttribute('role', 'alert');
-      screen.setAttribute('aria-live', 'assertive');
-      Object.assign(screen.style, {
-        position: 'fixed',
-        inset: '0',
-        zIndex: '2147483647',
-        display: 'grid',
-        placeItems: 'center',
-        padding: '24px',
-        background: 'linear-gradient(145deg, #102339, #173f51)',
-        color: '#fff',
-        font: '700 1rem/1.8 system-ui, sans-serif',
-        textAlign: 'center',
-        direction: 'rtl'
-      });
-      document.body.appendChild(screen);
-    }
-    const card = document.createElement('main');
-    Object.assign(card.style, { width: 'min(100%, 540px)', padding: '32px', borderRadius: '24px', background: 'rgba(255,255,255,.1)' });
-    const icon = document.createElement('div');
-    icon.style.fontSize = '3rem';
-    icon.textContent = maintenance ? '🛠️' : '⚙️';
-    const heading = document.createElement('h1');
-    heading.textContent = title;
-    const details = document.createElement('p');
-    details.textContent = message;
-    card.append(icon, heading, details);
-    if (expectedTime) {
-      const time = document.createElement('p');
-      const date = new Date(expectedTime);
-      const displayTime = Number.isNaN(date.valueOf())
-        ? expectedTime
-        : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
-      time.textContent = `وقت العودة المتوقع: ${displayTime}`;
-      card.appendChild(time);
-    }
-    const refresh = document.createElement('button');
-    refresh.type = 'button';
-    refresh.textContent = 'تحديث';
-    Object.assign(refresh.style, { padding: '12px 24px', border: '0', borderRadius: '12px', cursor: 'pointer', font: 'inherit' });
-    refresh.addEventListener('click', () => window.location.reload());
-    card.appendChild(refresh);
-    if (loginUrl) {
-      const login = document.createElement('a');
-      login.href = loginUrl;
-      login.textContent = 'فتح صفحة تسجيل الدخول';
-      Object.assign(login.style, { display: 'inline-block', marginInlineStart: '16px', color: '#fff' });
-      card.appendChild(login);
-    }
-    screen.replaceChildren(card);
-    return screen;
-  }
-
-  window.addEventListener('kids-games-save-error', event => {
-    showAccessScreen('تعذر حفظ تقدمك', event.detail?.message || 'تعذر حفظ البيانات في Firebase. تحقق من الاتصال ثم أعد تحميل الصفحة؛ لن تُحفظ هذه البيانات محليًا.');
-  });
-
-  if (!isAdminPage() && !isAuthPage()) {
-    const loadingScreen = showAccessScreen('جارٍ التحقق من اتصال Firebase', 'يتم تحميل حسابك وبياناتك السحابية بأمان.');
-    window.KidsGamesCloudReady.then(async cloud => {
-      const authUrl = new URL('pages/auth/index.html', APP_BASE_URL).href;
-      if (!cloud?.enabled) {
-        showAccessScreen(
-          'تعذر الاتصال بـ Firebase',
-          'لم يتم تحميل بياناتك أو حفظها محليًا. تحقق من الاتصال ثم أعد المحاولة.',
-          { loginUrl: authUrl }
-        );
+    window.KidsGames.getEffectiveGameSettings().then(settings => {
+      if (!settings.lockedGames.includes(currentGame.key)) {
+        accessCheck.remove();
         return;
       }
-      const user = getCurrentUser();
-      const applyMaintenance = maintenance => {
-        if (maintenance.enabled && user?.role !== 'admin') {
-          showAccessScreen(
-            'الموقع تحت الصيانة مؤقتًا',
-            maintenance.message || 'نعمل على تحسين الموقع. يرجى العودة بعد قليل.',
-            { maintenance: true, expectedTime: maintenance.expectedTime }
-          );
-        } else if (!user) {
-          window.location.replace(authUrl);
-        } else {
-          document.getElementById('kids-games-access-screen')?.remove();
-        }
-      };
-      const maintenance = await withTimeout(
-        cloud.getMaintenanceMode(),
-        FIRESTORE_READ_TIMEOUT_MS,
-        'Firestore maintenance settings read'
-      );
-      if (!user && !maintenance.enabled) {
-        window.location.replace(authUrl);
-        return;
-      }
-      applyMaintenance(maintenance);
-      cloud.subscribeMaintenanceMode(applyMaintenance, error => {
-        console.error('Unable to monitor site maintenance state:', error);
-        showAccessScreen('تعذر التحقق من حالة الموقع', 'تعذر تحميل حالة الصيانة من Firebase. أعد المحاولة بعد التحقق من الاتصال.');
-      });
-      if (!user) return;
-
-      const currentGame = gameCatalog.find(game =>
-        new URL(game.href).pathname.replace(/\/+$/, '').toLowerCase() ===
-        window.location.pathname.replace(/\/+$/, '').toLowerCase()
-      );
-      if (currentGame && user.role !== 'admin') {
-        const settings = await withTimeout(
-          getEffectiveGameSettings(),
-          FIRESTORE_READ_TIMEOUT_MS,
-          'Firestore game settings read'
-        );
-        if (settings.lockedGames.includes(currentGame.key)) {
-          const maintenanceUrl = new URL('pages/games/maintenance.html', APP_BASE_URL);
-          maintenanceUrl.searchParams.set('game', currentGame.key);
-          window.location.replace(maintenanceUrl.href);
-          return;
-        }
-      }
+      const maintenanceUrl = new URL('pages/games/maintenance.html', APP_BASE_URL);
+      maintenanceUrl.searchParams.set('game', currentGame.key);
+      window.location.replace(maintenanceUrl.href);
     }).catch(error => {
-      console.error('Unable to initialize app access checks:', error);
-      showAccessScreen(
-        'تعذر الاتصال بـ Firebase',
-        'لم يتم تحميل بياناتك. أعد المحاولة بعد التحقق من الاتصال.',
-        { loginUrl: new URL('pages/auth/index.html', APP_BASE_URL).href }
-      );
+      console.error('Unable to check game availability:', error);
+      const maintenanceUrl = new URL('pages/games/maintenance.html', APP_BASE_URL);
+      maintenanceUrl.searchParams.set('game', currentGame.key);
+      maintenanceUrl.searchParams.set('verify', 'failed');
+      window.location.replace(maintenanceUrl.href);
     });
   }
 })();

@@ -34,20 +34,8 @@ function validatePinCredentials(username, pin) {
   if (!/^[a-z0-9._-]{1,32}$/.test(normalizedUsername)) {
     throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
   }
-  if (!/^\d{6,128}$/.test(normalizedPin)) {
-    throw new TypeError('رمز الدخول يجب أن يتكون من 6 أرقام على الأقل.');
-  }
-  return { username: normalizedUsername, password: normalizedPin };
-}
-
-function validateLegacyPinCredentials(username, pin) {
-  const normalizedUsername = normalizeUsername(username);
-  const normalizedPin = normalizePin(pin);
-  if (!/^[a-z0-9._-]{1,32}$/.test(normalizedUsername)) {
-    throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
-  }
   if (!/^\d{4}$/.test(normalizedPin)) {
-    throw new TypeError('رمز الدخول القديم يجب أن يتكون من 4 أرقام بالضبط.');
+    throw new TypeError('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.');
   }
   return { username: normalizedUsername, password: normalizedPin };
 }
@@ -78,7 +66,6 @@ module.exports = {
   normalizePin,
   validateCredentials,
   validatePinCredentials,
-  validateLegacyPinCredentials,
   hashPassword,
   verifyPassword,
   hashRateLimitKey

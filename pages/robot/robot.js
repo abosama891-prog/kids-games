@@ -1,6 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  const cloud = await window.KidsGamesCloudReady;
-  if (!cloud?.enabled) return;
+document.addEventListener('DOMContentLoaded', () => {
   const SIZE = 6;
   const directions = [
     { key: 'right', dx: 1, dy: 0, rotation: 90 },

@@ -1,60 +1,4 @@
-async function forgotPassword(email) {
-  const emailAddress = String(email || '').trim();
-  if (!emailAddress || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) {
-    throw Object.assign(new TypeError('أدخل عنوان إيميل صحيحًا.'), { code: 'auth/invalid-email' });
-  }
-  const normalizedEmail = emailAddress.toLocaleLowerCase('en-US');
-  if (normalizedEmail.endsWith('.invalid') || normalizedEmail.endsWith('.local')) {
-    throw Object.assign(
-      new Error('هذا عنوان تجريبي غير قابل لاستقبال البريد. استخدم الإيميل الحقيقي المرتبط بحسابك.'),
-      { code: 'app/non-deliverable-email' }
-    );
-  }
-
-  const cloud = await window.KidsGamesCloudReady;
-  if (!cloud?.enabled || !window.firebase?.auth) {
-    throw Object.assign(new Error('تعذر الاتصال بخدمة Firebase.'), { code: 'app/firebase-unavailable' });
-  }
-  await window.firebase.auth().sendPasswordResetEmail(emailAddress);
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  const cloud = await window.KidsGamesCloudReady;
-  const forgotPasswordForm = document.getElementById('forgot-password-form');
-  if (forgotPasswordForm) {
-    const emailInput = document.getElementById('forgot-password-email');
-    const message = document.getElementById('auth-message');
-    const submitButton = forgotPasswordForm.querySelector('[type="submit"]');
-    forgotPasswordForm.addEventListener('submit', async event => {
-      event.preventDefault();
-      if (!forgotPasswordForm.reportValidity()) return;
-      submitButton.disabled = true;
-      message.textContent = '';
-      message.className = 'auth-message';
-      try {
-        await forgotPassword(emailInput.value);
-        message.textContent = 'تم إرسال الرابط إلى إيميلك';
-        message.classList.add('success');
-      } catch (error) {
-        console.error('Unable to send password reset email:', error);
-        const errorMessage = error.code === 'app/non-deliverable-email'
-          ? error.message
-          : error.code === 'auth/user-not-found'
-            ? 'الإيميل غير موجود.'
-            : error.code === 'auth/invalid-email'
-              ? 'أدخل عنوان إيميل صحيحًا.'
-              : error.code === 'auth/operation-not-allowed'
-                ? 'إعادة تعيين كلمة المرور غير مفعّلة في إعدادات Firebase.'
-                : 'تعذر إرسال رابط إعادة التعيين. تحقق من اتصالك وحاول مرة أخرى.';
-        message.textContent = errorMessage;
-        message.classList.add('error');
-      } finally {
-        submitButton.disabled = false;
-      }
-    });
-    return;
-  }
-
+document.addEventListener('DOMContentLoaded', () => {
   const authMessage = document.getElementById('auth-message');
   const splashScreen = document.getElementById('splash-screen');
   const accountScreen = document.getElementById('account-screen');
@@ -79,9 +23,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     authMessage.className = `auth-message ${type}`;
   }
 
+  function isCloudUnavailable(error) {
+    return [
+      'auth/network-request-failed',
+      'functions/deadline-exceeded',
+      'functions/internal',
+      'functions/unavailable'
+    ].includes(error?.code);
+  }
+
   function redirectByRole(user) {
-    const role = user?.role ?? 'child';
-    if (role === 'admin') {
+    if (user.role === 'admin') {
       window.location.href = '../admin/index.html';
       return;
     }
@@ -128,43 +80,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 2200);
   }
 
-  const currentUser = window.KidsGamesAuth.getCurrentUser();
-  if (currentUser) redirectByRole(currentUser);
-  const cloudReady = Promise.resolve(cloud);
+  const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
+
+  const cloudReady = window.KidsGamesCloudReady.then(cloud => {
+    if (currentUser) {
+      redirectByRole(window.KidsGamesAuth.getCurrentUser() || currentUser);
+    }
+    return cloud;
+  });
 
   showSignupButton.addEventListener('click', showSignup);
   showLoginButton.addEventListener('click', showLogin);
 
   loginForm.addEventListener('submit', async event => {
     event.preventDefault();
-    const username = document.getElementById('username').value.trim().toLocaleLowerCase('en-US');
+    const username = document.getElementById('username').value.trim();
     const password = normalizePin(document.getElementById('password').value);
     const submitButton = loginForm.querySelector('[type="submit"]');
     submitButton.disabled = true;
     try {
       const cloud = await cloudReady;
-      if (!cloud?.enabled) throw new Error('تعذر الاتصال بخدمة Firebase. لم يتم تسجيل الدخول.');
-      let credential;
-      try {
-        credential = await window.firebase.auth().signInWithEmailAndPassword(
-          `${username}@kids-games.local`,
-          password
-        );
-      } catch (error) {
-        if (!['auth/user-not-found', 'auth/invalid-credential'].includes(error.code)) throw error;
-        credential = await window.firebase.auth().signInWithEmailAndPassword(
-          `${username}@accounts.kids-games.invalid`,
-          password
-        );
+      const localAdmin = window.KidsGamesAuth.findUserByIdentifier(username);
+      const isLocalAdmin = localAdmin?.id === 'admin-demo'
+        && localAdmin.role === 'admin'
+        && localAdmin.provider === 'local';
+      let user;
+      if (isLocalAdmin || !cloud.enabled) {
+        user = /^\d{4}$/.test(password)
+          ? await window.KidsGamesAuth.loginWithPin(username, password)
+          : window.KidsGamesAuth.loginWithUsername(username, password);
+      } else {
+        try {
+          user = await cloud.signInWithUsername(username, password);
+        } catch (error) {
+          const localAccount = window.KidsGamesAuth.findUserByIdentifier(username);
+          if (!isCloudUnavailable(error) || localAccount?.provider !== 'local') throw error;
+          if (cloud.getCurrentUserId?.()) await cloud.signOut();
+          user = /^\d{4}$/.test(password)
+            ? await window.KidsGamesAuth.loginWithPin(username, password)
+            : window.KidsGamesAuth.loginWithUsername(username, password);
+          if (!user) throw error;
+          console.warn('Cloud sign-in is unavailable; signed in with the saved local account.');
+        }
       }
-      const user = await cloud.syncAuthenticatedUser(credential.user);
+      if (!user) {
+        setMessage('اسم المستخدم أو كلمة المرور غير صحيحة.', 'error');
+        return;
+      }
       redirectByRole(user);
     } catch (error) {
       console.error('Unable to sign in with username:', error);
-      const message = !cloud?.enabled
-        ? 'تعذر الاتصال بخدمة Firebase. تحقق من الاتصال ثم حاول مرة أخرى.'
-        : error.code === 'auth/too-many-requests'
+      const message = error.code === 'auth/too-many-requests'
         ? 'محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.'
+        : error.code === 'functions/resource-exhausted'
+          ? 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.'
+          : error.code === 'functions/unavailable'
+            ? 'تعذر الاتصال بخدمة الحسابات. تحقق من اتصال الإنترنت.'
         : error.code === 'auth/network-request-failed'
           ? 'تعذر الاتصال بخدمة تسجيل الدخول. تحقق من اتصال الإنترنت.'
           : 'اسم المستخدم أو كلمة المرور غير صحيحة.';
@@ -200,8 +171,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       setMessage('اختر شخصية من القائمة.', 'error');
       return;
     }
-    if (!/^\d{6,128}$/.test(pin)) {
-      setMessage('رمز الدخول يجب أن يتكون من 6 أرقام على الأقل.', 'error');
+    if (!/^\d{4}$/.test(pin)) {
+      setMessage('رمز الدخول يجب أن يتكون من 4 أرقام بالضبط.', 'error');
       return;
     }
     if (pin !== pinConfirm) {
@@ -212,45 +183,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     submitButton.disabled = true;
     try {
       const cloud = await cloudReady;
-      if (!cloud?.enabled) throw new Error('تعذر الاتصال بخدمة Firebase. لم يتم إنشاء الحساب.');
-      const email = `${username}@kids-games.local`;
-      const credential = await window.firebase.auth().createUserWithEmailAndPassword(email, pin);
-      try {
-        await window.firebase.firestore().collection('users').doc(credential.user.uid).set({
+      let user;
+      if (cloud.enabled) {
+        user = await cloud.createAccount(username, pin, fullName, role, avatar);
+      } else {
+        const createdUser = await window.KidsGamesAuth.addPinUser({
           username,
-          email,
           fullName,
+          pin,
           role,
-          status: 'active',
           avatar,
           provider: 'local',
-          progress: {},
-          updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+          status: 'active'
         });
-      } catch (error) {
-        try {
-          await credential.user.delete();
-        } catch (cleanupError) {
-          console.error('Unable to remove Firebase Auth account after profile creation failed:', cleanupError);
+        if (!createdUser) {
+          setMessage('اسم المستخدم مستخدم بالفعل أو بيانات الحساب غير صالحة.', 'error');
+          return;
         }
-        throw error;
+        user = await window.KidsGamesAuth.loginWithPin(username, pin);
+        if (!user) throw new Error('تعذر تسجيل الدخول إلى الحساب المحلي الجديد.');
       }
-      const user = await cloud.syncAuthenticatedUser(credential.user);
       setMessage('تم إنشاء الحساب بنجاح. جارٍ فتح المنصة...');
       setTimeout(() => redirectByRole(user), 350);
     } catch (error) {
       console.error('Unable to create account:', error);
-      const message = !cloud?.enabled
-        ? 'تعذر الاتصال بخدمة Firebase. تحقق من الاتصال ثم حاول مرة أخرى.'
-        : error.code === 'auth/email-already-in-use'
+      const message = error.code === 'auth/email-already-in-use'
         ? 'اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.'
-        : error.code === 'auth/network-request-failed'
-          ? 'تعذر الاتصال بخدمة Firebase. تحقق من اتصال الإنترنت.'
-          : error.code === 'auth/operation-not-allowed'
-            ? 'إنشاء الحسابات غير مفعّل في إعدادات Firebase.'
-            : error.code === 'permission-denied'
-              ? 'تعذر حفظ ملف الحساب. تحقق من نشر قواعد Firestore.'
-              : 'تعذر إنشاء الحساب. تحقق من البيانات ثم حاول مرة أخرى.';
+        : error.code === 'functions/resource-exhausted'
+          ? 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.'
+          : error.code === 'functions/already-exists'
+            ? 'اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.'
+            : error.code === 'functions/not-found'
+              ? 'خدمة إنشاء الحسابات غير مهيأة بعد. تواصل مع مسؤول الموقع.'
+              : error.code === 'functions/unavailable' || error.code === 'auth/network-request-failed'
+                ? 'تعذر الاتصال بخدمة الحسابات. تحقق من اتصال الإنترنت.'
+                : error.code === 'auth/operation-not-allowed'
+                  ? 'إنشاء الحسابات غير مفعّل في إعدادات Firebase.'
+                  : error instanceof TypeError || error.code === 'functions/invalid-argument'
+                    ? error.message
+                    : 'تعذر إنشاء الحساب. تحقق من البيانات ثم حاول مرة أخرى.';
       setMessage(message, 'error');
     } finally {
       submitButton.disabled = false;

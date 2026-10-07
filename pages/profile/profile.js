@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const cloud = await window.KidsGamesCloudReady;
-  const currentUser = window.KidsGamesAuth.getCurrentUser();
+  const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
   if (!currentUser) {
     window.location.href = '../auth/index.html';
     return;
@@ -64,21 +63,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       showMessage('تأكيد كلمة المرور الجديدة غير متطابق.', true);
       return;
     }
-    if (changingCredential && (newCredential.length < 6 || newCredential.length > 128)) {
-      showMessage('استخدم رمزًا من 6 أرقام على الأقل أو كلمة مرور من 6 إلى 128 حرفًا.', true);
+    if (changingCredential && !/^\d{4}$/.test(newCredential)
+      && (newCredential.length < 6 || newCredential.length > 128)) {
+      showMessage('استخدم رمزًا من 4 أرقام أو كلمة مرور من 6 إلى 128 حرفًا.', true);
       return;
     }
 
     saveButton.disabled = true;
     saveButton.textContent = 'جارٍ الحفظ...';
     try {
-      if (!cloud?.enabled) throw new Error('تعذر الاتصال بـ Firebase. لم يتم حفظ التغييرات.');
+      const cloud = await window.KidsGamesCloudReady;
       const updates = {
         fullName,
         avatar,
         ...(changingCredential ? { currentCredential, newCredential } : {})
       };
-      await cloud.updateOwnProfile(updates);
+      if (cloud.enabled) await cloud.updateOwnProfile(updates);
+      else await window.KidsGamesAuth.updateOwnProfile(updates);
 
       currentCredentialInput.value = '';
       newCredentialInput.value = '';

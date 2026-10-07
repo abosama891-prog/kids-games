@@ -1,6 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  const cloud = await window.KidsGamesCloudReady;
-  if (!cloud?.enabled) return;
+document.addEventListener('DOMContentLoaded', () => {
   const levels = [
     {
       title: '1', concept: 'ترتيب الخطوات', ageBand: 'مبتدئ · مناسب للأعمار 6–8', icon: '🌉', riverState: 'calm', riverLabel: 'النهر هادئ',

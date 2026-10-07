@@ -1,6 +1,3 @@
-window.KidsGamesCloudReady.then(cloud => {
-  if (!cloud?.enabled) return;
-
 const BOARD_SIZE = 420;
 const GRID_SIZE = 7;
 const CELL_SIZE = BOARD_SIZE / GRID_SIZE;
@@ -772,6 +769,3 @@ document.getElementById('nextLevelButton').addEventListener('click', nextLevel);
 
 readProgress();
 loadLevel();
-}).catch(error => {
-  console.error('Unable to initialize the drawing game:', error);
-});
