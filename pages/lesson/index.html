@@ -6,6 +6,8 @@
     <title>دروس البرمجة | Bu🤖y&lt;/Code&gt;</title>
     <link rel="stylesheet" href="../common.css" />
     <link rel="stylesheet" href="lesson.css" />
+    <script defer src="../common.js"></script>
+    <script defer src="lesson.js"></script>
   </head>
   <body>
     <div class="app-shell lesson-page">
@@ -28,10 +30,38 @@
         <p id="lessonDescription">خمسة دروس قصيرة تفتح تدريجيًا مع تقدمك في الألعاب.</p>
       </header>
 
-      <main id="lessonContent" class="content-grid" aria-live="polite"></main>
+      <main id="lessonContent" class="content-grid lesson-list" aria-live="polite">
+        <p id="lessonOpeningMessage" class="lesson-notice" role="status" hidden>يتم تجهيز محتوى الدرس من البيانات المحفوظة على هذا الجهاز...</p>
+        <a class="page-card lesson-tile" href="?id=commands" aria-label="افتح درس ما معنى الأمر في البرمجة؟">
+          <img class="lesson-tile-image" src="art/commands.svg" alt="" loading="lazy" decoding="async" />
+          <h2>ما معنى الأمر في البرمجة؟</h2>
+        </a>
+        <a class="page-card lesson-tile" href="?id=sequence" aria-label="افتح درس ترتيب الأوامر">
+          <img class="lesson-tile-image" src="art/sequence.svg" alt="" loading="lazy" decoding="async" />
+          <h2>ترتيب الأوامر</h2>
+        </a>
+        <a class="page-card lesson-tile" href="?id=loops" aria-label="افتح درس التكرار والحلقات">
+          <img class="lesson-tile-image" src="art/loops.svg" alt="" loading="lazy" decoding="async" />
+          <h2>التكرار والحلقات</h2>
+        </a>
+        <a class="page-card lesson-tile" href="?id=conditions" aria-label="افتح درس الشروط واتخاذ القرار">
+          <img class="lesson-tile-image" src="art/conditions.svg" alt="" loading="lazy" decoding="async" />
+          <h2>الشروط واتخاذ القرار</h2>
+        </a>
+        <a class="page-card lesson-tile" href="?id=debugging" aria-label="افتح درس اكتشاف الأخطاء وتصحيحها">
+          <img class="lesson-tile-image" src="art/debugging.svg" alt="" loading="lazy" decoding="async" />
+          <h2>اكتشاف الأخطاء وتصحيحها</h2>
+        </a>
+      </main>
     </div>
 
-    <script src="../common.js"></script>
-    <script src="lesson.js"></script>
+    <script>
+      if (new URLSearchParams(window.location.search).has('id')) {
+        const lessonContent = document.getElementById('lessonContent');
+        const openingMessage = document.getElementById('lessonOpeningMessage');
+        openingMessage.hidden = false;
+        lessonContent.replaceChildren(openingMessage);
+      }
+    </script>
   </body>
 </html>

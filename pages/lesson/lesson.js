@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
   const lessons = [
     {
       key: 'commands',
@@ -218,6 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
       image.src = new URL(`art/${lesson.image}`, window.location.href).href;
       image.alt = `صورة توضيحية لدرس ${lesson.title}`;
       image.draggable = false;
+      image.loading = 'lazy';
+      image.decoding = 'async';
       card.append(image, make('h2', '', lesson.title));
       content.appendChild(card);
     });
@@ -243,6 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
     tag.textContent = '📚 درس البرمجة';
     lessonImage.src = new URL(`art/${lesson.image}`, window.location.href).href;
     lessonImage.alt = `صورة توضيحية لدرس ${lesson.title}`;
+    lessonImage.decoding = 'async';
+    lessonImage.fetchPriority = 'high';
     lessonImage.hidden = false;
     backButton.dataset.goBack = 'index.html';
     content.replaceChildren(...lesson.sections.map(renderSection));
@@ -287,4 +291,4 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Unable to load shared lesson settings:', error);
     }
   })();
-});
+})();
