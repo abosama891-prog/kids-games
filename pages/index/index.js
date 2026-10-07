@@ -53,9 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
     syncCloudMessage.textContent = 'جارٍ المزامنة...';
     try {
       const synced = await window.KidsGames.syncCloud();
-      syncCloudMessage.textContent = synced
-        ? 'تم تحديث التقدم سحابيًا.'
-        : 'هذا حساب محلي؛ تقدمك محفوظ على هذا الجهاز.';
+      if (!synced) {
+        syncCloudMessage.textContent = 'هذا حساب محلي؛ تقدمك محفوظ على هذا الجهاز.';
+        return;
+      }
+      updateProgressStats();
+      syncCloudMessage.textContent = 'تم جلب التقدم وحفظه على الجهاز والسحابة.';
     } catch (error) {
       console.error('Manual cloud progress synchronization failed:', error);
       syncCloudMessage.textContent = 'تعذرت المزامنة؛ تقدمك محفوظ على هذا الجهاز.';
@@ -146,34 +149,36 @@ document.addEventListener('DOMContentLoaded', () => {
     adminLink.classList.toggle('hidden', !window.KidsGamesAuth.canAccess('manageUsers', currentUser));
   }
 
-  const progress = window.KidsGames.readProgress();
   const games = window.KidsGames.gameCatalog;
   const totalLevels = games.reduce((total, game) => total + game.levels, 0);
 
-  const totalStars = document.getElementById('total-stars');
-  const lastLevel = document.getElementById('last-level');
-  const levelStatus = document.getElementById('level-status');
-  const completedLevelsElement = document.getElementById('completed-levels');
-  const nextLevelElement = document.getElementById('next-level');
-  const levelProgress = document.getElementById('level-progress');
-  const progressTrack = levelProgress.parentElement;
   document.getElementById('total-level-count').textContent = totalLevels;
-  progressTrack.setAttribute('aria-valuemax', totalLevels);
+  function updateProgressStats(progress = window.KidsGames.readProgress()) {
+    const totalStars = document.getElementById('total-stars');
+    const lastLevel = document.getElementById('last-level');
+    const levelStatus = document.getElementById('level-status');
+    const completedLevelsElement = document.getElementById('completed-levels');
+    const nextLevelElement = document.getElementById('next-level');
+    const levelProgress = document.getElementById('level-progress');
+    const progressTrack = levelProgress.parentElement;
+    progressTrack.setAttribute('aria-valuemax', totalLevels);
 
-  totalStars.textContent = progress.stars || 0;
-  const highest = Math.max(...games.filter(game => game.levels > 0).map(game => progress[game.key]?.currentLevel || 1));
-  lastLevel.textContent = Math.min(highest, totalLevels);
+    totalStars.textContent = progress.stars || 0;
+    const highest = Math.max(...games.filter(game => game.levels > 0).map(game => progress[game.key]?.currentLevel || 1));
+    lastLevel.textContent = Math.min(highest, totalLevels);
 
-  const completedLevels = games.reduce((total, game) => {
-    if (!game.levels) return total;
-    const completed = Array.isArray(progress[game.key]?.completed) ? progress[game.key].completed.length : 0;
-    return total + Math.min(completed, game.levels);
-  }, 0);
-  completedLevelsElement.textContent = completedLevels;
-  nextLevelElement.textContent = Math.min(highest, totalLevels);
-  levelProgress.style.width = `${(completedLevels / totalLevels) * 100}%`;
-  progressTrack.setAttribute('aria-valuenow', completedLevels);
+    const completedLevels = games.reduce((total, game) => {
+      if (!game.levels) return total;
+      const completed = Array.isArray(progress[game.key]?.completed) ? progress[game.key].completed.length : 0;
+      return total + Math.min(completed, game.levels);
+    }, 0);
+    completedLevelsElement.textContent = completedLevels;
+    nextLevelElement.textContent = Math.min(highest, totalLevels);
+    levelProgress.style.width = `${(completedLevels / totalLevels) * 100}%`;
+    progressTrack.setAttribute('aria-valuenow', completedLevels);
 
-  const statusText = highest <= 2 ? 'مبتدئ' : highest <= 4 ? 'متوسط' : 'متقدم';
-  levelStatus.textContent = statusText;
+    levelStatus.textContent = highest <= 2 ? 'مبتدئ' : highest <= 4 ? 'متوسط' : 'متقدم';
+  }
+
+  updateProgressStats();
 });

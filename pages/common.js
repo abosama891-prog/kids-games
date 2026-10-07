@@ -162,13 +162,33 @@
 
   async function syncCloudNow() {
     if (isLocalOnlySession()) return false;
-    const cloud = await window.KidsGamesCloudReady;
-    if (!cloud?.enabled || typeof cloud.saveProgress !== 'function' || !cloud.isCurrentUserLinked?.()) {
-      throw new Error('Firebase is unavailable; local progress is still saved.');
-    }
-    const synced = await syncCloudProgress(readProgress(), true);
-    if (!synced) throw new Error('Cloud synchronization did not complete.');
-    return true;
+    const sync = cloudSyncQueue.then(async () => {
+      const cloud = await window.KidsGamesCloudReady;
+      if (!cloud?.enabled
+        || typeof cloud.getProgress !== 'function'
+        || typeof cloud.saveProgress !== 'function'
+        || !cloud.isCurrentUserLinked?.()) {
+        throw new Error('Firebase is unavailable; local progress is still saved.');
+      }
+      const localProgress = readProgress();
+      const cloudProgress = await cloud.getProgress();
+      const progress = cloudProgress ? mergeProgress(localProgress, cloudProgress) : localProgress;
+      if (!safeSetItem(progressStorageKey(), JSON.stringify(progress))) {
+        throw new Error('Unable to update saved progress on this device.');
+      }
+      if (!await cloud.saveProgress(progress)) {
+        throw new Error('Cloud synchronization did not complete.');
+      }
+      safeSetItem(STORAGE_KEYS.fullSyncAt, new Date().toISOString());
+      safeSetItem(STORAGE_KEYS.partialSyncAt, new Date().toISOString());
+      window.dispatchEvent(new Event('kids-games-full-sync'));
+      window.dispatchEvent(new Event('kids-games-partial-sync'));
+      return true;
+    });
+    cloudSyncQueue = sync.catch(error => {
+      console.error('Manual Firebase progress synchronization failed:', error);
+    });
+    return sync;
   }
 
   function saveProgress(nextState) {
@@ -1691,6 +1711,14 @@
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           }, { merge: true });
           return true;
+        },
+        async getProgress() {
+          const user = getCurrentUser();
+          if (!auth.currentUser || !user || auth.currentUser.uid !== user.id) {
+            throw new Error('يجب تسجيل الدخول بحساب سحابي لمزامنة التقدم.');
+          }
+          const snapshot = await database.collection('users').doc(user.id).get();
+          return snapshot.exists ? snapshot.data().progress || null : null;
         }
       };
       return window.KidsGamesCloud;
