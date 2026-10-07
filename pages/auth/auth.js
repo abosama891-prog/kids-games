@@ -24,12 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function isCloudUnavailable(error) {
-    return [
-      'auth/network-request-failed',
-      'functions/deadline-exceeded',
-      'functions/internal',
-      'functions/unavailable'
-    ].includes(error?.code);
+    return error?.code === 'auth/network-request-failed';
   }
 
   function redirectByRole(user) {
@@ -138,10 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Unable to sign in with username:', error);
       const message = error.code === 'auth/too-many-requests'
         ? 'محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.'
-        : error.code === 'functions/resource-exhausted'
-          ? 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.'
-          : error.code === 'functions/unavailable'
-            ? 'تعذر الاتصال بخدمة الحسابات. تحقق من اتصال الإنترنت.'
         : error.code === 'auth/network-request-failed'
           ? 'تعذر الاتصال بخدمة تسجيل الدخول. تحقق من اتصال الإنترنت.'
           : 'اسم المستخدم أو كلمة المرور غير صحيحة.';
@@ -215,19 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Unable to create account:', error);
       const message = error.code === 'auth/email-already-in-use'
         ? 'اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.'
-        : error.code === 'functions/resource-exhausted'
-          ? 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.'
-          : error.code === 'functions/already-exists'
-            ? 'اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.'
-            : error.code === 'functions/not-found'
-              ? 'خدمة إنشاء الحسابات غير مهيأة بعد. تواصل مع مسؤول الموقع.'
-              : error.code === 'functions/unavailable' || error.code === 'auth/network-request-failed'
-                ? 'تعذر الاتصال بخدمة الحسابات. تحقق من اتصال الإنترنت.'
-                : error.code === 'auth/operation-not-allowed'
-                  ? 'إنشاء الحسابات غير مفعّل في إعدادات Firebase.'
-                  : error instanceof TypeError || error.code === 'functions/invalid-argument'
-                    ? error.message
-                    : 'تعذر إنشاء الحساب. تحقق من البيانات ثم حاول مرة أخرى.';
+        : error.code === 'auth/network-request-failed'
+          ? 'تعذر الاتصال بخدمة الحسابات. تحقق من اتصال الإنترنت.'
+          : error.code === 'auth/operation-not-allowed'
+            ? 'إنشاء الحسابات غير مفعّل في إعدادات Firebase.'
+            : error instanceof TypeError
+              ? error.message
+              : 'تعذر إنشاء الحساب. تحقق من البيانات ثم حاول مرة أخرى.';
       setMessage(message, 'error');
     } finally {
       submitButton.disabled = false;
