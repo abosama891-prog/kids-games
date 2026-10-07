@@ -597,3 +597,35 @@ body {
     max-width: 120px;
   }
 }
+
+@media (max-width: 600px) {
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+    min-height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    min-height: 100vh;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .app-shell {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 18px 12px 22px;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .site-nav {
+    box-shadow: none;
+  }
+}
