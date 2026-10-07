@@ -4,8 +4,54 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>الألعاب | Bu🤖y&lt;/Code&gt;</title>
-    <link rel="stylesheet" href="../common.css" />
-    <link rel="stylesheet" href="games.css" />
+    <link rel="preload" href="../common.css" as="style" data-games-style onload="this.onload=null;this.rel='stylesheet';if(document.querySelectorAll('link[data-games-style][rel=stylesheet]').length===2)document.getElementById('games-critical-style').remove()" />
+    <link rel="preload" href="games.css" as="style" data-games-style onload="this.onload=null;this.rel='stylesheet';if(document.querySelectorAll('link[data-games-style][rel=stylesheet]').length===2)document.getElementById('games-critical-style').remove()" />
+    <noscript>
+      <link rel="stylesheet" href="../common.css" />
+      <link rel="stylesheet" href="games.css" />
+    </noscript>
+    <style id="games-critical-style">
+      *, *::before, *::after { box-sizing: border-box; }
+      html { min-height: 100%; direction: rtl; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 20px 14px 36px;
+        background: linear-gradient(155deg, #263b83 0%, #426cb3 55%, #d7eaff 145%);
+        color: #173d3a;
+        font-family: "Segoe UI", Tahoma, sans-serif;
+      }
+      a { text-decoration: none; }
+      .games-page { width: min(820px, 100%); margin: 0 auto; }
+      .games-header { margin-bottom: 18px; }
+      .page-nav, .games-brand-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .page-nav { margin-bottom: 14px; }
+      .nav-control { display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid #d5e4da; border-radius: 14px; background: #f2f8f3; color: #176b63; font-size: 1.4rem; }
+      .games-brand-row { justify-content: center; gap: 10px; margin-bottom: 8px; color: #fff4d6; }
+      .games-header .brand-lockup { display: flex; width: fit-content; margin: 0; }
+      .games-header .brand-word { font-size: clamp(1.45rem, 4vw, 2rem); }
+      .games-header .brand-subtitle { font-size: 0.72rem; }
+      .games-header .page-kicker { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid rgba(255, 244, 214, 0.7); border-radius: 11px; }
+      .games-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+      .game-card { display: grid; grid-template-columns: 52px minmax(0, 1fr) 44px; align-items: center; gap: 12px; min-height: 104px; padding: 12px 14px; border-top: 5px solid var(--game-accent, #4285a8); border-radius: 16px; background: #fff; box-shadow: 0 10px 22px rgba(0, 0, 0, 0.14); color: #173d3a; }
+      .game-draw { --game-accent: #d58b37; }
+      .game-maze { --game-accent: #4285a8; }
+      .game-gas { --game-accent: #e47645; }
+      .game-robot { --game-accent: #e47765; }
+      .game-icon, .launch-game { display: grid; place-items: center; border-radius: 14px; }
+      .game-icon { width: 48px; height: 48px; background: color-mix(in srgb, var(--game-accent, #4285a8) 14%, white); font-size: 2rem; }
+      .game-details { display: grid; gap: 5px; min-width: 0; }
+      .game-details h2 { margin: 0; font-size: 1.1rem; }
+      .level-count { color: #5f7183; direction: ltr; font-size: 0.78rem; font-weight: 800; text-align: right; }
+      .game-progress-track { height: 6px; overflow: hidden; border-radius: 999px; background: #e8eef0; }
+      .game-progress-fill { height: 100%; border-radius: inherit; background: var(--game-accent, #4285a8); }
+      .launch-game { width: 44px; height: 44px; background: var(--game-accent, #e47645); color: #fff; font-size: 1.2rem; }
+      @media (max-width: 420px) {
+        body { padding: 14px 10px 24px; }
+        .games-grid { grid-template-columns: 1fr; gap: 9px; }
+        .game-card { min-height: 86px; }
+      }
+    </style>
   </head>
   <body>
     <div class="app-shell games-page">
