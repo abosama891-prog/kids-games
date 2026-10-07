@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const syncStorageKeys = {
-    full: window.KidsGames.STORAGE_KEYS.fullSyncAt,
-    partial: window.KidsGames.STORAGE_KEYS.partialSyncAt
+    full: window.KidsGames.STORAGE_KEYS.fullSyncAt
   };
 
   function formatSyncTime(timestamp) {
@@ -22,29 +21,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updateSyncStatus() {
     let fullSyncAt = null;
-    let partialSyncAt = null;
     try {
       fullSyncAt = localStorage.getItem(syncStorageKeys.full);
-      partialSyncAt = localStorage.getItem(syncStorageKeys.partial);
     } catch (error) {
       console.error('Unable to read sync timestamps:', error);
     }
 
     const fullSyncText = document.getElementById('last-full-sync');
-    const partialSyncText = document.getElementById('last-partial-sync');
     const formattedFullSync = fullSyncAt && formatSyncTime(fullSyncAt);
-    const formattedPartialSync = partialSyncAt && formatSyncTime(partialSyncAt);
     fullSyncText.textContent = `آخر تحديث كلي: ${formattedFullSync || 'لم تتم مزامنة كاملة بعد'}`;
-    partialSyncText.textContent = `آخر تحديث جزئي: ${formattedPartialSync || 'لا توجد حركات جديدة'}`;
   }
 
   updateSyncStatus();
   window.setInterval(updateSyncStatus, 60 * 1000);
   window.addEventListener('storage', event => {
-    if (Object.values(syncStorageKeys).includes(event.key)) updateSyncStatus();
+    if (event.key === syncStorageKeys.full) updateSyncStatus();
   });
   window.addEventListener('kids-games-full-sync', updateSyncStatus);
-  window.addEventListener('kids-games-partial-sync', updateSyncStatus);
 
   const syncCloudButton = document.getElementById('sync-cloud-button');
   const syncCloudMessage = document.getElementById('sync-cloud-message');
