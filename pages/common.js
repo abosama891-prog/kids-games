@@ -1,5 +1,7 @@
 (function () {
   const APP_BASE_URL = new URL('../', document.currentScript.src);
+  const FIREBASE_STARTUP_TIMEOUT_MS = 15000;
+  const FIRESTORE_READ_TIMEOUT_MS = 8000;
   const STORAGE_KEYS = Object.freeze({
     serviceWorkerUpdateCheck: 'kids_games_sw_update_check_v1'
   });
@@ -711,11 +713,33 @@
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
+      const timeout = window.setTimeout(() => {
+        script.remove();
+        reject(new Error(`Timed out loading Firebase SDK: ${src}`));
+      }, 10000);
       script.src = src;
-      script.onload = resolve;
-      script.onerror = () => reject(new Error(`تعذر تحميل ${src}`));
+      script.onload = () => {
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      script.onerror = () => {
+        window.clearTimeout(timeout);
+        reject(new Error(`تعذر تحميل ${src}`));
+      };
       document.head.appendChild(script);
     });
+  }
+
+  function withTimeout(promise, timeoutMs, label) {
+    let timeout;
+    return Promise.race([
+      promise,
+      new Promise((resolve, reject) => {
+        timeout = window.setTimeout(() => {
+          reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      })
+    ]).finally(() => window.clearTimeout(timeout));
   }
 
   function normalizeMaintenanceSettings(settings) {
@@ -729,7 +753,11 @@
 
   async function initializeCloud() {
     try {
-      const response = await fetch(new URL('firebase-config.json', APP_BASE_URL), { cache: 'no-store' });
+      const response = await withTimeout(
+        fetch(new URL('firebase-config.json', APP_BASE_URL), { cache: 'no-store' }),
+        FIRESTORE_READ_TIMEOUT_MS,
+        'Firebase configuration request'
+      );
       if (!response.ok) throw new Error(`Firebase configuration request failed: ${response.status} ${response.statusText}`);
       const config = await response.json();
       const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'appId'];
@@ -746,7 +774,11 @@
       const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
       const auth = app.auth();
       const database = app.firestore();
-      await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      await withTimeout(
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL),
+        FIRESTORE_READ_TIMEOUT_MS,
+        'Firebase Auth persistence initialization'
+      );
       let userProgressUnsubscribe = null;
 
       function setProgressFromCloud(progress) {
@@ -756,7 +788,7 @@
 
       async function syncAccount(firebaseUser) {
         const userRef = database.collection('users').doc(firebaseUser.uid);
-        const snapshot = await userRef.get();
+        const snapshot = await withTimeout(userRef.get(), FIRESTORE_READ_TIMEOUT_MS, 'Firestore user profile read');
         if (!snapshot.exists) {
           throw new Error('تعذر العثور على ملف المستخدم في Firestore.');
         }
@@ -797,10 +829,10 @@
 
       async function readSettings() {
         if (!auth.currentUser) return;
-        const [lessons, games] = await Promise.all([
+        const [lessons, games] = await withTimeout(Promise.all([
           database.collection('settings').doc('lessons').get(),
           database.collection('settings').doc('games').get()
-        ]);
+        ]), FIRESTORE_READ_TIMEOUT_MS, 'Firestore settings read');
         if (lessons.exists) {
           const saved = lessons.data().unlockAt || {};
           lessonSettingsCache = Object.fromEntries(lessonCatalog.map(lesson => {
@@ -1000,7 +1032,7 @@
       };
       window.KidsGamesCloud = cloud;
 
-      await new Promise((resolve, reject) => {
+      await withTimeout(new Promise((resolve, reject) => {
         let initialState = true;
         auth.onAuthStateChanged(async firebaseUser => {
           try {
@@ -1033,7 +1065,7 @@
             console.error('Firebase authentication state listener failed:', error);
           }
         });
-      });
+      }), FIREBASE_STARTUP_TIMEOUT_MS, 'Firebase Auth initialization');
       return cloud;
     } catch (error) {
       console.error('Firebase initialization failed:', error);
@@ -1048,7 +1080,7 @@
 
   function scheduleCloudInitialization() {
     const initializeWhenIdle = () => {
-      initializeCloud().then(resolveCloudReady).catch(error => {
+      withTimeout(initializeCloud(), FIREBASE_STARTUP_TIMEOUT_MS, 'Firebase startup').then(resolveCloudReady).catch(error => {
         console.error('Cloud init failed:', error);
         resolveCloudReady({ enabled: false, reason: 'cloud-error' });
       });
@@ -1071,7 +1103,7 @@
     return /\/pages\/auth(?:\/|$)/i.test(window.location.pathname);
   }
 
-  function showAccessScreen(title, message, { maintenance = false, expectedTime = '' } = {}) {
+  function showAccessScreen(title, message, { maintenance = false, expectedTime = '', loginUrl = '' } = {}) {
     let screen = document.getElementById('kids-games-access-screen');
     if (!screen) {
       screen = document.createElement('section');
@@ -1118,6 +1150,13 @@
     Object.assign(refresh.style, { padding: '12px 24px', border: '0', borderRadius: '12px', cursor: 'pointer', font: 'inherit' });
     refresh.addEventListener('click', () => window.location.reload());
     card.appendChild(refresh);
+    if (loginUrl) {
+      const login = document.createElement('a');
+      login.href = loginUrl;
+      login.textContent = 'فتح صفحة تسجيل الدخول';
+      Object.assign(login.style, { display: 'inline-block', marginInlineStart: '16px', color: '#fff' });
+      card.appendChild(login);
+    }
     screen.replaceChildren(card);
     return screen;
   }
@@ -1129,12 +1168,16 @@
   if (!isAdminPage() && !isAuthPage()) {
     const loadingScreen = showAccessScreen('جارٍ التحقق من اتصال Firebase', 'يتم تحميل حسابك وبياناتك السحابية بأمان.');
     window.KidsGamesCloudReady.then(async cloud => {
+      const authUrl = new URL('pages/auth/index.html', APP_BASE_URL).href;
       if (!cloud?.enabled) {
-        showAccessScreen('تعذر الاتصال بـ Firebase', 'لم يتم تحميل بياناتك أو حفظها محليًا. تحقق من الاتصال ثم أعد المحاولة.');
+        showAccessScreen(
+          'تعذر الاتصال بـ Firebase',
+          'لم يتم تحميل بياناتك أو حفظها محليًا. تحقق من الاتصال ثم أعد المحاولة.',
+          { loginUrl: authUrl }
+        );
         return;
       }
       const user = getCurrentUser();
-      const authUrl = new URL('pages/auth/index.html', APP_BASE_URL).href;
       const applyMaintenance = maintenance => {
         if (maintenance.enabled && user?.role !== 'admin') {
           showAccessScreen(
@@ -1148,7 +1191,11 @@
           document.getElementById('kids-games-access-screen')?.remove();
         }
       };
-      const maintenance = await cloud.getMaintenanceMode();
+      const maintenance = await withTimeout(
+        cloud.getMaintenanceMode(),
+        FIRESTORE_READ_TIMEOUT_MS,
+        'Firestore maintenance settings read'
+      );
       if (!user && !maintenance.enabled) {
         window.location.replace(authUrl);
         return;
@@ -1165,7 +1212,11 @@
         window.location.pathname.replace(/\/+$/, '').toLowerCase()
       );
       if (currentGame && user.role !== 'admin') {
-        const settings = await getEffectiveGameSettings();
+        const settings = await withTimeout(
+          getEffectiveGameSettings(),
+          FIRESTORE_READ_TIMEOUT_MS,
+          'Firestore game settings read'
+        );
         if (settings.lockedGames.includes(currentGame.key)) {
           const maintenanceUrl = new URL('pages/games/maintenance.html', APP_BASE_URL);
           maintenanceUrl.searchParams.set('game', currentGame.key);
@@ -1175,7 +1226,11 @@
       }
     }).catch(error => {
       console.error('Unable to initialize app access checks:', error);
-      showAccessScreen('تعذر الاتصال بـ Firebase', 'لم يتم تحميل بياناتك. أعد المحاولة بعد التحقق من الاتصال.');
+      showAccessScreen(
+        'تعذر الاتصال بـ Firebase',
+        'لم يتم تحميل بياناتك. أعد المحاولة بعد التحقق من الاتصال.',
+        { loginUrl: new URL('pages/auth/index.html', APP_BASE_URL).href }
+      );
     });
   }
 })();
