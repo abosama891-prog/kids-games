@@ -3,7 +3,8 @@ async function forgotPassword(email) {
   if (!emailAddress || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) {
     throw Object.assign(new TypeError('أدخل عنوان إيميل صحيحًا.'), { code: 'auth/invalid-email' });
   }
-  if (emailAddress.toLocaleLowerCase('en-US').endsWith('.invalid')) {
+  const normalizedEmail = emailAddress.toLocaleLowerCase('en-US');
+  if (normalizedEmail.endsWith('.invalid') || normalizedEmail.endsWith('.local')) {
     throw Object.assign(
       new Error('هذا عنوان تجريبي غير قابل لاستقبال البريد. استخدم الإيميل الحقيقي المرتبط بحسابك.'),
       { code: 'app/non-deliverable-email' }
@@ -136,18 +137,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   loginForm.addEventListener('submit', async event => {
     event.preventDefault();
-    const username = document.getElementById('username').value.trim();
+    const username = document.getElementById('username').value.trim().toLocaleLowerCase('en-US');
     const password = normalizePin(document.getElementById('password').value);
     const submitButton = loginForm.querySelector('[type="submit"]');
     submitButton.disabled = true;
     try {
       const cloud = await cloudReady;
       if (!cloud?.enabled) throw new Error('تعذر الاتصال بخدمة Firebase. لم يتم تسجيل الدخول.');
-      const user = await cloud.signInWithUsername(username, password);
-      if (!user) {
-        setMessage('اسم المستخدم أو كلمة المرور غير صحيحة.', 'error');
-        return;
+      let credential;
+      try {
+        credential = await window.firebase.auth().signInWithEmailAndPassword(
+          `${username}@kids-games.local`,
+          password
+        );
+      } catch (error) {
+        if (!['auth/user-not-found', 'auth/invalid-credential'].includes(error.code)) throw error;
+        credential = await window.firebase.auth().signInWithEmailAndPassword(
+          `${username}@accounts.kids-games.invalid`,
+          password
+        );
       }
+      const user = await cloud.syncAuthenticatedUser(credential.user);
       redirectByRole(user);
     } catch (error) {
       console.error('Unable to sign in with username:', error);
@@ -155,10 +165,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         ? 'تعذر الاتصال بخدمة Firebase. تحقق من الاتصال ثم حاول مرة أخرى.'
         : error.code === 'auth/too-many-requests'
         ? 'محاولات كثيرة. انتظر قليلًا ثم حاول مرة أخرى.'
-        : error.code === 'functions/resource-exhausted'
-          ? 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.'
-          : error.code === 'functions/unavailable'
-            ? 'تعذر الاتصال بخدمة الحسابات. تحقق من اتصال الإنترنت.'
         : error.code === 'auth/network-request-failed'
           ? 'تعذر الاتصال بخدمة تسجيل الدخول. تحقق من اتصال الإنترنت.'
           : 'اسم المستخدم أو كلمة المرور غير صحيحة.';
@@ -207,7 +213,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const cloud = await cloudReady;
       if (!cloud?.enabled) throw new Error('تعذر الاتصال بخدمة Firebase. لم يتم إنشاء الحساب.');
-      const user = await cloud.createAccount(username, pin, fullName, role, avatar);
+      const email = `${username}@kids-games.local`;
+      const credential = await window.firebase.auth().createUserWithEmailAndPassword(email, pin);
+      try {
+        await window.firebase.firestore().collection('users').doc(credential.user.uid).set({
+          username,
+          email,
+          fullName,
+          role,
+          status: 'active',
+          avatar,
+          provider: 'local',
+          progress: {},
+          updatedAt: window.firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch (error) {
+        try {
+          await credential.user.delete();
+        } catch (cleanupError) {
+          console.error('Unable to remove Firebase Auth account after profile creation failed:', cleanupError);
+        }
+        throw error;
+      }
+      const user = await cloud.syncAuthenticatedUser(credential.user);
       setMessage('تم إنشاء الحساب بنجاح. جارٍ فتح المنصة...');
       setTimeout(() => redirectByRole(user), 350);
     } catch (error) {
@@ -216,19 +244,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         ? 'تعذر الاتصال بخدمة Firebase. تحقق من الاتصال ثم حاول مرة أخرى.'
         : error.code === 'auth/email-already-in-use'
         ? 'اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.'
-        : error.code === 'functions/resource-exhausted'
-          ? 'محاولات كثيرة. انتظر 15 دقيقة ثم حاول مرة أخرى.'
-          : error.code === 'functions/already-exists'
-            ? 'اسم المستخدم مستخدم بالفعل. اختر اسمًا آخر.'
-            : error.code === 'functions/not-found'
-              ? 'خدمة إنشاء الحسابات غير مهيأة بعد. تواصل مع مسؤول الموقع.'
-              : error.code === 'functions/unavailable' || error.code === 'auth/network-request-failed'
-                ? 'تعذر الاتصال بخدمة الحسابات. تحقق من اتصال الإنترنت.'
-                : error.code === 'auth/operation-not-allowed'
-                  ? 'إنشاء الحسابات غير مفعّل في إعدادات Firebase.'
-                  : error instanceof TypeError || error.code === 'functions/invalid-argument'
-                    ? error.message
-                    : 'تعذر إنشاء الحساب. تحقق من البيانات ثم حاول مرة أخرى.';
+        : error.code === 'auth/network-request-failed'
+          ? 'تعذر الاتصال بخدمة Firebase. تحقق من اتصال الإنترنت.'
+          : error.code === 'auth/operation-not-allowed'
+            ? 'إنشاء الحسابات غير مفعّل في إعدادات Firebase.'
+            : error.code === 'permission-denied'
+              ? 'تعذر حفظ ملف الحساب. تحقق من نشر قواعد Firestore.'
+              : 'تعذر إنشاء الحساب. تحقق من البيانات ثم حاول مرة أخرى.';
       setMessage(message, 'error');
     } finally {
       submitButton.disabled = false;

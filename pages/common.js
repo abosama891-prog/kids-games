@@ -718,14 +718,6 @@
     });
   }
 
-  function usernameEmail(username) {
-    const normalized = String(username || '').trim().toLocaleLowerCase('en-US');
-    if (!/^[a-z0-9._-]{1,32}$/.test(normalized)) {
-      throw new TypeError('اسم المستخدم يجب أن يتكون من 1 إلى 32 حرفًا إنجليزيًا أو رقمًا أو . _ -');
-    }
-    return normalized + '@accounts.kids-games.invalid';
-  }
-
   function normalizeMaintenanceSettings(settings) {
     const value = settings && typeof settings === 'object' ? settings : {};
     return {
@@ -767,19 +759,21 @@
       async function syncAccount(firebaseUser) {
         const userRef = database.collection('users').doc(firebaseUser.uid);
         const snapshot = await userRef.get();
-        const cloudData = snapshot.exists ? snapshot.data() : {};
+        if (!snapshot.exists) {
+          throw new Error('تعذر العثور على ملف المستخدم في Firestore.');
+        }
+        const cloudData = snapshot.data();
         if (cloudData.status === 'inactive') {
           await auth.signOut();
           setCurrentUser(null);
           throw new Error('هذا الحساب غير نشط.');
         }
 
-        const token = await firebaseUser.getIdTokenResult();
         const provider = firebaseUser.providerData.some(item => item.providerId === 'google.com') ? 'google' : 'local';
         const role = isValidRole(cloudData.role) ? cloudData.role : 'child';
         const user = normalizeUser({
           id: firebaseUser.uid,
-          username: cloudData.username || token.claims.username || (firebaseUser.email || '').split('@')[0],
+          username: cloudData.username || (firebaseUser.email || '').split('@')[0],
           email: firebaseUser.email || '',
           fullName: cloudData.fullName || firebaseUser.displayName || cloudData.username || firebaseUser.email || 'مستخدم',
           role,
@@ -788,18 +782,6 @@
           status: 'active'
         });
         const progress = normalizeProgress(cloudData.progress || {});
-        const profile = {
-          username: user.username,
-          email: user.email,
-          fullName: user.fullName,
-          role: user.role,
-          avatar: user.avatar,
-          provider: user.provider,
-          status: user.status,
-          progress,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        await userRef.set(profile, { merge: true });
         setCurrentUser(user);
         setProgressFromCloud(progress);
         userProgressUnsubscribe?.();
@@ -834,38 +816,24 @@
       const cloud = {
         enabled: true,
         projectId: config.projectId,
+        async syncAuthenticatedUser(firebaseUser) {
+          const user = await syncAccount(firebaseUser);
+          await readSettings();
+          return user;
+        },
         getCurrentUserId() {
           return auth.currentUser?.uid || null;
         },
-        async signInWithUsername(username, password) {
-          let credential;
-          try {
-            const result = await functions.httpsCallable('authenticateUsername')({ username, password });
-            credential = await auth.signInWithCustomToken(result.data.token);
-          } catch (error) {
-            if (!['functions/unauthenticated', 'functions/not-found', 'functions/invalid-argument'].includes(error.code)) throw error;
-            credential = await auth.signInWithEmailAndPassword(usernameEmail(username), password);
-          }
-          const user = await syncAccount(credential.user);
-          await readSettings();
-          return user;
-        },
-        async createAccount(username, pin, fullName, role, avatar) {
-          const normalizedUsername = String(username || '').trim().toLocaleLowerCase('en-US');
-          const normalizedFullName = String(fullName || '').trim();
-          if (!normalizedFullName || normalizedFullName.length > 60) throw new TypeError('أدخل اسمًا صحيحًا لا يتجاوز 60 حرفًا.');
-          if (!['child', 'teacher', 'parent'].includes(role)) throw new TypeError('اختر نوع حساب صحيحًا.');
-          if (!['child', 'girl', 'engineer'].includes(avatar)) throw new TypeError('اختر شخصية من القائمة.');
-          if (!/^\d{6,128}$/.test(String(pin || ''))) throw new TypeError('رمز الدخول يجب أن يتكون من 6 أرقام على الأقل.');
-          const result = await functions.httpsCallable('registerAccount')({ username: normalizedUsername, pin, fullName: normalizedFullName, role, avatar });
-          const credential = await auth.signInWithCustomToken(result.data.token);
-          const user = await syncAccount(credential.user);
-          await readSettings();
-          return user;
-        },
         async listAccounts() {
-          const result = await functions.httpsCallable('listAccounts')();
-          return result.data.users || [];
+          const snapshot = await database.collection('users').get();
+          return snapshot.docs.map(document => {
+            const account = document.data();
+            return {
+              ...account,
+              id: document.id,
+              uid: document.id
+            };
+          });
         },
         async createManagedAccount(account) {
           const result = await functions.httpsCallable('createAccount')({

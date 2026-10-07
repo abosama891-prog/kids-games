@@ -30,7 +30,8 @@ service cloud.firestore {
         && (
           (request.resource.data.provider == 'local'
             && request.auth.token.email.split('@')[0] == request.resource.data.username
-            && request.auth.token.email.split('@')[1] == 'accounts.kids-games.invalid')
+            && request.resource.data.email == request.auth.token.email
+            && request.auth.token.email.split('@')[1] in ['kids-games.local', 'accounts.kids-games.invalid'])
           || (request.resource.data.provider == 'google'
             && request.auth.token.firebase.sign_in_provider == 'google.com')
         );
