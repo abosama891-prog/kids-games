@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   const lessons = [
     {
       key: 'commands',
@@ -255,33 +255,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     content.appendChild(actions);
   }
 
-  try {
-    const cloud = await window.KidsGamesCloudReady;
-    if (cloud.enabled && cloud.getCurrentUserId?.() === currentUser.id) {
+  const lessonKey = new URLSearchParams(window.location.search).get('id');
+  const selectedLesson = lessons.find(lesson => lesson.key === lessonKey);
+  function renderCurrentLesson() {
+    if (selectedLesson) {
+      const unlockAt = Number(lessonSettings[selectedLesson.key] ?? selectedLesson.unlockAt);
+      if (!isAdmin && completedLevels < unlockAt) {
+        renderLockedLesson(selectedLesson, unlockAt);
+        return;
+      }
+      renderLesson(selectedLesson);
+      return;
+    }
+
+    renderLessonList(settingsMessage === 'saved' ? 'تم حفظ مستويات فتح الدروس.' : '');
+  }
+
+  renderCurrentLesson();
+  (async () => {
+    try {
+      const cloud = await window.KidsGamesCloudReady;
+      if (!cloud.enabled || cloud.getCurrentUserId?.() !== currentUser.id) return;
       const savedSettings = await cloud.getLessonSettings();
       if (savedSettings) {
         lessonSettings = window.KidsGames.saveLessonSettings(savedSettings);
+        renderCurrentLesson();
       } else if (currentUser.role === 'admin') {
         await cloud.saveLessonSettings(lessonSettings);
       }
+    } catch (error) {
+      console.error('Unable to load shared lesson settings:', error);
     }
-  } catch (error) {
-    console.error('Unable to load shared lesson settings:', error);
-    renderLessonList('تعذر تحميل إعدادات فتح الدروس؛ أعد تحميل الصفحة بعد التحقق من الاتصال.');
-    return;
-  }
-
-  const lessonKey = new URLSearchParams(window.location.search).get('id');
-  const selectedLesson = lessons.find(lesson => lesson.key === lessonKey);
-  if (selectedLesson) {
-    const unlockAt = Number(lessonSettings[selectedLesson.key] ?? selectedLesson.unlockAt);
-    if (!isAdmin && completedLevels < unlockAt) {
-      renderLockedLesson(selectedLesson, unlockAt);
-      return;
-    }
-    renderLesson(selectedLesson);
-    return;
-  }
-
-  renderLessonList(settingsMessage === 'saved' ? 'تم حفظ مستويات فتح الدروس.' : '');
+  })();
 });

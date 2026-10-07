@@ -82,12 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const currentUser = window.KidsGamesAuth?.getCurrentUser?.();
 
-  const cloudReady = window.KidsGamesCloudReady.then(cloud => {
-    if (currentUser) {
-      redirectByRole(window.KidsGamesAuth.getCurrentUser() || currentUser);
-    }
-    return cloud;
-  });
+  const cloudReady = window.KidsGamesCloudReady;
+  if (currentUser) redirectByRole(currentUser);
 
   showSignupButton.addEventListener('click', showSignup);
   showLoginButton.addEventListener('click', showLogin);

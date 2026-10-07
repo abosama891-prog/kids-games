@@ -1381,8 +1381,10 @@
 
       const version = '10.12.5';
       await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-app-compat.js`);
-      await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-auth-compat.js`);
-      await loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-firestore-compat.js`);
+      await Promise.all([
+        loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-auth-compat.js`),
+        loadScript(`https://www.gstatic.com/firebasejs/${version}/firebase-firestore-compat.js`)
+      ]);
 
       const firebase = window.firebase;
       const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(config);
@@ -1698,7 +1700,14 @@
     }
   }
 
-  window.KidsGamesCloudReady = initializeCloud();
+  window.KidsGamesCloudReady = new Promise(resolve => {
+    const startCloud = () => initializeCloud().then(resolve);
+    if (typeof window.requestIdleCallback === 'function') {
+      window.requestIdleCallback(startCloud, { timeout: 1000 });
+    } else {
+      window.setTimeout(startCloud, 0);
+    }
+  });
   const adminPagePath = new URL('pages/admin/', APP_BASE_URL).pathname;
   if (!window.location.pathname.startsWith(adminPagePath)) {
     let maintenanceScreen = null;
@@ -1826,30 +1835,8 @@
   );
   const currentUser = window.KidsGamesAuth.getCurrentUser();
   if (currentGame && currentUser?.role !== 'admin') {
-    const accessCheck = document.createElement('div');
-    accessCheck.setAttribute('role', 'status');
-    accessCheck.setAttribute('aria-live', 'assertive');
-    accessCheck.textContent = `لحظة واحدة، نتحقق من توفر لعبة ${currentGame.title}.`;
-    Object.assign(accessCheck.style, {
-      position: 'fixed',
-      inset: '0',
-      zIndex: '2147483647',
-      display: 'grid',
-      placeItems: 'center',
-      padding: '24px',
-      background: 'rgba(16, 35, 57, 0.92)',
-      color: '#fff',
-      font: '800 1.1rem/1.8 system-ui, sans-serif',
-      textAlign: 'center',
-      direction: 'rtl'
-    });
-    document.body.appendChild(accessCheck);
-
     window.KidsGames.getEffectiveGameSettings().then(settings => {
-      if (!settings.lockedGames.includes(currentGame.key)) {
-        accessCheck.remove();
-        return;
-      }
+      if (!settings.lockedGames.includes(currentGame.key)) return;
       const maintenanceUrl = new URL('pages/games/maintenance.html', APP_BASE_URL);
       maintenanceUrl.searchParams.set('game', currentGame.key);
       window.location.replace(maintenanceUrl.href);
