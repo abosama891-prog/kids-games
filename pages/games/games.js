@@ -1,23 +1,22 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const query = new URLSearchParams(window.location.search);
-  const unavailableGame = window.KidsGames.gameCatalog.find(game => game.key === query.get('unavailable'));
-  const isAdmin = window.KidsGamesAuth.getCurrentUser()?.role === 'admin';
-  const cachedSettings = window.KidsGames.getGameSettings();
-  renderGames(cachedSettings, false);
+const query = new URLSearchParams(window.location.search);
+const unavailableGame = window.KidsGames.gameCatalog.find(game => game.key === query.get('unavailable'));
+const isAdmin = window.KidsGamesAuth.getCurrentUser()?.role === 'admin';
+const cachedSettings = window.KidsGames.getGameSettings();
 
-  window.KidsGames.getEffectiveGameSettings().then(settings => {
-    if (unavailableGame && settings.lockedGames.includes(unavailableGame.key) && !isAdmin) {
-      window.location.replace(getMaintenanceHref(unavailableGame.key));
-      return;
-    }
-    renderGames(settings, false);
-  }).catch(error => {
-    console.error('Unable to load game availability:', error);
-    const message = document.getElementById('games-message');
-    message.textContent = 'تعذر التحقق من حالة تحديثات الألعاب. أعد تحميل الصفحة قبل فتح أي لعبة.';
-    message.hidden = false;
-    renderGames(cachedSettings, true);
-  });
+renderGames(cachedSettings, false);
+
+window.KidsGames.getEffectiveGameSettings().then(settings => {
+  if (unavailableGame && settings.lockedGames.includes(unavailableGame.key) && !isAdmin) {
+    window.location.replace(getMaintenanceHref(unavailableGame.key));
+    return;
+  }
+  renderGames(settings, false);
+}).catch(error => {
+  console.error('Unable to load game availability:', error);
+  const message = document.getElementById('games-message');
+  message.textContent = 'تعذر التحقق من حالة تحديثات الألعاب. أعد تحميل الصفحة قبل فتح أي لعبة.';
+  message.hidden = false;
+  renderGames(cachedSettings, true);
 });
 
 function getMaintenanceHref(gameKey) {

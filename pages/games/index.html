@@ -25,11 +25,47 @@
 
       <main>
         <div id="games-message" class="games-message" role="status" aria-live="polite" hidden></div>
-        <div class="games-grid" id="gamesGrid" aria-live="polite"></div>
+        <div class="games-grid" id="gamesGrid" aria-live="polite">
+          <a class="game-card game-draw" href="../draw/index.html" aria-label="افتح لعبة الرسم">
+            <span class="game-icon" aria-hidden="true">🎨</span>
+            <div class="game-details"><h2>الرسم</h2><span class="level-count">0 / 10</span></div>
+            <span class="launch-game" aria-hidden="true">▶</span>
+          </a>
+          <a class="game-card game-maze" href="../maze/index.html" aria-label="افتح لعبة CoD">
+            <span class="game-icon" aria-hidden="true">🐰</span>
+            <div class="game-details"><h2>CoD</h2><span class="level-count">0 / 20</span></div>
+            <span class="launch-game" aria-hidden="true">▶</span>
+          </a>
+          <a class="game-card game-gas" href="../gas/index.html" aria-label="افتح لعبة المهندس">
+            <span class="game-icon" aria-hidden="true">🌉</span>
+            <div class="game-details"><h2>المهندس</h2><span class="level-count">0 / 10</span></div>
+            <span class="launch-game" aria-hidden="true">▶</span>
+          </a>
+          <a class="game-card game-frog" href="../frog/index.html" aria-label="افتح لعبة الضفدع">
+            <span class="game-icon" aria-hidden="true">🐸</span>
+            <div class="game-details"><h2>الضفدع</h2><span class="level-count">0 / 5</span></div>
+            <span class="launch-game" aria-hidden="true">▶</span>
+          </a>
+          <a class="game-card game-potion" href="../potion/index.html" aria-label="افتح لعبة المختبر">
+            <span class="game-icon" aria-hidden="true">🧪</span>
+            <div class="game-details"><h2>المختبر</h2><span class="level-count">0 / 3</span></div>
+            <span class="launch-game" aria-hidden="true">▶</span>
+          </a>
+          <a class="game-card game-robot" href="../robot/index.html" aria-label="افتح لعبة الألوان">
+            <span class="game-icon" aria-hidden="true">🌈</span>
+            <div class="game-details"><h2>الألوان</h2><span class="level-count">0 / 10</span></div>
+            <span class="launch-game" aria-hidden="true">▶</span>
+          </a>
+          <a class="game-card game-code-park" href="code-park.html" aria-label="افتح لعبة ملاهي البرمجة">
+            <span class="game-icon" aria-hidden="true">🎢</span>
+            <div class="game-details"><h2>ملاهي البرمجة</h2><span class="level-count">0 / 5</span></div>
+            <span class="launch-game" aria-hidden="true">▶</span>
+          </a>
+        </div>
       </main>
     </div>
 
-    <script src="../common.js"></script>
-    <script src="games.js"></script>
+    <script defer src="../common.js"></script>
+    <script defer src="games.js"></script>
   </body>
 </html>
