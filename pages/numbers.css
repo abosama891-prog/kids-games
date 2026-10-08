@@ -1,0 +1,392 @@
+/* ========== Number Lab - Kids Friendly ========== */
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #1a3a5c;
+}
+
+.game-wrap {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: linear-gradient(160deg, #1a3a5c 0%, #2d5a7e 50%, #3d6b8e 100%);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  gap: 12px;
+  overflow-x: hidden;
+}
+
+/* ========== Header ========== */
+.game-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+.game-top h1 {
+  font-size: 18px;
+  margin: 0;
+  font-weight: 800;
+  color: #fff;
+}
+.back {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 22px;
+  transition: all 0.2s;
+}
+.back:active { transform: scale(0.9); }
+
+.stars {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 215, 0, 0.25);
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-weight: 800;
+  color: #ffd700;
+  font-size: 15px;
+}
+
+/* ========== Info Bar ========== */
+.info-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.info-item {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px 8px;
+  border-radius: 14px;
+  text-align: center;
+}
+.info-item span {
+  display: block;
+  font-size: 10px;
+  opacity: 0.7;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.info-item b {
+  font-size: 18px;
+  font-weight: 800;
+  color: #7dd3fc;
+  display: block;
+}
+
+/* ========== Levels Bar ========== */
+.levels-bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #fff;
+  border-radius: 18px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  -webkit-overflow-scrolling: touch;
+}
+.levels-bar::-webkit-scrollbar {
+  height: 4px;
+}
+.levels-bar::-webkit-scrollbar-thumb {
+  background: #7dd3fc;
+  border-radius: 2px;
+}
+
+.level-btn {
+  min-width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 800;
+  font-family: inherit;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.25s;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.level-btn.unlocked {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  border-color: #10b981;
+  color: #065f46;
+  cursor: pointer;
+}
+
+.level-btn.current {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-color: #f59e0b;
+  color: #92400e;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), 0 4px 15px rgba(245, 158, 11, 0.4);
+  animation: levelPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes levelPulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2), 0 4px 15px rgba(245, 158, 11, 0.4); }
+  50% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.3), 0 6px 20px rgba(245, 158, 11, 0.6); }
+}
+
+.level-btn.locked {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.level-btn.locked::after {
+  content: '🔒';
+  position: absolute;
+  font-size: 10px;
+  bottom: -2px;
+  right: -2px;
+}
+
+.level-btn.completed {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-color: #3b82f6;
+  color: #1e40af;
+}
+
+.level-btn.completed::after {
+  content: '✓';
+  position: absolute;
+  font-size: 14px;
+  bottom: -2px;
+  right: 2px;
+  color: #10b981;
+  font-weight: 900;
+}
+
+/* ========== Question Card ========== */
+.question-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  animation: cardIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.question-label {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+  text-align: center;
+}
+.numbers-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 80px;
+}
+.number-box {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 3px solid #7dd3fc;
+  border-radius: 16px;
+  font-size: 28px;
+  font-weight: 900;
+  color: #0369a1;
+  box-shadow: 0 4px 12px rgba(125, 211, 252, 0.3);
+  transition: all 0.3s;
+}
+.number-box.hidden-box {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-color: #f59e0b;
+  color: #92400e;
+  animation: pulseBox 1.5s ease-in-out infinite;
+  font-size: 32px;
+}
+@keyframes pulseBox {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.7);
+    transform: scale(1.05);
+  }
+}
+.number-box.correct {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  border-color: #10b981;
+  color: #065f46;
+  animation: correctPop 0.5s;
+}
+@keyframes correctPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.number-box.wrong {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  border-color: #ef4444;
+  color: #991b1b;
+  animation: wrongShake 0.5s;
+}
+@keyframes wrongShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+/* ========== Hint Box ========== */
+.hint-box {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-radius: 16px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+  display: none;
+}
+.hint-box.visible {
+  display: block;
+  animation: hintIn 0.4s;
+}
+@keyframes hintIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hint-label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #92400e;
+}
+.hint-box code {
+  display: block;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: #78350f;
+  direction: ltr;
+  text-align: left;
+}
+
+/* ========== Answers ========== */
+.answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.answer-btn {
+  padding: 20px 10px;
+  background: #fff;
+  border: 3px solid #e2e8f0;
+  border-radius: 16px;
+  font-size: 24px;
+  font-weight: 900;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.answer-btn:active {
+  transform: scale(0.95);
+}
+.answer-btn.correct {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  border-color: #10b981;
+  color: #065f46;
+}
+.answer-btn.wrong {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  border-color: #ef4444;
+  color: #991b1b;
+}
+.answer-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* ========== Message ========== */
+.message {
+  text-align: center;
+  font-size: 16px;
+  font-weight: 800;
+  min-height: 24px;
+  padding: 8px;
+  color: #fff;
+}
+.message.success {
+  color: #86efac;
+  animation: msgPop 0.4s;
+}
+.message.error {
+  color: #fca5a5;
+  animation: msgShake 0.4s;
+}
+@keyframes msgPop {
+  0% { transform: scale(0.5); }
+  100% { transform: scale(1); }
+}
+@keyframes msgShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+/* ========== Particles ========== */
+.particle {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  animation: particleFall 1.5s ease-out forwards;
+}
+@keyframes particleFall {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* ========== Responsive ========== */
+@media (min-width: 600px) {
+  .game-wrap {
+    padding: 24px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .number-box {
+    width: 72px;
+    height: 72px;
+    font-size: 32px;
+  }
+}
