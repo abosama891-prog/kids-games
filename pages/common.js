@@ -31,8 +31,8 @@
     { key: 'potion', title: 'المختبر', icon: '🧪', href: new URL('pages/potion/index.html', APP_BASE_URL).href, levels: 3, accent: '#2DD4BF' },
     { key: 'robot', title: 'الألوان', icon: '🌈', href: new URL('pages/robot/index.html', APP_BASE_URL).href, levels: 10, accent: '#e47765' },
     { key: 'code-park', title: 'ملاهي البرمجة', icon: '🎢', href: new URL('pages/games/code-park.html', APP_BASE_URL).href, levels: 5, accent: '#FF6B6B' },
-  { key: 'numbers', title: 'مختبر الأرقام', icon: '🧪', href: new URL('pages/numbers/index.html', APP_BASE_URL).href, levels: 20, accent: '#7dd3fc' }
-  ];
+    { key: 'numbers', title: 'مختبر الأرقام', icon: '🧪', href: new URL('pages/numbers/index.html', APP_BASE_URL).href, levels: 20, accent: '#7dd3fc' }
+   ];
   const lessonCatalog = [
     { key: 'commands', title: 'ما معنى الأمر في البرمجة؟', icon: '📘', unlockAt: 1 },
     { key: 'sequence', title: 'ترتيب الأوامر', icon: '🔢', unlockAt: 3 },
